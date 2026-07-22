@@ -1,4 +1,3 @@
-[README.md](https://github.com/user-attachments/files/30282919/README.md)
 # Productividad de planta — Supabase + Netlify
 
 Aplicación web (mobile-first) para registrar tareas de producción de piezas inyectadas y consultar el desempeño diario de la operación.
