@@ -672,6 +672,21 @@ mark {
 .etapa.cero {
   opacity: 0.6;
 }
+.etapa.lista {
+  border-color: #cbe7d7;
+  background: var(--good-bg);
+}
+.etapa .eno {
+  font-size: 9.5px;
+  color: #9aa2ab;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.etapa .eok-tick {
+  color: var(--good);
+  font-weight: 700;
+}
 
 /* --- tarea bloqueada --- */
 .locked {

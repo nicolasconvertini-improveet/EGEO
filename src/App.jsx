@@ -566,8 +566,7 @@ function Login() {
   return (
     <div className="login">
       <img src="/logo.png" alt="Improveet" className="brand" />
-      <h2>EGEO OMS</h2>
-      <h2>Operations Mngmt Software</h2>
+      <h2>Productividad</h2>
       <p>Registro de tareas y desempeño de planta.</p>
       {err && <div className="lerr">{err}</div>}
       {mode === "up" && (
@@ -607,7 +606,17 @@ function Login() {
       </button>
       <div className="switch-mode">
         {mode === "in" ? (
-          <></>
+          <>
+            ¿No tenés cuenta?{" "}
+            <button
+              onClick={() => {
+                setMode("up");
+                setErr("");
+              }}
+            >
+              Crear una
+            </button>
+          </>
         ) : (
           <>
             ¿Ya tenés cuenta?{" "}
@@ -1305,7 +1314,7 @@ function Pedidos({ rol, peds, setDetail }) {
               className="mono"
             >
               <span>
-                {nf(p.okAcum)} / {nf(p.cantidad)} OK
+                {nf(p.okAcum)} / {nf(p.cantidad)} completas
               </span>
               <span>{pct}%</span>
             </div>
@@ -1396,10 +1405,27 @@ function PedidoDetalle({ arts, peds, tars, detail, notify }) {
           }}
         >
           <span>
-            {nf(p.okAcum)} / {nf(p.cantidad)} OK
+            {nf(p.okAcum)} / {nf(p.cantidad)} completas
           </span>
           <span>Scrap {nf(p.scrapAcum)}</span>
         </div>
+        {p.etapasReq > 0 && (
+          <div
+            style={{
+              fontSize: 11.5,
+              color: "var(--ink2)",
+              marginTop: 9,
+              borderTop: "1px solid var(--line2)",
+              paddingTop: 9,
+            }}
+          >
+            {p.etapasCompletas} de {p.etapasReq} etapa
+            {p.etapasReq === 1 ? "" : "s"} completa
+            {p.etapasCompletas === 1 ? "" : "s"}
+            {p.etapasCompletas < p.etapasReq &&
+              " · falta terminar las demás para cerrar el pedido"}
+          </div>
+        )}
       </div>
 
       <div className="sec-title" style={{ marginTop: 18 }}>
@@ -1414,10 +1440,21 @@ function PedidoDetalle({ arts, peds, tars, detail, notify }) {
           <div className="etapas">
             {ACTS.map((ac) => {
               const e = etapaDe(ac.key);
+              const requerida = (a?.std?.[ac.key] || 0) > 0;
+              const lista = requerida && e.ok >= p.cantidad;
               const vacia = e.ok === 0 && e.scrap === 0;
               return (
-                <div className={"etapa" + (vacia ? " cero" : "")} key={ac.key}>
-                  <div className="en">{ac.label}</div>
+                <div
+                  className={
+                    "etapa" + (vacia ? " cero" : "") + (lista ? " lista" : "")
+                  }
+                  key={ac.key}
+                >
+                  <div className="en">
+                    {ac.label}
+                    {!requerida && <span className="eno"> no aplica</span>}
+                    {lista && <span className="eok-tick"> ✓</span>}
+                  </div>
                   <div
                     className="eok mono"
                     style={{ color: e.ok > 0 ? "var(--good)" : "var(--ink2)" }}

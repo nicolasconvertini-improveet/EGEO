@@ -84,7 +84,10 @@ export async function fetchPedidos() {
     articuloCodigo: p.articulo_codigo,
     cantidad: p.cantidad,
     estado: p.estado,
-    okAcum: p.ok_acum,
+    okAcum: p.ok_acum, // piezas completas (etapa más atrasada)
+    okBruto: p.ok_bruto, // volumen total trabajado
+    etapasReq: p.etapas_req,
+    etapasCompletas: p.etapas_completas,
     scrapAcum: p.scrap_acum,
   }));
 }
