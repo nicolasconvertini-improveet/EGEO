@@ -62,7 +62,10 @@ export async function saveArticulo(a, id) {
 }
 
 export async function setArticuloActivo(id, activo) {
-  const { error } = await supabase.from("articulos").update({ activo }).eq("id", id);
+  const { error } = await supabase
+    .from("articulos")
+    .update({ activo })
+    .eq("id", id);
   if (error) throw error;
 }
 
@@ -89,8 +92,63 @@ export async function fetchPedidos() {
 export async function createPedido({ codigo, articuloId, cantidad }) {
   const { error } = await supabase
     .from("pedidos")
-    .insert({ codigo: codigo.trim(), articulo_id: articuloId, cantidad: Number(cantidad) });
+    .insert({
+      codigo: codigo.trim(),
+      articulo_id: articuloId,
+      cantidad: Number(cantidad),
+    });
   if (error) throw error;
+}
+
+/* ---------- Usuarios (sólo administradores) ---------- */
+export async function fetchUsuarios() {
+  const { data, error } = await supabase
+    .from("perfiles")
+    .select("*")
+    .order("nombre", { ascending: true });
+  if (error) throw error;
+  return data;
+}
+
+export async function updateUsuario(id, cambios) {
+  const { error } = await supabase
+    .from("perfiles")
+    .update(cambios)
+    .eq("id", id);
+  if (error) throw error;
+}
+
+/* El alta pasa por una función del servidor: la clave con permisos
+   de administración nunca llega al navegador. */
+export async function crearUsuario({ email, password, nombre, rol }) {
+  const { data } = await supabase.auth.getSession();
+  const token = data?.session?.access_token;
+  if (!token) throw new Error("Sesión vencida. Volvé a ingresar.");
+
+  const res = await fetch("/.netlify/functions/crear-usuario", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ email, password, nombre, rol }),
+  });
+
+  let payload = null;
+  try {
+    payload = await res.json();
+  } catch {
+    /* respuesta no JSON */
+  }
+
+  if (!res.ok) {
+    if (res.status === 404)
+      throw new Error(
+        "El alta de usuarios sólo funciona en el sitio publicado.",
+      );
+    throw new Error(payload?.error || "No se pudo crear el usuario");
+  }
+  return payload;
 }
 
 /* ---------- Tareas ---------- */
@@ -110,11 +168,16 @@ function mapTarea(t) {
     scrap: t.piezas_scrap,
     realSec: t.real_seg,
     stdSec: Number(t.std_seg) || 0,
+    confirmada: t.confirmada,
   };
 }
 
-export async function fetchTareas({ desdeDias = null, limit = 200 } = {}) {
-  let q = supabase.from("v_tareas").select("*").order("fin", { ascending: false });
+export async function fetchTareas({ desdeDias = null, limit = 500 } = {}) {
+  let q = supabase
+    .from("v_tareas")
+    .select("*")
+    .eq("confirmada", true)
+    .order("fin", { ascending: false });
   if (desdeDias != null) {
     const d = new Date();
     d.setDate(d.getDate() - desdeDias);
@@ -126,16 +189,77 @@ export async function fetchTareas({ desdeDias = null, limit = 200 } = {}) {
   return data.map(mapTarea);
 }
 
-export async function createTarea({ pedidoId, actividad, inicio, fin, ok, scrap }) {
+/* Totales por etapa de un pedido (las 4 actividades, en cero si no hubo) */
+export async function fetchEtapasPedido(pedidoId) {
+  const { data, error } = await supabase
+    .from("v_pedido_etapas")
+    .select("*")
+    .eq("pedido_id", pedidoId);
+  if (error) throw error;
+  return data;
+}
+
+/* Cantidad de tareas actualmente abiertas (sin finalizar) */
+export async function contarTareasEnCurso() {
+  const { count, error } = await supabase
+    .from("tareas")
+    .select("id", { count: "exact", head: true })
+    .is("fin", null);
+  if (error) throw error;
+  return count || 0;
+}
+
+/* ---------- Flujo de la tarea del operario ---------- */
+
+/* Tarea propia sin confirmar: abierta (fin null) o pendiente de cargar piezas */
+export async function fetchTareaActiva() {
   const { data: userData } = await supabase.auth.getUser();
-  const { error } = await supabase.from("tareas").insert({
-    pedido_id: pedidoId,
-    actividad,
-    inicio,
-    fin,
-    piezas_ok: ok,
-    piezas_scrap: scrap,
-    operario_id: userData?.user?.id,
-  });
+  const uid = userData?.user?.id;
+  if (!uid) return null;
+  const { data, error } = await supabase
+    .from("v_tareas")
+    .select("*")
+    .eq("operario_id", uid)
+    .eq("confirmada", false)
+    .order("inicio", { ascending: false })
+    .limit(1);
+  if (error) throw error;
+  return data && data.length ? mapTarea(data[0]) : null;
+}
+
+export async function iniciarTarea({ pedidoId, actividad }) {
+  const { data: userData } = await supabase.auth.getUser();
+  const { data, error } = await supabase
+    .from("tareas")
+    .insert({
+      pedido_id: pedidoId,
+      actividad,
+      inicio: new Date().toISOString(),
+      operario_id: userData?.user?.id,
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+  return data.id;
+}
+
+export async function finalizarTarea(tareaId) {
+  const { error } = await supabase
+    .from("tareas")
+    .update({ fin: new Date().toISOString() })
+    .eq("id", tareaId);
+  if (error) throw error;
+}
+
+export async function confirmarTarea(tareaId, { ok, scrap }) {
+  const { error } = await supabase
+    .from("tareas")
+    .update({ piezas_ok: ok, piezas_scrap: scrap, confirmada: true })
+    .eq("id", tareaId);
+  if (error) throw error;
+}
+
+export async function cancelarTarea(tareaId) {
+  const { error } = await supabase.from("tareas").delete().eq("id", tareaId);
   if (error) throw error;
 }
