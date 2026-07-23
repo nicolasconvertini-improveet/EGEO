@@ -566,7 +566,8 @@ function Login() {
   return (
     <div className="login">
       <img src="/logo.png" alt="Improveet" className="brand" />
-      <h2>Productividad</h2>
+      <h2>EGEO OMS</h2>
+      <h2>Operations Mngmt Software</h2>
       <p>Registro de tareas y desempeño de planta.</p>
       {err && <div className="lerr">{err}</div>}
       {mode === "up" && (
@@ -606,17 +607,7 @@ function Login() {
       </button>
       <div className="switch-mode">
         {mode === "in" ? (
-          <>
-            ¿No tenés cuenta?{" "}
-            <button
-              onClick={() => {
-                setMode("up");
-                setErr("");
-              }}
-            >
-              Crear una
-            </button>
-          </>
+          <></>
         ) : (
           <>
             ¿Ya tenés cuenta?{" "}
