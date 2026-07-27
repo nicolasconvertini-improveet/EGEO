@@ -737,6 +737,86 @@ mark {
   color: #8a3f13;
 }
 
+/* --- guía --- */
+.gsec {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.ghead {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: #fff;
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+.ghead:active {
+  background: var(--line2);
+}
+.gic {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--line2);
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.gtt {
+  flex: 1;
+  min-width: 0;
+}
+.gt {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.gr {
+  display: block;
+  font-size: 12px;
+  color: var(--ink2);
+  margin-top: 2px;
+}
+.gchev {
+  color: #b4bbc3;
+  flex: none;
+  transition: transform 0.18s;
+}
+.gchev.op {
+  transform: rotate(180deg);
+}
+.gbody {
+  padding: 0 14px 12px;
+  border-top: 1px solid var(--line2);
+}
+.gblock {
+  padding: 11px 0;
+}
+.gblock + .gblock {
+  border-top: 1px solid var(--line2);
+}
+.gbt {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 3px;
+}
+.gbd {
+  font-size: 13px;
+  color: var(--ink2);
+  line-height: 1.5;
+}
+
 /* --- usuarios --- */
 .usercard {
   padding: 13px 14px;

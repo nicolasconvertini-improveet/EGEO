@@ -19,6 +19,7 @@ import {
   Lock,
   Users,
   UserPlus,
+  HelpCircle,
 } from "lucide-react";
 import { supabase } from "./supabaseClient";
 import {
@@ -40,6 +41,7 @@ import {
   updateUsuario,
   crearUsuario,
 } from "./api";
+import Guia from "./Guia";
 
 /* ============================================================
    Constantes y helpers
@@ -386,6 +388,7 @@ export default function App() {
         arts={arts}
         peds={peds}
         onBack={() => setDetail(null)}
+        onGuia={() => setDetail({ type: "guia" })}
       />
       <div className={"body" + (tabs.length === 1 ? " nonav" : "")}>
         {loadingData ? (
@@ -451,7 +454,7 @@ const tabLabel = (t) =>
   })[t];
 
 /* ---------- App bar ---------- */
-function AppBar({ rol, tab, detail, arts, peds, onBack }) {
+function AppBar({ rol, tab, detail, arts, peds, onBack, onGuia }) {
   let title = tabLabel(tab),
     sub = null,
     back = false;
@@ -473,6 +476,9 @@ function AppBar({ rol, tab, detail, arts, peds, onBack }) {
     back = true;
   } else if (detail?.type === "usrNew") {
     title = "Nuevo usuario";
+    back = true;
+  } else if (detail?.type === "guia") {
+    title = "Guía de uso";
     back = true;
   } else if (tab === "tablero") sub = "Desempeño de la operación";
 
@@ -505,6 +511,9 @@ function AppBar({ rol, tab, detail, arts, peds, onBack }) {
           }}
         >
           <span className="chip-role">{ROLES[rol].full}</span>
+          <button className="iconbtn" title="Guía de uso" onClick={onGuia}>
+            <HelpCircle size={17} />
+          </button>
           <button
             className="iconbtn"
             title="Salir"
@@ -643,6 +652,7 @@ function Screen(props) {
   if (detail?.type === "ped") return <PedidoDetalle {...props} />;
   if (detail?.type === "pedNew") return <PedidoForm {...props} />;
   if (detail?.type === "usrNew") return <UsuarioForm {...props} />;
+  if (detail?.type === "guia") return <Guia rol={props.rol} />;
   if (tab === "tablero") return <Tablero {...props} />;
   if (tab === "articulos") return <Articulos {...props} />;
   if (tab === "pedidos") return <Pedidos {...props} />;
