@@ -37,7 +37,8 @@ body {
     -apple-system,
     sans-serif;
   color: var(--ink);
-  min-height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   background: radial-gradient(
     1200px 600px at 50% -10%,
     #f3f5f8 0%,
@@ -50,7 +51,8 @@ body {
 .app {
   width: 100%;
   max-width: 460px;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
   background: var(--surface);
   display: flex;
   flex-direction: column;
@@ -124,8 +126,9 @@ body {
 .body {
   flex: 1;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   background: var(--paper);
-  padding: 16px 16px 96px;
+  padding: 16px 16px 24px;
 }
 .body.nonav {
   padding-bottom: 24px;
@@ -135,7 +138,6 @@ body {
 }
 
 .nav {
-  position: sticky;
   bottom: 0;
   height: 70px;
   background: rgba(255, 255, 255, 0.95);
@@ -144,6 +146,7 @@ body {
   display: flex;
   padding: 6px 4px 10px;
   flex: none;
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
 }
 .nav button {
   flex: 1;
@@ -737,6 +740,123 @@ mark {
   color: #8a3f13;
 }
 
+/* --- categorías: desplegable multiselección --- */
+.dropdown {
+  position: relative;
+  margin-bottom: 12px;
+}
+.ddbtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  padding: 12px 14px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink2);
+  cursor: pointer;
+}
+.ddbtn.act {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+.ddchev {
+  color: #9aa2ab;
+  flex: none;
+  transition: transform 0.18s;
+}
+.ddchev.op {
+  transform: rotate(180deg);
+}
+.ddmenu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 12px 30px -10px rgba(15, 20, 26, 0.28);
+  padding: 6px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+.ddopt {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  background: #fff;
+  border: 0;
+  border-radius: 9px;
+  padding: 11px 10px;
+  font-family: inherit;
+  font-size: 13.5px;
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+}
+.ddopt:active {
+  background: var(--line2);
+}
+.ddcheck {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1.5px solid var(--line);
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+}
+.ddcheck.on {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+.ddtxt {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+}
+.ddcount {
+  font-size: 11.5px;
+  color: var(--ink2);
+  font-family: "IBM Plex Mono", monospace;
+  flex: none;
+}
+.ddclear {
+  width: 100%;
+  border: 0;
+  background: none;
+  color: var(--ink2);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 10px;
+  border-top: 1px solid var(--line2);
+  margin-top: 4px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.catpill {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--line2);
+  border-radius: 20px;
+  padding: 4px 11px;
+  letter-spacing: 0.02em;
+}
+
 /* --- guía --- */
 .gsec {
   background: #fff;
@@ -1211,7 +1331,7 @@ mark {
   padding: 28px;
   background: var(--ink);
   color: #fff;
-  min-height: 100vh;
+  overflow-y: auto;
 }
 .login .logo {
   width: 52px;

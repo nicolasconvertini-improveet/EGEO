@@ -21,6 +21,7 @@ function mapArticulo(r) {
     maquina: r.maquina,
     bocas: r.bocas,
     material: r.material,
+    categoria: r.categoria,
     activo: r.activo,
     std: {
       inyectado: Number(r.std_inyectado) || 0,
@@ -48,6 +49,7 @@ export async function saveArticulo(a, id) {
     maquina: a.maquina || null,
     bocas: Number(a.bocas) || null,
     material: a.material || null,
+    categoria: a.categoria || null,
     activo: a.activo,
     std_inyectado: Number(a.std.inyectado) || 0,
     std_rebabado: Number(a.std.rebabado) || 0,
@@ -93,13 +95,11 @@ export async function fetchPedidos() {
 }
 
 export async function createPedido({ codigo, articuloId, cantidad }) {
-  const { error } = await supabase
-    .from("pedidos")
-    .insert({
-      codigo: codigo.trim(),
-      articulo_id: articuloId,
-      cantidad: Number(cantidad),
-    });
+  const { error } = await supabase.from("pedidos").insert({
+    codigo: codigo.trim(),
+    articulo_id: articuloId,
+    cantidad: Number(cantidad),
+  });
   if (error) throw error;
 }
 

@@ -30,6 +30,7 @@ create table if not exists public.articulos (
   maquina        text,
   bocas          int,
   material       text,
+  categoria      text,
   activo         boolean not null default true,
   std_inyectado  numeric not null default 0,   -- segundos / unidad
   std_rebabado   numeric not null default 0,
@@ -69,6 +70,7 @@ create table if not exists public.tareas (
   creado       timestamptz not null default now()
 );
 
+create index if not exists idx_articulos_categoria on public.articulos(categoria);
 create index if not exists idx_tareas_pedido on public.tareas(pedido_id);
 create index if not exists idx_pedidos_estado on public.pedidos(estado);
 
@@ -299,3 +301,11 @@ drop policy if exists tareas_delete on public.tareas;
 create policy tareas_delete on public.tareas for delete
   using (public.rango(public.rol_actual()) >= 2);
 
+-- =====================================================================
+--  LISTO. Después de correr esto:
+--  1) Crear tu usuario (registrándote desde la app o en Auth → Users).
+--  2) Convertirte en admin con:
+--       update public.perfiles set rol = 'admin'
+--       where id = (select id from auth.users where email = 'TU_EMAIL');
+--  3) (Opcional) Cargar artículos de ejemplo con supabase/seed.sql
+-- =====================================================================

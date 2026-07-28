@@ -7,6 +7,7 @@ import {
   Boxes,
   Plus,
   ChevronLeft,
+  ChevronDown,
   Play,
   Square,
   Check,
@@ -907,18 +908,39 @@ function Kpi({ lab, val, col }) {
    ============================================================ */
 function Articulos({ arts, setDetail }) {
   const [q, setQ] = useState("");
+  const [cats, setCats] = useState([]); // categorías seleccionadas (multi)
+  const [abierto, setAbierto] = useState(false);
+
+  const categorias = useMemo(
+    () => [...new Set(arts.map((a) => a.categoria).filter(Boolean))].sort(),
+    [arts],
+  );
+
+  const toggleCat = (c) =>
+    setCats((s) => (s.includes(c) ? s.filter((x) => x !== c) : [...s, c]));
+
   const lista = useMemo(() => {
     const nq = norm(q.trim());
-    if (!nq) return arts;
-    return arts.filter(
-      (a) =>
+    return arts.filter((a) => {
+      if (cats.length && !cats.includes(a.categoria)) return false;
+      if (!nq) return true;
+      return (
         norm(a.codigo).includes(nq) ||
         norm(a.nombre).includes(nq) ||
         norm(a.molde).includes(nq) ||
         norm(a.maquina).includes(nq) ||
-        norm(a.material).includes(nq),
-    );
-  }, [arts, q]);
+        norm(a.material).includes(nq) ||
+        norm(a.categoria).includes(nq)
+      );
+    });
+  }, [arts, q, cats]);
+
+  const etiqueta =
+    cats.length === 0
+      ? "Todas las categorías"
+      : cats.length === 1
+        ? cats[0]
+        : `${cats.length} categorías`;
 
   return (
     <>
@@ -933,13 +955,61 @@ function Articulos({ arts, setDetail }) {
       <SearchBox
         value={q}
         onChange={setQ}
-        placeholder="Buscar por código, nombre, molde…"
+        placeholder="Buscar por código, nombre, categoría…"
       />
-      {q && (
+
+      {categorias.length > 0 && (
+        <div className="dropdown">
+          <button
+            className={"ddbtn" + (cats.length ? " act" : "")}
+            onClick={() => setAbierto((v) => !v)}
+          >
+            <span>{etiqueta}</span>
+            <ChevronDown
+              size={17}
+              className={"ddchev" + (abierto ? " op" : "")}
+            />
+          </button>
+          {abierto && (
+            <div className="ddmenu">
+              {categorias.map((c) => {
+                const on = cats.includes(c);
+                return (
+                  <button
+                    key={c}
+                    className="ddopt"
+                    onClick={() => toggleCat(c)}
+                  >
+                    <span className={"ddcheck" + (on ? " on" : "")}>
+                      {on && <Check size={13} strokeWidth={3} color="#fff" />}
+                    </span>
+                    <span className="ddtxt">{c}</span>
+                    <span className="ddcount">
+                      {arts.filter((a) => a.categoria === c).length}
+                    </span>
+                  </button>
+                );
+              })}
+              {cats.length > 0 && (
+                <button
+                  className="ddclear"
+                  onClick={() => {
+                    setCats([]);
+                  }}
+                >
+                  Limpiar selección
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {q || cats.length ? (
         <div className="search-count">
           {lista.length} de {arts.length} artículos
         </div>
-      )}
+      ) : null}
 
       {lista.map((a) => (
         <div
@@ -955,8 +1025,7 @@ function Articulos({ arts, setDetail }) {
             </div>
             <div className="s">
               <Highlight text={a.codigo} query={q} />
-              {a.molde ? ` · Molde ${a.molde}` : ""}
-              {a.maquina ? ` · ${a.maquina}` : ""}
+              {a.categoria ? ` · ${a.categoria}` : ""}
             </div>
           </div>
           {!a.activo && <span className="badge b-off">Inactivo</span>}
@@ -1016,6 +1085,11 @@ function ArticuloDetalle({ arts, detail, setDetail, notify, reloadArts }) {
             {a.activo ? "Activo" : "Inactivo"}
           </span>
         </div>
+        {a.categoria && (
+          <div style={{ marginTop: 10 }}>
+            <span className="catpill">{a.categoria}</span>
+          </div>
+        )}
         <div
           style={{
             display: "flex",
@@ -1109,6 +1183,7 @@ function ArticuloForm({ arts, detail, setDetail, notify, reloadArts }) {
           maquina: "",
           bocas: "",
           material: "",
+          categoria: "",
           activo: true,
           std: { inyectado: "", rebabado: "", armado: "", embolsado: "" },
         },
@@ -1190,6 +1265,22 @@ function ArticuloForm({ arts, detail, setDetail, notify, reloadArts }) {
           onChange={(e) => set("material", e.target.value)}
           placeholder="PA7335 Verde"
         />
+      </div>
+      <div className="field">
+        <label>Categoría</label>
+        <input
+          value={f.categoria || ""}
+          onChange={(e) => set("categoria", e.target.value)}
+          placeholder="Ej: PRODUCTOS EMBOLSADOS"
+          list="lista-categorias"
+        />
+        <datalist id="lista-categorias">
+          {[...new Set(arts.map((x) => x.categoria).filter(Boolean))].map(
+            (c) => (
+              <option key={c} value={c} />
+            ),
+          )}
+        </datalist>
       </div>
 
       <div className="toggle-row">
