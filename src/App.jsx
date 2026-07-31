@@ -576,8 +576,9 @@ function Login() {
   return (
     <div className="login">
       <img src="/logo.png" alt="Improveet" className="brand" />
-      <h2>Productividad</h2>
-      <p>Registro de tareas y desempeño de planta.</p>
+      <h1>OMS</h1>
+      <h2>Operations Management System</h2>
+      <p>Registro de tareas y productividad de planta.</p>
       {err && <div className="lerr">{err}</div>}
       {mode === "up" && (
         <div className="lf">
