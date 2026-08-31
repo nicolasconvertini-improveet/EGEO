@@ -1,14 +1,5 @@
 import React, { useState } from "react";
-import {
-  ChevronDown,
-  PlayCircle,
-  ClipboardList,
-  Package,
-  Boxes,
-  LayoutDashboard,
-  Users,
-  HelpCircle,
-} from "lucide-react";
+import { ChevronDown, PlayCircle, ClipboardList, Package, Boxes, LayoutDashboard, Users, HelpCircle } from "lucide-react";
 
 /* Nivel mínimo de rol que puede ver cada sección (rango: operario 1, supervisor 2, admin 3) */
 const rango = (r) => ({ admin: 3, supervisor: 2, operario: 1 })[r] || 0;
@@ -33,10 +24,7 @@ const SECCIONES = [
         "3 · Cargar piezas",
         "Al finalizar, cargá las Piezas OK (de a 1, de a 10, o escribiendo el número) y el Scrap. Vas viendo la eficiencia estimada.",
       ],
-      [
-        "Resultado",
-        "Con “Registrar tarea” se guarda y suma al pedido. Si te equivocaste al iniciar, usá “Descartar esta tarea”.",
-      ],
+      ["Resultado", "Con “Registrar tarea” se guarda y suma al pedido. Si te equivocaste al iniciar, usá “Descartar esta tarea”."],
     ],
   },
   {
@@ -46,22 +34,13 @@ const SECCIONES = [
     titulo: "Pedidos",
     resumen: "Creá órdenes de fabricación y seguí su avance.",
     bloques: [
-      [
-        "Crear",
-        "“Nuevo pedido”: código (obligatorio y único), artículo activo y cantidad a fabricar.",
-      ],
-      [
-        "Estados",
-        "Pendiente (sin producción), En curso (con avance) y Finalizado (todas las etapas llegaron a la cantidad pedida).",
-      ],
+      ["Crear", "“Nuevo pedido”: código (obligatorio y único), artículo activo y cantidad a fabricar."],
+      ["Estados", "Pendiente (sin producción), En curso (con avance) y Finalizado (todas las etapas llegaron a la cantidad pedida)."],
       [
         "Avance por etapa",
         "Una pieza se considera completa cuando pasó por todas las etapas que el artículo requiere. El avance es el de la etapa más atrasada.",
       ],
-      [
-        "Detalle",
-        "Muestra los totales por etapa (inyectado, rebabado, armado, embolsado) y el historial de tareas del pedido.",
-      ],
+      ["Detalle", "Muestra los totales por etapa (inyectado, rebabado, armado, embolsado) y el historial de tareas del pedido."],
     ],
   },
   {
@@ -71,14 +50,8 @@ const SECCIONES = [
     titulo: "Historial de tareas",
     resumen: "Consultá y filtrá todo lo registrado.",
     bloques: [
-      [
-        "Filtros",
-        "Por fecha (desde/hasta), proceso, usuario y pedido. Se combinan entre sí y hay un total de piezas al pie.",
-      ],
-      [
-        "Lectura",
-        "Cada línea muestra la eficiencia (el número de color), el horario, las piezas OK y el responsable.",
-      ],
+      ["Filtros", "Por fecha (desde/hasta), proceso, usuario y pedido. Se combinan entre sí y hay un total de piezas al pie."],
+      ["Lectura", "Cada línea muestra la eficiencia (el número de color), el horario, las piezas OK y el responsable."],
     ],
   },
   {
@@ -89,18 +62,9 @@ const SECCIONES = [
     resumen: "Indicadores de desempeño de la operación.",
     bloques: [
       ["Situación actual", "Pedidos y tareas en curso en este momento."],
-      [
-        "Día vencido",
-        "El resto muestra la jornada anterior completa: unidades, productividad, tiempo estimado y scrap.",
-      ],
-      [
-        "Real vs objetivo",
-        "Compara la productividad con el objetivo de 100 % (cumplir el tiempo estándar).",
-      ],
-      [
-        "Operarios y evolución",
-        "Producción por persona y tendencia de los últimos 7 días.",
-      ],
+      ["Día vencido", "El resto muestra la jornada anterior completa: unidades, productividad, tiempo estimado y scrap."],
+      ["Real vs objetivo", "Compara la productividad con el objetivo de 100 % (cumplir el tiempo estándar)."],
+      ["Operarios y evolución", "Producción por persona y tendencia de los últimos 7 días."],
     ],
   },
   {
@@ -110,10 +74,7 @@ const SECCIONES = [
     titulo: "Artículos",
     resumen: "El maestro de productos y sus tiempos estándar.",
     bloques: [
-      [
-        "Datos",
-        "Código (único) y nombre son obligatorios; molde, máquina, bocas y material son opcionales.",
-      ],
+      ["Datos", "Código (único) y nombre son obligatorios; molde, máquina, bocas y material son opcionales."],
       [
         "Tiempos estándar",
         "Segundos por unidad de cada proceso. Si un artículo no pasa por una etapa, se deja en cero y esa etapa no cuenta para completarlo.",
@@ -131,31 +92,16 @@ const SECCIONES = [
     titulo: "Usuarios",
     resumen: "Alta de cuentas y asignación de roles.",
     bloques: [
-      [
-        "Crear",
-        "Nombre, e-mail, contraseña inicial (mín. 6) y rol. La cuenta queda habilitada al instante.",
-      ],
-      [
-        "Roles",
-        "Operario (registra tareas), Supervisor (además pedidos y tablero) y Administrador (todo). Se cambian con un toque.",
-      ],
-      [
-        "Activar / desactivar",
-        "Podés dar de baja a alguien sin borrar su historial. No podés cambiar tu propio rol ni desactivarte.",
-      ],
+      ["Crear", "Nombre, e-mail, contraseña inicial (mín. 6) y rol. La cuenta queda habilitada al instante."],
+      ["Roles", "Operario (registra tareas), Supervisor (además pedidos y tablero) y Administrador (todo). Se cambian con un toque."],
+      ["Activar / desactivar", "Podés dar de baja a alguien sin borrar su historial. No podés cambiar tu propio rol ni desactivarte."],
     ],
   },
 ];
 
 const FAQ = [
-  [
-    "Cerré la app con una tarea abierta, ¿se perdió?",
-    "No. La tarea se guarda al iniciarse; al volver a entrar aparece para finalizarla.",
-  ],
-  [
-    "¿Puedo tener dos tareas abiertas?",
-    "No. Hay que finalizar la que está en curso antes de empezar otra.",
-  ],
+  ["Cerré la app con una tarea abierta, ¿se perdió?", "No. La tarea se guarda al iniciarse; al volver a entrar aparece para finalizarla."],
+  ["¿Puedo tener dos tareas abiertas?", "No. Hay que finalizar la que está en curso antes de empezar otra."],
   [
     "La productividad dio un valor raro",
     "Suele indicar que el tiempo estándar del artículo no refleja la realidad. Revisalo con un administrador.",
@@ -193,9 +139,7 @@ export default function Guia({ rol }) {
     <>
       <div className="dash-note" style={{ marginTop: 0 }}>
         <HelpCircle size={16} />
-        <span>
-          Guía de uso — se muestran las funciones habilitadas para tu rol.
-        </span>
+        <span>Guía de uso — se muestran las funciones habilitadas para tu rol.</span>
       </div>
 
       {visibles.map((s) => (
@@ -209,11 +153,7 @@ export default function Guia({ rol }) {
         </Item>
       ))}
 
-      <Item
-        icon={HelpCircle}
-        titulo="Preguntas frecuentes"
-        resumen="Dudas comunes y su respuesta."
-      >
+      <Item icon={HelpCircle} titulo="Preguntas frecuentes" resumen="Dudas comunes y su respuesta.">
         {FAQ.map(([q, a], i) => (
           <div className="gblock" key={i}>
             <div className="gbt">{q}</div>

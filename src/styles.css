@@ -39,12 +39,7 @@ body {
   color: var(--ink);
   min-height: 100vh;
   min-height: 100dvh;
-  background: radial-gradient(
-    1200px 600px at 50% -10%,
-    #f3f5f8 0%,
-    #dde1e7 60%,
-    #d3d8df 100%
-  );
+  background: radial-gradient(1200px 600px at 50% -10%, #f3f5f8 0%, #dde1e7 60%, #d3d8df 100%);
   display: flex;
   justify-content: center;
 }
@@ -92,11 +87,7 @@ body {
   height: 4px;
   width: 100%;
   margin-top: 10px;
-  background-image: repeating-linear-gradient(
-    -45deg,
-    var(--ink) 0 9px,
-    var(--signal) 9px 18px
-  );
+  background-image: repeating-linear-gradient(-45deg, var(--ink) 0 9px, var(--signal) 9px 18px);
   opacity: 0.9;
 }
 .chip-role {
@@ -1119,7 +1110,7 @@ mark {
   font-size: 38px;
   font-weight: 700;
   line-height: 1;
-  margin-top: -46px;
+  margin-top: 2px;
 }
 .gauge-lab {
   font-size: 11px;
