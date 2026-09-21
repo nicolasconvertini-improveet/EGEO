@@ -1,15 +1,5 @@
 import React from "react";
-import {
-  ChevronLeft,
-  LogOut,
-  HelpCircle,
-  LayoutDashboard,
-  Package,
-  ClipboardList,
-  Timer,
-  Boxes,
-  Users,
-} from "lucide-react";
+import { ChevronLeft, LogOut, HelpCircle, LayoutDashboard, Package, ClipboardList, Timer, Boxes, Users } from "lucide-react";
 import { supabase } from "../supabaseClient";
 import { ROLES } from "../lib/constants";
 import { findArt, findPed } from "../lib/format";
@@ -28,11 +18,11 @@ export default function AppBar({ rol, tab, detail, arts, peds, onBack, onGuia })
     back = true;
   } else if (detail?.type === "ped") {
     const p = findPed(peds, detail.id);
-    title = p?.codigo || "Pedido";
+    title = p?.codigo || "Orden";
     sub = p?.articuloNombre;
     back = true;
   } else if (detail?.type === "pedNew") {
-    title = "Nuevo pedido";
+    title = "Nueva orden";
     back = true;
   } else if (detail?.type === "usrNew") {
     title = "Nuevo usuario";
@@ -74,11 +64,7 @@ export default function AppBar({ rol, tab, detail, arts, peds, onBack, onGuia })
           <button className="iconbtn" title="Guía de uso" onClick={onGuia}>
             <HelpCircle size={17} />
           </button>
-          <button
-            className="iconbtn"
-            title="Salir"
-            onClick={() => supabase.auth.signOut()}
-          >
+          <button className="iconbtn" title="Salir" onClick={() => supabase.auth.signOut()}>
             <LogOut size={17} />
           </button>
         </div>
@@ -102,7 +88,7 @@ export const tabLabel = (t) =>
   ({
     tablero: "Tablero",
     articulos: "Artículos",
-    pedidos: "Pedidos",
+    pedidos: "Órdenes",
     tareas: "Tareas",
     registrar: "Registrar",
     usuarios: "Usuarios",

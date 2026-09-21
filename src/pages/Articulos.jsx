@@ -1,12 +1,5 @@
 import React, { useState, useMemo } from "react";
-import {
-  Package,
-  Plus,
-  ChevronLeft,
-  ChevronDown,
-  Check,
-  Settings2,
-} from "lucide-react";
+import { Package, Plus, ChevronLeft, ChevronDown, Check, Settings2 } from "lucide-react";
 import { saveArticulo, setArticuloActivo } from "../api";
 import { ACTS } from "../lib/constants";
 import { findArt, norm } from "../lib/format";
@@ -18,13 +11,9 @@ export default function Articulos({ arts, setDetail }) {
   const [cats, setCats] = useState([]); // categorías seleccionadas (multi)
   const [abierto, setAbierto] = useState(false);
 
-  const categorias = useMemo(
-    () => [...new Set(arts.map((a) => a.categoria).filter(Boolean))].sort(),
-    [arts],
-  );
+  const categorias = useMemo(() => [...new Set(arts.map((a) => a.categoria).filter(Boolean))].sort(), [arts]);
 
-  const toggleCat = (c) =>
-    setCats((s) => (s.includes(c) ? s.filter((x) => x !== c) : [...s, c]));
+  const toggleCat = (c) => setCats((s) => (s.includes(c) ? s.filter((x) => x !== c) : [...s, c]));
 
   const lista = useMemo(() => {
     const nq = norm(q.trim());
@@ -42,58 +31,31 @@ export default function Articulos({ arts, setDetail }) {
     });
   }, [arts, q, cats]);
 
-  const etiqueta =
-    cats.length === 0
-      ? "Todas las categorías"
-      : cats.length === 1
-        ? cats[0]
-        : `${cats.length} categorías`;
+  const etiqueta = cats.length === 0 ? "Todas las categorías" : cats.length === 1 ? cats[0] : `${cats.length} categorías`;
 
   return (
     <>
-      <button
-        className="btn btn-dark"
-        style={{ marginBottom: 12 }}
-        onClick={() => setDetail({ type: "artNew" })}
-      >
+      <button className="btn btn-dark" style={{ marginBottom: 12 }} onClick={() => setDetail({ type: "artNew" })}>
         <Plus size={18} strokeWidth={2.5} /> Nuevo artículo
       </button>
 
-      <SearchBox
-        value={q}
-        onChange={setQ}
-        placeholder="Buscar por código, nombre, categoría…"
-      />
+      <SearchBox value={q} onChange={setQ} placeholder="Buscar por código, nombre, categoría…" />
 
       {categorias.length > 0 && (
         <div className="dropdown">
-          <button
-            className={"ddbtn" + (cats.length ? " act" : "")}
-            onClick={() => setAbierto((v) => !v)}
-          >
+          <button className={"ddbtn" + (cats.length ? " act" : "")} onClick={() => setAbierto((v) => !v)}>
             <span>{etiqueta}</span>
-            <ChevronDown
-              size={17}
-              className={"ddchev" + (abierto ? " op" : "")}
-            />
+            <ChevronDown size={17} className={"ddchev" + (abierto ? " op" : "")} />
           </button>
           {abierto && (
             <div className="ddmenu">
               {categorias.map((c) => {
                 const on = cats.includes(c);
                 return (
-                  <button
-                    key={c}
-                    className="ddopt"
-                    onClick={() => toggleCat(c)}
-                  >
-                    <span className={"ddcheck" + (on ? " on" : "")}>
-                      {on && <Check size={13} strokeWidth={3} color="#fff" />}
-                    </span>
+                  <button key={c} className="ddopt" onClick={() => toggleCat(c)}>
+                    <span className={"ddcheck" + (on ? " on" : "")}>{on && <Check size={13} strokeWidth={3} color="#fff" />}</span>
                     <span className="ddtxt">{c}</span>
-                    <span className="ddcount">
-                      {arts.filter((a) => a.categoria === c).length}
-                    </span>
+                    <span className="ddcount">{arts.filter((a) => a.categoria === c).length}</span>
                   </button>
                 );
               })}
@@ -119,12 +81,7 @@ export default function Articulos({ arts, setDetail }) {
       ) : null}
 
       {lista.map((a) => (
-        <div
-          className="rowitem"
-          key={a.id}
-          onClick={() => setDetail({ type: "art", id: a.id })}
-          style={{ opacity: a.activo ? 1 : 0.6 }}
-        >
+        <div className="rowitem" key={a.id} onClick={() => setDetail({ type: "art", id: a.id })} style={{ opacity: a.activo ? 1 : 0.6 }}>
           <div className="lead">{a.codigo.slice(0, 3)}</div>
           <div className="mid">
             <div className="t">
@@ -136,10 +93,7 @@ export default function Articulos({ arts, setDetail }) {
             </div>
           </div>
           {!a.activo && <span className="badge b-off">Inactivo</span>}
-          <ChevronLeft
-            size={17}
-            style={{ transform: "rotate(180deg)", color: "#C0C6CD" }}
-          />
+          <ChevronLeft size={17} style={{ transform: "rotate(180deg)", color: "#C0C6CD" }} />
         </div>
       ))}
       {lista.length === 0 && (
@@ -147,9 +101,7 @@ export default function Articulos({ arts, setDetail }) {
           <div className="ic">
             <Package size={22} />
           </div>
-          {arts.length === 0
-            ? "No hay artículos cargados"
-            : "Ningún artículo coincide con la búsqueda"}
+          {arts.length === 0 ? "No hay artículos cargados" : "Ningún artículo coincide con la búsqueda"}
         </div>
       )}
     </>
@@ -179,18 +131,10 @@ export function ArticuloDetalle({ arts, detail, setDetail, notify, reloadArts })
           }}
         >
           <div>
-            <div
-              style={{ fontSize: 12, color: "var(--ink2)", fontWeight: 600 }}
-            >
-              {a.codigo}
-            </div>
-            <div style={{ fontSize: 19, fontWeight: 700, marginTop: 2 }}>
-              {a.nombre}
-            </div>
+            <div style={{ fontSize: 12, color: "var(--ink2)", fontWeight: 600 }}>{a.codigo}</div>
+            <div style={{ fontSize: 19, fontWeight: 700, marginTop: 2 }}>{a.nombre}</div>
           </div>
-          <span className={"badge " + (a.activo ? "b-curso" : "b-off")}>
-            {a.activo ? "Activo" : "Inactivo"}
-          </span>
+          <span className={"badge " + (a.activo ? "b-curso" : "b-off")}>{a.activo ? "Activo" : "Inactivo"}</span>
         </div>
         {a.categoria && (
           <div style={{ marginTop: 10 }}>
@@ -249,29 +193,15 @@ export function ArticuloDetalle({ arts, detail, setDetail, notify, reloadArts })
 
       <div className="toggle-row">
         <div>
-          <div className="tl">
-            {a.activo ? "Artículo activo" : "Artículo inactivo"}
-          </div>
-          <div className="ts">
-            {a.activo
-              ? "Disponible para nuevos pedidos"
-              : "No aparece al crear pedidos"}
-          </div>
+          <div className="tl">{a.activo ? "Artículo activo" : "Artículo inactivo"}</div>
+          <div className="ts">{a.activo ? "Disponible para nuevas órdenes" : "No aparece al crear órdenes"}</div>
         </div>
-        <button
-          className={"switch" + (a.activo ? " on" : "")}
-          onClick={toggle}
-          aria-label="Activar/inactivar"
-        >
+        <button className={"switch" + (a.activo ? " on" : "")} onClick={toggle} aria-label="Activar/inactivar">
           <i />
         </button>
       </div>
 
-      <button
-        className="btn btn-dark"
-        style={{ marginTop: 12 }}
-        onClick={() => setDetail({ type: "artNew", edit: a.id })}
-      >
+      <button className="btn btn-dark" style={{ marginTop: 12 }} onClick={() => setDetail({ type: "artNew", edit: a.id })}>
         <Settings2 size={17} /> Editar
       </button>
     </>
@@ -308,12 +238,7 @@ export function ArticuloForm({ arts, detail, setDetail, notify, reloadArts }) {
       notify(edit ? "Artículo actualizado" : "Artículo creado");
       setDetail(null);
     } catch (e) {
-      notify(
-        e?.code === "23505"
-          ? "Ese código de artículo ya existe"
-          : "No se pudo guardar",
-        true,
-      );
+      notify(e?.code === "23505" ? "Ese código de artículo ya existe" : "No se pudo guardar", true);
     } finally {
       setBusy(false);
     }
@@ -325,53 +250,31 @@ export function ArticuloForm({ arts, detail, setDetail, notify, reloadArts }) {
         <label>
           Código <span className="req">*</span>
         </label>
-        <input
-          value={f.codigo}
-          onChange={(e) => set("codigo", e.target.value)}
-          placeholder="PCH-C27"
-        />
+        <input value={f.codigo} onChange={(e) => set("codigo", e.target.value)} placeholder="PCH-C27" />
       </div>
       <div className="field">
         <label>
           Nombre <span className="req">*</span>
         </label>
-        <input
-          value={f.nombre}
-          onChange={(e) => set("nombre", e.target.value)}
-          placeholder="Percha P.Corta"
-        />
+        <input value={f.nombre} onChange={(e) => set("nombre", e.target.value)} placeholder="Percha P.Corta" />
       </div>
       <div style={{ display: "flex", gap: 10 }}>
         <div className="field" style={{ flex: 1 }}>
           <label>Molde</label>
-          <input
-            value={f.molde || ""}
-            onChange={(e) => set("molde", e.target.value)}
-          />
+          <input value={f.molde || ""} onChange={(e) => set("molde", e.target.value)} />
         </div>
         <div className="field" style={{ flex: 1 }}>
           <label>Máquina</label>
-          <input
-            value={f.maquina || ""}
-            onChange={(e) => set("maquina", e.target.value)}
-          />
+          <input value={f.maquina || ""} onChange={(e) => set("maquina", e.target.value)} />
         </div>
         <div className="field" style={{ flex: 1 }}>
           <label>Bocas</label>
-          <input
-            value={f.bocas || ""}
-            inputMode="numeric"
-            onChange={(e) => set("bocas", e.target.value)}
-          />
+          <input value={f.bocas || ""} inputMode="numeric" onChange={(e) => set("bocas", e.target.value)} />
         </div>
       </div>
       <div className="field">
         <label>Material</label>
-        <input
-          value={f.material || ""}
-          onChange={(e) => set("material", e.target.value)}
-          placeholder="PA7335 Verde"
-        />
+        <input value={f.material || ""} onChange={(e) => set("material", e.target.value)} placeholder="PA7335 Verde" />
       </div>
       <div className="field">
         <label>Categoría</label>
@@ -382,28 +285,18 @@ export function ArticuloForm({ arts, detail, setDetail, notify, reloadArts }) {
           list="lista-categorias"
         />
         <datalist id="lista-categorias">
-          {[...new Set(arts.map((x) => x.categoria).filter(Boolean))].map(
-            (c) => (
-              <option key={c} value={c} />
-            ),
-          )}
+          {[...new Set(arts.map((x) => x.categoria).filter(Boolean))].map((c) => (
+            <option key={c} value={c} />
+          ))}
         </datalist>
       </div>
 
       <div className="toggle-row">
         <div>
           <div className="tl">{f.activo ? "Activo" : "Inactivo"}</div>
-          <div className="ts">
-            {f.activo
-              ? "Disponible para nuevos pedidos"
-              : "No disponible para nuevos pedidos"}
-          </div>
+          <div className="ts">{f.activo ? "Disponible para nuevas órdenes" : "No disponible para nuevas órdenes"}</div>
         </div>
-        <button
-          className={"switch" + (f.activo ? " on" : "")}
-          onClick={() => set("activo", !f.activo)}
-          aria-label="Activar/inactivar"
-        >
+        <button className={"switch" + (f.activo ? " on" : "")} onClick={() => set("activo", !f.activo)} aria-label="Activar/inactivar">
           <i />
         </button>
       </div>
@@ -415,24 +308,13 @@ export function ArticuloForm({ arts, detail, setDetail, notify, reloadArts }) {
         {ACTS.map((ac) => (
           <div className="field" style={{ margin: 0 }} key={ac.key}>
             <label>{ac.label}</label>
-            <input
-              value={f.std[ac.key]}
-              inputMode="decimal"
-              placeholder="0"
-              onChange={(e) => setStd(ac.key, e.target.value)}
-            />
+            <input value={f.std[ac.key]} inputMode="decimal" placeholder="0" onChange={(e) => setStd(ac.key, e.target.value)} />
           </div>
         ))}
       </div>
 
-      <button
-        className="btn btn-primary"
-        style={{ marginTop: 22 }}
-        disabled={!valid || busy}
-        onClick={save}
-      >
-        <Check size={18} strokeWidth={2.5} />{" "}
-        {edit ? "Guardar cambios" : "Crear artículo"}
+      <button className="btn btn-primary" style={{ marginTop: 22 }} disabled={!valid || busy} onClick={save}>
+        <Check size={18} strokeWidth={2.5} /> {edit ? "Guardar cambios" : "Crear artículo"}
       </button>
     </>
   );

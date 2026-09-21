@@ -31,11 +31,7 @@ export default function Tablero({ tars, peds, enCurso }) {
     d,
     prod: agg(tars.filter((t) => t.fin && dayKey(t.fin) === dayKey(d))).prod,
   }));
-  const maxProd = Math.max(
-    OBJETIVO,
-    ...evo.map((e) => e.prod || 0),
-    a.prod || 0,
-  );
+  const maxProd = Math.max(OBJETIVO, ...evo.map((e) => e.prod || 0), a.prod || 0);
   const scrapPct = a.ok + a.scrap > 0 ? (a.scrap / (a.ok + a.scrap)) * 100 : 0;
 
   return (
@@ -44,12 +40,8 @@ export default function Tablero({ tars, peds, enCurso }) {
         Situación actual
       </div>
       <div className="kpis">
-        <Kpi lab="Pedidos en curso" val={nf(pedidosEnCurso)} col="var(--ink)" />
-        <Kpi
-          lab="Tareas en curso"
-          val={nf(enCurso)}
-          col={enCurso > 0 ? "var(--good)" : "var(--ink2)"}
-        />
+        <Kpi lab="Órdenes en curso" val={nf(pedidosEnCurso)} col="var(--ink)" />
+        <Kpi lab="Tareas en curso" val={nf(enCurso)} col={enCurso > 0 ? "var(--good)" : "var(--ink2)"} />
       </div>
 
       <div className="dash-note" style={{ marginTop: 18 }}>
@@ -72,21 +64,9 @@ export default function Tablero({ tars, peds, enCurso }) {
         <>
           <div className="kpis">
             <Kpi lab="Unidades procesadas" val={nf(a.ok)} col="var(--good)" />
-            <Kpi
-              lab="Productividad"
-              val={a.prod == null ? "—" : Math.round(a.prod) + "%"}
-              col={effColor(a.prod)}
-            />
-            <Kpi
-              lab="Tiempo estimado"
-              val={(a.std / 3600).toFixed(1) + " h"}
-              col="var(--ink)"
-            />
-            <Kpi
-              lab="Scrap"
-              val={scrapPct.toFixed(1) + "%"}
-              col="var(--warn)"
-            />
+            <Kpi lab="Productividad" val={a.prod == null ? "—" : Math.round(a.prod) + "%"} col={effColor(a.prod)} />
+            <Kpi lab="Tiempo estimado" val={(a.std / 3600).toFixed(1) + " h"} col="var(--ink)" />
+            <Kpi lab="Scrap" val={scrapPct.toFixed(1) + "%"} col="var(--warn)" />
           </div>
 
           <div className="sec-title" style={{ marginTop: 18 }}>
@@ -94,18 +74,8 @@ export default function Tablero({ tars, peds, enCurso }) {
           </div>
           <div className="card">
             <div className="compare">
-              <CBar
-                label="Real"
-                pct={a.prod || 0}
-                max={maxProd}
-                color={effColor(a.prod)}
-              />
-              <CBar
-                label="Objetivo"
-                pct={OBJETIVO}
-                max={maxProd}
-                color="var(--ink2)"
-              />
+              <CBar label="Real" pct={a.prod || 0} max={maxProd} color={effColor(a.prod)} />
+              <CBar label="Objetivo" pct={OBJETIVO} max={maxProd} color="var(--ink2)" />
             </div>
             <div style={{ fontSize: 12, color: "var(--ink2)", marginTop: 12 }}>
               {a.prod == null
@@ -156,9 +126,7 @@ export default function Tablero({ tars, peds, enCurso }) {
                   opacity: e.prod == null ? 0.15 : 1,
                 }}
               />
-              <div className="d">
-                {String(new Date(e.d).getDate()).padStart(2, "0")}
-              </div>
+              <div className="d">{String(new Date(e.d).getDate()).padStart(2, "0")}</div>
             </div>
           ))}
         </div>

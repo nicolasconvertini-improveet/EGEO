@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { Boxes } from "lucide-react";
 import { ACTS, actLabel } from "../lib/constants";
-import { nf, fmtDT, isoDate, efficiency, effColor, findArt } from "../lib/format";
+import { nf, fmtDT, fmtClock, isoDate, efficiency, effColor, findArt } from "../lib/format";
 
 const FILTROS_VACIOS = {
   desde: "",
@@ -16,14 +16,8 @@ export default function Tareas({ arts, tars, setDetail }) {
   const [abierto, setAbierto] = useState(false);
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
 
-  const operarios = useMemo(
-    () => [...new Set(tars.map((t) => t.operario))].sort(),
-    [tars],
-  );
-  const pedidos = useMemo(
-    () => [...new Set(tars.map((t) => t.pedidoCodigo))].sort(),
-    [tars],
-  );
+  const operarios = useMemo(() => [...new Set(tars.map((t) => t.operario))].sort(), [tars]);
+  const pedidos = useMemo(() => [...new Set(tars.map((t) => t.pedidoCodigo))].sort(), [tars]);
 
   const lista = useMemo(
     () =>
@@ -45,9 +39,7 @@ export default function Tareas({ arts, tars, setDetail }) {
     <>
       <div className="filters">
         <div className="ftop">
-          <span className="ftitle">
-            Filtros{activos > 0 ? ` (${activos})` : ""}
-          </span>
+          <span className="ftitle">Filtros{activos > 0 ? ` (${activos})` : ""}</span>
           <div style={{ display: "flex", gap: 12 }}>
             {activos > 0 && (
               <button className="linkmini" onClick={() => setF(FILTROS_VACIOS)}>
@@ -64,28 +56,17 @@ export default function Tareas({ arts, tars, setDetail }) {
             <div className="fgrid">
               <div>
                 <label>Desde</label>
-                <input
-                  type="date"
-                  value={f.desde}
-                  onChange={(e) => set("desde", e.target.value)}
-                />
+                <input type="date" value={f.desde} onChange={(e) => set("desde", e.target.value)} />
               </div>
               <div>
                 <label>Hasta</label>
-                <input
-                  type="date"
-                  value={f.hasta}
-                  onChange={(e) => set("hasta", e.target.value)}
-                />
+                <input type="date" value={f.hasta} onChange={(e) => set("hasta", e.target.value)} />
               </div>
             </div>
             <div className="fgrid" style={{ marginTop: 9 }}>
               <div>
                 <label>Proceso</label>
-                <select
-                  value={f.actividad}
-                  onChange={(e) => set("actividad", e.target.value)}
-                >
+                <select value={f.actividad} onChange={(e) => set("actividad", e.target.value)}>
                   <option value="">Todos</option>
                   {ACTS.map((a) => (
                     <option key={a.key} value={a.key}>
@@ -96,10 +77,7 @@ export default function Tareas({ arts, tars, setDetail }) {
               </div>
               <div>
                 <label>Usuario</label>
-                <select
-                  value={f.operario}
-                  onChange={(e) => set("operario", e.target.value)}
-                >
+                <select value={f.operario} onChange={(e) => set("operario", e.target.value)}>
                   <option value="">Todos</option>
                   {operarios.map((o) => (
                     <option key={o} value={o}>
@@ -110,11 +88,8 @@ export default function Tareas({ arts, tars, setDetail }) {
               </div>
             </div>
             <div style={{ marginTop: 9 }}>
-              <label>Pedido</label>
-              <select
-                value={f.pedido}
-                onChange={(e) => set("pedido", e.target.value)}
-              >
+              <label>Orden</label>
+              <select value={f.pedido} onChange={(e) => set("pedido", e.target.value)}>
                 <option value="">Todos</option>
                 {pedidos.map((p) => (
                   <option key={p} value={p}>
@@ -128,23 +103,15 @@ export default function Tareas({ arts, tars, setDetail }) {
       </div>
 
       <div className="search-count">
-        {lista.length} tarea{lista.length === 1 ? "" : "s"} · {nf(tot)} piezas
-        OK
+        {lista.length} tarea{lista.length === 1 ? "" : "s"} · {nf(tot)} piezas OK
       </div>
 
       {lista.map((t) => {
         const a = findArt(arts, t.articuloId);
         const e = efficiency(a, t.actividad, t.ok, t.realSec);
         return (
-          <div
-            className="rowitem"
-            key={t.id}
-            onClick={() => setDetail({ type: "ped", id: t.pedidoId })}
-          >
-            <div
-              className="lead"
-              style={{ background: effColor(e), color: "#fff" }}
-            >
+          <div className="rowitem" key={t.id} onClick={() => setDetail({ type: "ped", id: t.pedidoId })}>
+            <div className="lead" style={{ background: effColor(e), color: "#fff" }}>
               {e == null ? "—" : Math.round(e)}
             </div>
             <div className="mid">
@@ -154,6 +121,10 @@ export default function Tareas({ arts, tars, setDetail }) {
               <div className="s mono">
                 {fmtDT(t.fin)} · {nf(t.ok)} OK · {t.operario}
               </div>
+              <div className="s">
+                Total {fmtClock(t.totalSec)} · Pausas {fmtClock(t.pausaSec)} · Neto {fmtClock(t.realSec)}
+              </div>
+              {t.observaciones && <div className="s observacion">{t.observaciones}</div>}
             </div>
           </div>
         );
@@ -163,9 +134,7 @@ export default function Tareas({ arts, tars, setDetail }) {
           <div className="ic">
             <Boxes size={22} />
           </div>
-          {tars.length === 0
-            ? "Todavía no hay tareas registradas"
-            : "Ninguna tarea coincide con los filtros"}
+          {tars.length === 0 ? "Todavía no hay tareas registradas" : "Ninguna tarea coincide con los filtros"}
         </div>
       )}
     </>

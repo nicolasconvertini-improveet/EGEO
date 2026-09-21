@@ -10,37 +10,40 @@ const SECCIONES = [
     min: 1,
     icon: PlayCircle,
     titulo: "Registrar una tarea",
-    resumen: "Iniciá, finalizá y cargá las piezas de tu trabajo.",
+    resumen: "Iniciá, pausá o finalizá y registrá las cantidades y observaciones.",
     bloques: [
       [
         "1 · Iniciar",
-        "Elegí el pedido (podés buscarlo por código o artículo) y el proceso. Tocá “Iniciar tarea” cuando arranques. Desde ese momento el pedido y el proceso quedan fijos.",
+        "Elegí la orden (podés buscarlo por código o artículo) y el proceso. Tocá “Iniciar tarea” cuando arranques. Desde ese momento la orden y el proceso quedan fijos.",
       ],
       [
         "2 · Trabajar",
-        "La tarea queda abierta. Podés cerrar la app o cambiar de teléfono: al volver aparece igual, con el único botón “Finalizar tarea”. No se puede iniciar otra tarea con una abierta.",
+        "El contador total sigue avanzando. Podés pausar con motivo, reanudar o finalizar incluso desde una pausa. Cada pausa se guarda como tiempo no operativo y se resta del total para calcular la eficiencia. No podés iniciar otra tarea hasta registrar la actual, aunque esté pausada. Al volver a la app se recupera su estado.",
       ],
       [
         "3 · Cargar piezas",
-        "Al finalizar, cargá las Piezas OK (de a 1, de a 10, o escribiendo el número) y el Scrap. Vas viendo la eficiencia estimada.",
+        "Al finalizar, cargá las Piezas OK, el Scrap y las observaciones sobre problemas que alteraron el tiempo. La eficiencia usa el tiempo operativo neto. Si no hubo producción, registrá cero piezas y explicá el motivo.",
       ],
-      ["Resultado", "Con “Registrar tarea” se guarda y suma al pedido. Si te equivocaste al iniciar, usá “Descartar esta tarea”."],
+      [
+        "Resultado",
+        "Con “Registrar tarea” se guarda y suma a la orden. Si te equivocaste al iniciar, registrá cero piezas y explicalo en observaciones para conservar el tiempo y las pausas.",
+      ],
     ],
   },
   {
     id: "pedidos",
     min: 2,
     icon: ClipboardList,
-    titulo: "Pedidos",
+    titulo: "Órdenes",
     resumen: "Creá órdenes de fabricación y seguí su avance.",
     bloques: [
-      ["Crear", "“Nuevo pedido”: código (obligatorio y único), artículo activo y cantidad a fabricar."],
-      ["Estados", "Pendiente (sin producción), En curso (con avance) y Finalizado (todas las etapas llegaron a la cantidad pedida)."],
+      ["Crear", "“Nueva orden”: código (obligatorio y único), artículo activo y cantidad a fabricar."],
+      ["Estados", "Pendiente (sin producción), En curso (con avance) y Finalizada (todas las etapas llegaron a la cantidad pedida)."],
       [
         "Avance por etapa",
         "Una pieza se considera completa cuando pasó por todas las etapas que el artículo requiere. El avance es el de la etapa más atrasada.",
       ],
-      ["Detalle", "Muestra los totales por etapa (inyectado, rebabado, armado, embolsado) y el historial de tareas del pedido."],
+      ["Detalle", "Muestra los totales por etapa (inyectado, rebabado, armado, embolsado) y el historial de tareas de la orden."],
     ],
   },
   {
@@ -50,10 +53,11 @@ const SECCIONES = [
     titulo: "Historial de tareas",
     resumen: "Consultá y filtrá todo lo registrado.",
     bloques: [
-      ["Filtros", "Por fecha (desde/hasta), proceso, usuario y pedido. Se combinan entre sí y hay un total de piezas al pie."],
+      ["Filtros", "Por fecha (desde/hasta), proceso, usuario y orden. Se combinan entre sí y hay un total de piezas al pie."],
       ["Lectura", "Cada línea muestra la eficiencia (el número de color), el horario, las piezas OK y el responsable."],
     ],
   },
+
   {
     id: "tablero",
     min: 2,
@@ -61,7 +65,7 @@ const SECCIONES = [
     titulo: "Tablero de control",
     resumen: "Indicadores de desempeño de la operación.",
     bloques: [
-      ["Situación actual", "Pedidos y tareas en curso en este momento."],
+      ["Situación actual", "Órdenes y tareas en curso en este momento."],
       ["Día vencido", "El resto muestra la jornada anterior completa: unidades, productividad, tiempo estimado y scrap."],
       ["Real vs objetivo", "Compara la productividad con el objetivo de 100 % (cumplir el tiempo estándar)."],
       ["Operarios y evolución", "Producción por persona y tendencia de los últimos 7 días."],
@@ -81,10 +85,11 @@ const SECCIONES = [
       ],
       [
         "Activar / inactivar",
-        "Los artículos no se borran: se inactivan para conservar el historial. Un inactivo no aparece al crear pedidos y se puede reactivar.",
+        "Los artículos no se borran: se inactivan para conservar el historial. Un inactivo no aparece al crear órdenes y se puede reactivar.",
       ],
     ],
   },
+
   {
     id: "usuarios",
     min: 3,
@@ -93,15 +98,22 @@ const SECCIONES = [
     resumen: "Alta de cuentas y asignación de roles.",
     bloques: [
       ["Crear", "Nombre, e-mail, contraseña inicial (mín. 6) y rol. La cuenta queda habilitada al instante."],
-      ["Roles", "Operario (registra tareas), Supervisor (además pedidos y tablero) y Administrador (todo). Se cambian con un toque."],
+      ["Roles", "Operario (registra tareas), Supervisor (además órdenes y tablero) y Administrador (todo). Se cambian con un toque."],
       ["Activar / desactivar", "Podés dar de baja a alguien sin borrar su historial. No podés cambiar tu propio rol ni desactivarte."],
     ],
   },
 ];
 
 const FAQ = [
+  [
+    "¿Pueden trabajar varios operarios a la vez?",
+    "Sí, cada uno con su propia cuenta y una tarea pendiente como máximo. Pueden trabajar sobre la misma orden o actividad; cada uno registra únicamente sus propias piezas.",
+  ],
   ["Cerré la app con una tarea abierta, ¿se perdió?", "No. La tarea se guarda al iniciarse; al volver a entrar aparece para finalizarla."],
-  ["¿Puedo tener dos tareas abiertas?", "No. Hay que finalizar la que está en curso antes de empezar otra."],
+  [
+    "¿Puedo tener dos tareas abiertas?",
+    "No. Hay que finalizar y registrar las cantidades de la actual antes de empezar otra. Una pausa mantiene reservada la tarea.",
+  ],
   [
     "La productividad dio un valor raro",
     "Suele indicar que el tiempo estándar del artículo no refleja la realidad. Revisalo con un administrador.",

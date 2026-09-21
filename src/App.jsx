@@ -1,13 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Circle, Check } from "lucide-react";
 import { supabase } from "./supabaseClient";
-import {
-  fetchPerfil,
-  fetchArticulos,
-  fetchPedidos,
-  fetchTareas,
-  contarTareasEnCurso,
-} from "./api";
+import { fetchPerfil, fetchArticulos, fetchPedidos, fetchTareas, contarTareasEnCurso } from "./api";
 import { ROLES } from "./lib/constants";
 
 import Shell from "./components/Shell";
@@ -81,7 +75,7 @@ export default function App() {
     () =>
       fetchPedidos()
         .then(setPeds)
-        .catch(() => notify("Error al cargar pedidos", true)),
+        .catch(() => notify("Error al cargar órdenes", true)),
     [notify],
   );
   const reloadTars = useCallback(
@@ -102,13 +96,28 @@ export default function App() {
   useEffect(() => {
     if (!perfil || !perfil.activo) return;
     setLoadingData(true);
-    Promise.all([
-      reloadArts(),
-      reloadPeds(),
-      reloadTars(),
-      reloadEnCurso(),
-    ]).finally(() => setLoadingData(false));
+    Promise.all([reloadArts(), reloadPeds(), reloadTars(), reloadEnCurso()]).finally(() => setLoadingData(false));
   }, [perfil, reloadArts, reloadPeds, reloadTars, reloadEnCurso]);
+
+  useEffect(() => {
+    if (!perfil?.activo) return;
+    let enVuelo = false;
+    const actualizar = async () => {
+      if (enVuelo || document.visibilityState !== "visible") return;
+      enVuelo = true;
+      try {
+        await Promise.all([reloadPeds(), reloadTars(), reloadEnCurso()]);
+      } finally {
+        enVuelo = false;
+      }
+    };
+    const id = setInterval(actualizar, 15000);
+    window.addEventListener("focus", actualizar);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener("focus", actualizar);
+    };
+  }, [perfil?.id, perfil?.activo, reloadPeds, reloadTars, reloadEnCurso]);
 
   if (booting)
     return (
@@ -129,11 +138,7 @@ export default function App() {
       <Shell>
         <div className="center" style={{ padding: 30, textAlign: "center" }}>
           <div>Tu cuenta está inactiva. Contactá a un administrador.</div>
-          <button
-            className="btn btn-ghost"
-            style={{ maxWidth: 200 }}
-            onClick={() => supabase.auth.signOut()}
-          >
+          <button className="btn btn-ghost" style={{ maxWidth: 200 }} onClick={() => supabase.auth.signOut()}>
             Salir
           </button>
         </div>
@@ -188,13 +193,7 @@ export default function App() {
 
       {toast && (
         <div className={"toast" + (toast.err ? " err" : "")}>
-          <span className="tk">
-            {toast.err ? (
-              <Circle size={13} color="#fff" />
-            ) : (
-              <Check size={13} color="#fff" strokeWidth={3} />
-            )}
-          </span>
+          <span className="tk">{toast.err ? <Circle size={13} color="#fff" /> : <Check size={13} color="#fff" strokeWidth={3} />}</span>
           {toast.msg}
         </div>
       )}

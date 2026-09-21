@@ -2,11 +2,7 @@ import { supabase } from "./supabaseClient";
 
 /* ---------- Perfil / rol ---------- */
 export async function fetchPerfil(userId) {
-  const { data, error } = await supabase
-    .from("perfiles")
-    .select("*")
-    .eq("id", userId)
-    .single();
+  const { data, error } = await supabase.from("perfiles").select("*").eq("id", userId).single();
   if (error) throw error;
   return data; // { id, nombre, rol, activo }
 }
@@ -33,10 +29,7 @@ function mapArticulo(r) {
 }
 
 export async function fetchArticulos() {
-  const { data, error } = await supabase
-    .from("articulos")
-    .select("*")
-    .order("nombre", { ascending: true });
+  const { data, error } = await supabase.from("articulos").select("*").order("nombre", { ascending: true });
   if (error) throw error;
   return data.map(mapArticulo);
 }
@@ -56,27 +49,19 @@ export async function saveArticulo(a, id) {
     std_armado: Number(a.std.armado) || 0,
     std_embolsado: Number(a.std.embolsado) || 0,
   };
-  const q = id
-    ? supabase.from("articulos").update(row).eq("id", id)
-    : supabase.from("articulos").insert(row);
+  const q = id ? supabase.from("articulos").update(row).eq("id", id) : supabase.from("articulos").insert(row);
   const { error } = await q;
   if (error) throw error;
 }
 
 export async function setArticuloActivo(id, activo) {
-  const { error } = await supabase
-    .from("articulos")
-    .update({ activo })
-    .eq("id", id);
+  const { error } = await supabase.from("articulos").update({ activo }).eq("id", id);
   if (error) throw error;
 }
 
 /* ---------- Pedidos ---------- */
 export async function fetchPedidos() {
-  const { data, error } = await supabase
-    .from("v_pedidos")
-    .select("*")
-    .order("creado", { ascending: false });
+  const { data, error } = await supabase.from("v_pedidos").select("*").order("creado", { ascending: false });
   if (error) throw error;
   return data.map((p) => ({
     id: p.id,
@@ -105,19 +90,13 @@ export async function createPedido({ codigo, articuloId, cantidad }) {
 
 /* ---------- Usuarios (sólo administradores) ---------- */
 export async function fetchUsuarios() {
-  const { data, error } = await supabase
-    .from("perfiles")
-    .select("*")
-    .order("nombre", { ascending: true });
+  const { data, error } = await supabase.from("perfiles").select("*").order("nombre", { ascending: true });
   if (error) throw error;
   return data;
 }
 
 export async function updateUsuario(id, cambios) {
-  const { error } = await supabase
-    .from("perfiles")
-    .update(cambios)
-    .eq("id", id);
+  const { error } = await supabase.from("perfiles").update(cambios).eq("id", id);
   if (error) throw error;
 }
 
@@ -145,10 +124,7 @@ export async function crearUsuario({ email, password, nombre, rol }) {
   }
 
   if (!res.ok) {
-    if (res.status === 404)
-      throw new Error(
-        "El alta de usuarios sólo funciona en el sitio publicado.",
-      );
+    if (res.status === 404) throw new Error("El alta de usuarios sólo funciona en el sitio publicado.");
     throw new Error(payload?.error || "No se pudo crear el usuario");
   }
   return payload;
@@ -172,15 +148,20 @@ function mapTarea(t) {
     realSec: t.real_seg,
     stdSec: Number(t.std_seg) || 0,
     confirmada: t.confirmada,
+    observaciones: t.observaciones || "",
+    revision: t.revision,
+    totalSec: t.total_seg,
+    pausaSec: t.pausa_seg,
+    pausaId: t.pausa_id,
+    pausaInicio: t.pausa_inicio,
+    pausaMotivo: t.pausa_motivo,
+    servidorAhora: t.servidor_ahora,
+    recibidoEn: Date.now(),
   };
 }
 
 export async function fetchTareas({ desdeDias = null, limit = 500 } = {}) {
-  let q = supabase
-    .from("v_tareas")
-    .select("*")
-    .eq("confirmada", true)
-    .order("fin", { ascending: false });
+  let q = supabase.from("v_tareas").select("*").eq("confirmada", true).order("fin", { ascending: false });
   if (desdeDias != null) {
     const d = new Date();
     d.setDate(d.getDate() - desdeDias);
@@ -194,20 +175,14 @@ export async function fetchTareas({ desdeDias = null, limit = 500 } = {}) {
 
 /* Totales por etapa de un pedido (las 4 actividades, en cero si no hubo) */
 export async function fetchEtapasPedido(pedidoId) {
-  const { data, error } = await supabase
-    .from("v_pedido_etapas")
-    .select("*")
-    .eq("pedido_id", pedidoId);
+  const { data, error } = await supabase.from("v_pedido_etapas").select("*").eq("pedido_id", pedidoId);
   if (error) throw error;
   return data;
 }
 
 /* Cantidad de tareas actualmente abiertas (sin finalizar) */
 export async function contarTareasEnCurso() {
-  const { count, error } = await supabase
-    .from("tareas")
-    .select("id", { count: "exact", head: true })
-    .is("fin", null);
+  const { count, error } = await supabase.from("tareas").select("id", { count: "exact", head: true }).is("fin", null);
   if (error) throw error;
   return count || 0;
 }
@@ -230,39 +205,38 @@ export async function fetchTareaActiva() {
   return data && data.length ? mapTarea(data[0]) : null;
 }
 
-export async function iniciarTarea({ pedidoId, actividad }) {
-  const { data: userData } = await supabase.auth.getUser();
-  const { data, error } = await supabase
-    .from("tareas")
-    .insert({
-      pedido_id: pedidoId,
-      actividad,
-      inicio: new Date().toISOString(),
-      operario_id: userData?.user?.id,
-    })
-    .select("id")
-    .single();
+async function gestionarTarea(p_accion, params = {}) {
+  const { data, error } = await supabase.rpc("gestionar_tarea", { p_accion, ...params });
   if (error) throw error;
-  return data.id;
+  return data;
 }
 
-export async function finalizarTarea(tareaId) {
-  const { error } = await supabase
-    .from("tareas")
-    .update({ fin: new Date().toISOString() })
-    .eq("id", tareaId);
-  if (error) throw error;
+export function iniciarTarea({ pedidoId, actividad }) {
+  return gestionarTarea("iniciar", { p_pedido: pedidoId, p_actividad: actividad });
 }
 
-export async function confirmarTarea(tareaId, { ok, scrap }) {
-  const { error } = await supabase
-    .from("tareas")
-    .update({ piezas_ok: ok, piezas_scrap: scrap, confirmada: true })
-    .eq("id", tareaId);
-  if (error) throw error;
+export function pausarTarea(tarea, motivo) {
+  return gestionarTarea("pausar", {
+    p_tarea: tarea.id,
+    p_revision: tarea.revision,
+    p_motivo: motivo,
+  });
 }
 
-export async function cancelarTarea(tareaId) {
-  const { error } = await supabase.from("tareas").delete().eq("id", tareaId);
-  if (error) throw error;
+export function reanudarTarea(tarea) {
+  return gestionarTarea("reanudar", { p_tarea: tarea.id, p_revision: tarea.revision });
+}
+
+export function finalizarTarea(tarea) {
+  return gestionarTarea("finalizar", { p_tarea: tarea.id, p_revision: tarea.revision });
+}
+
+export function confirmarTarea(tarea, { ok, scrap, observaciones }) {
+  return gestionarTarea("confirmar", {
+    p_tarea: tarea.id,
+    p_revision: tarea.revision,
+    p_ok: ok,
+    p_scrap: scrap,
+    p_observaciones: observaciones,
+  });
 }

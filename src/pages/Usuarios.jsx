@@ -7,7 +7,7 @@ import Highlight from "../components/Highlight";
 
 const ROL_OPCIONES = [
   { key: "operario", label: "Operario", desc: "Registra tareas" },
-  { key: "supervisor", label: "Supervisor", desc: "Además crea pedidos" },
+  { key: "supervisor", label: "Supervisor", desc: "Además crea órdenes" },
   { key: "admin", label: "Administrador", desc: "Acceso total" },
 ];
 
@@ -33,9 +33,7 @@ export default function Usuarios({ perfil, notify, setDetail }) {
     if (!usuarios) return [];
     const nq = norm(q.trim());
     if (!nq) return usuarios;
-    return usuarios.filter(
-      (u) => norm(u.nombre).includes(nq) || norm(u.rol).includes(nq),
-    );
+    return usuarios.filter((u) => norm(u.nombre).includes(nq) || norm(u.rol).includes(nq));
   }, [usuarios, q]);
 
   const cambiarRol = async (u, rol) => {
@@ -81,19 +79,11 @@ export default function Usuarios({ perfil, notify, setDetail }) {
 
   return (
     <>
-      <button
-        className="btn btn-dark"
-        style={{ marginBottom: 12 }}
-        onClick={() => setDetail({ type: "usrNew" })}
-      >
+      <button className="btn btn-dark" style={{ marginBottom: 12 }} onClick={() => setDetail({ type: "usrNew" })}>
         <UserPlus size={18} strokeWidth={2.4} /> Nuevo usuario
       </button>
 
-      <SearchBox
-        value={q}
-        onChange={setQ}
-        placeholder="Buscar por nombre o rol…"
-      />
+      <SearchBox value={q} onChange={setQ} placeholder="Buscar por nombre o rol…" />
       {q && (
         <div className="search-count">
           {lista.length} de {usuarios.length} usuarios
@@ -101,23 +91,15 @@ export default function Usuarios({ perfil, notify, setDetail }) {
       )}
 
       {lista.map((u) => (
-        <div
-          className="card usercard"
-          key={u.id}
-          style={{ opacity: u.activo ? 1 : 0.62 }}
-        >
+        <div className="card usercard" key={u.id} style={{ opacity: u.activo ? 1 : 0.62 }}>
           <div className="uhead">
-            <div className="uav">
-              {(u.nombre || "?").slice(0, 2).toUpperCase()}
-            </div>
+            <div className="uav">{(u.nombre || "?").slice(0, 2).toUpperCase()}</div>
             <div className="umid">
               <div className="un">
                 <Highlight text={u.nombre || "(sin nombre)"} query={q} />
                 {u.id === perfil.id && <span className="uyou">vos</span>}
               </div>
-              <div className="us">
-                {ROL_OPCIONES.find((r) => r.key === u.rol)?.label}
-              </div>
+              <div className="us">{ROL_OPCIONES.find((r) => r.key === u.rol)?.label}</div>
             </div>
             <button
               className={"switch" + (u.activo ? " on" : "")}
@@ -141,9 +123,7 @@ export default function Usuarios({ perfil, notify, setDetail }) {
               </button>
             ))}
           </div>
-          {!u.activo && (
-            <div className="uoff">Cuenta desactivada · no puede ingresar</div>
-          )}
+          {!u.activo && <div className="uoff">Cuenta desactivada · no puede ingresar</div>}
         </div>
       ))}
 
@@ -152,9 +132,7 @@ export default function Usuarios({ perfil, notify, setDetail }) {
           <div className="ic">
             <Users size={22} />
           </div>
-          {usuarios.length === 0
-            ? "No hay usuarios"
-            : "Ningún usuario coincide con la búsqueda"}
+          {usuarios.length === 0 ? "No hay usuarios" : "Ningún usuario coincide con la búsqueda"}
         </div>
       )}
     </>
@@ -171,8 +149,7 @@ export function UsuarioForm({ setDetail, notify }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
-  const valid =
-    f.nombre.trim() && f.email.includes("@") && f.password.length >= 6;
+  const valid = f.nombre.trim() && f.email.includes("@") && f.password.length >= 6;
 
   const save = async () => {
     setBusy(true);
@@ -200,11 +177,7 @@ export function UsuarioForm({ setDetail, notify }) {
         <label>
           Nombre y apellido <span className="req">*</span>
         </label>
-        <input
-          value={f.nombre}
-          onChange={(e) => set("nombre", e.target.value)}
-          placeholder="Marcelo Sosa"
-        />
+        <input value={f.nombre} onChange={(e) => set("nombre", e.target.value)} placeholder="Marcelo Sosa" />
       </div>
 
       <div className="field">
@@ -224,15 +197,8 @@ export function UsuarioForm({ setDetail, notify }) {
         <label>
           Contraseña inicial <span className="req">*</span>
         </label>
-        <input
-          type="text"
-          value={f.password}
-          onChange={(e) => set("password", e.target.value)}
-          placeholder="Mínimo 6 caracteres"
-        />
-        <div style={{ fontSize: 11.5, color: "var(--ink2)", marginTop: 6 }}>
-          Compartila con la persona; puede cambiarla luego.
-        </div>
+        <input type="text" value={f.password} onChange={(e) => set("password", e.target.value)} placeholder="Mínimo 6 caracteres" />
+        <div style={{ fontSize: 11.5, color: "var(--ink2)", marginTop: 6 }}>Compartila con la persona; puede cambiarla luego.</div>
       </div>
 
       <div className="field">
@@ -241,11 +207,7 @@ export function UsuarioForm({ setDetail, notify }) {
         </label>
         <div className="rolist">
           {ROL_OPCIONES.map((r) => (
-            <button
-              key={r.key}
-              className={"rolopt" + (f.rol === r.key ? " on" : "")}
-              onClick={() => set("rol", r.key)}
-            >
+            <button key={r.key} className={"rolopt" + (f.rol === r.key ? " on" : "")} onClick={() => set("rol", r.key)}>
               <span className="rr">{r.label}</span>
               <span className="rd">{r.desc}</span>
             </button>
@@ -253,12 +215,7 @@ export function UsuarioForm({ setDetail, notify }) {
         </div>
       </div>
 
-      <button
-        className="btn btn-primary"
-        style={{ marginTop: 22 }}
-        disabled={!valid || busy}
-        onClick={save}
-      >
+      <button className="btn btn-primary" style={{ marginTop: 22 }} disabled={!valid || busy} onClick={save}>
         <Check size={18} strokeWidth={2.5} /> Crear usuario
       </button>
     </>

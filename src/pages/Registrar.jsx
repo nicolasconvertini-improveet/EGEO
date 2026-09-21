@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Timer, Plus, Play, Square, Check, Lock } from "lucide-react";
-import { fetchTareaActiva, iniciarTarea, finalizarTarea, confirmarTarea, cancelarTarea, fetchEtapasPedido } from "../api";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { Timer, Plus, Play, Square, Check, Lock, Pause } from "lucide-react";
+import { fetchTareaActiva, iniciarTarea, finalizarTarea, confirmarTarea, pausarTarea, reanudarTarea, fetchEtapasPedido } from "../api";
 import { ACTS, actLabel } from "../lib/constants";
 import { nf, fmtClock, fmtDT, fmtHora, efficiency, effColor, findArt, findPed, norm } from "../lib/format";
 import SearchBox from "../components/SearchBox";
+
+const MOTIVOS_PAUSA = ["Logística", "Almuerzo/descanso", "Sanitario", "Acondicionamiento de máquina", "Otras"];
 
 export default function Registrar({ arts, peds, notify, reloadPeds, reloadTars, reloadEnCurso }) {
   const [cargando, setCargando] = useState(true);
@@ -16,6 +18,27 @@ export default function Registrar({ arts, peds, notify, reloadPeds, reloadTars, 
   const [hecha, setHecha] = useState(null);
   const [qPed, setQPed] = useState("");
   const [etapas, setEtapas] = useState(null);
+  const [observaciones, setObservaciones] = useState("");
+  const [motivo, setMotivo] = useState("");
+  const [ahora, setAhora] = useState(Date.now());
+  const [errorCarga, setErrorCarga] = useState(false);
+  const operacion = useRef(false);
+  const lectura = useRef(0);
+
+  useEffect(() => {
+    if (!activa || activa.fin) return;
+    const id = setInterval(() => setAhora(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [activa?.id, activa?.fin]);
+
+  // El total continúa durante la pausa. No se acumulan ticks locales.
+  const servidorAhora = activa?.servidorAhora ? new Date(activa.servidorAhora).getTime() + Math.max(0, ahora - activa.recibidoEn) : ahora;
+  const totalSec = activa
+    ? Math.max(0, Math.floor(((activa.fin ? new Date(activa.fin).getTime() : servidorAhora) - new Date(activa.inicio).getTime()) / 1000))
+    : 0;
+  const pausaSec =
+    (activa?.pausaSec || 0) +
+    (activa?.pausaId ? Math.max(0, Math.floor((servidorAhora - new Date(activa.servidorAhora).getTime()) / 1000)) : 0);
 
   const disponibles = useMemo(() => peds.filter((p) => p.estado !== "finalizado"), [peds]);
   const opciones = useMemo(() => {
@@ -24,20 +47,46 @@ export default function Registrar({ arts, peds, notify, reloadPeds, reloadTars, 
     return disponibles.filter((p) => norm(p.codigo).includes(nq) || norm(p.articuloNombre).includes(nq));
   }, [disponibles, qPed]);
 
-  const cargarActiva = useCallback(async () => {
-    setCargando(true);
-    try {
-      setActiva(await fetchTareaActiva());
-    } catch {
-      notify("No se pudo verificar si tenés una tarea abierta", true);
-    } finally {
-      setCargando(false);
-    }
-  }, [notify]);
+  const cargarActiva = useCallback(
+    async (silenciosa = false) => {
+      const solicitud = ++lectura.current;
+      if (!silenciosa) setCargando(true);
+      try {
+        const tarea = await fetchTareaActiva();
+        if (solicitud !== lectura.current) return;
+        setActiva(tarea);
+        setAhora(Date.now());
+        setErrorCarga(false);
+      } catch {
+        if (solicitud !== lectura.current) return;
+        setErrorCarga(true);
+        if (!silenciosa) notify("No se pudo verificar la tarea. Reintentá antes de continuar", true);
+      } finally {
+        if (solicitud === lectura.current) setCargando(false);
+      }
+    },
+    [notify],
+  );
 
   useEffect(() => {
     cargarActiva();
   }, [cargarActiva]);
+
+  useEffect(() => {
+    const actualizar = () => {
+      if (!operacion.current && document.visibilityState === "visible") cargarActiva(true);
+    };
+    const id = setInterval(actualizar, 15000);
+    window.addEventListener("focus", actualizar);
+    document.addEventListener("visibilitychange", actualizar);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener("focus", actualizar);
+      document.removeEventListener("visibilitychange", actualizar);
+      lectura.current += 1;
+    };
+  }, [cargarActiva]);
+
   useEffect(() => {
     if (opciones.length === 0) return;
     if (!opciones.some((p) => p.id === pedId)) setPedId(opciones[0].id);
@@ -56,44 +105,46 @@ export default function Registrar({ arts, peds, notify, reloadPeds, reloadTars, 
     return () => {
       vigente = false;
     };
-  }, [pedId, activa]);
+  }, [pedId, activa, peds]);
+
+  // Si otra sesión termina la tarea y abre otra, no reutilizar cantidades.
+  useEffect(() => {
+    setOk(0);
+    setScrap(0);
+    setObservaciones("");
+    setMotivo("");
+  }, [activa?.id]);
 
   const pedSel = findPed(peds, pedId);
   const artSel = findArt(arts, pedSel?.articuloId);
 
-  const iniciar = async () => {
-    if (!pedId) return;
+  const ejecutar = async (accion, mensaje) => {
+    if (operacion.current) return;
+    operacion.current = true;
+    lectura.current += 1;
     setBusy(true);
     try {
-      await iniciarTarea({ pedidoId: pedId, actividad: act });
-      await cargarActiva();
-      await reloadEnCurso();
-      notify("Tarea iniciada");
+      await accion();
+      setMotivo("");
+      await cargarActiva(true);
+      await Promise.all([reloadPeds(), reloadTars(), reloadEnCurso()]);
+      if (mensaje) notify(mensaje);
     } catch (e) {
-      notify(e?.code === "23505" ? "Ya tenés una tarea abierta" : "No se pudo iniciar la tarea", true);
-      await cargarActiva();
+      notify(e?.message || "No se pudo guardar. Verificá tu conexión", true);
+      await cargarActiva(true);
     } finally {
+      operacion.current = false;
       setBusy(false);
     }
   };
 
-  const finalizar = async () => {
-    setBusy(true);
-    try {
-      await finalizarTarea(activa.id);
-      await cargarActiva();
-      await reloadEnCurso();
-    } catch {
-      notify("No se pudo finalizar la tarea", true);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const confirmar = async () => {
-    setBusy(true);
-    try {
-      await confirmarTarea(activa.id, { ok, scrap });
+  const iniciar = () => pedId && ejecutar(() => iniciarTarea({ pedidoId: pedId, actividad: act }), "Tarea iniciada");
+  const finalizar = () => ejecutar(() => finalizarTarea(activa));
+  const pausar = () => motivo && ejecutar(() => pausarTarea(activa, motivo), "Tarea pausada");
+  const reanudar = () => ejecutar(() => reanudarTarea(activa), "Tarea reanudada");
+  const confirmar = () =>
+    ejecutar(async () => {
+      await confirmarTarea(activa, { ok, scrap, observaciones });
       setHecha({
         art: findArt(arts, activa.articuloId),
         act: activa.actividad,
@@ -101,38 +152,25 @@ export default function Registrar({ arts, peds, notify, reloadPeds, reloadTars, 
         scrap,
         realSec: activa.realSec,
       });
-      setActiva(null);
       setOk(0);
       setScrap(0);
-      await Promise.all([reloadPeds(), reloadTars(), reloadEnCurso()]);
-      notify("Tarea registrada");
-    } catch {
-      notify("No se pudo registrar la tarea", true);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const descartar = async () => {
-    setBusy(true);
-    try {
-      await cancelarTarea(activa.id);
-      setActiva(null);
-      setOk(0);
-      setScrap(0);
-      await reloadEnCurso();
-      notify("Tarea descartada");
-    } catch {
-      notify("No se pudo descartar", true);
-    } finally {
-      setBusy(false);
-    }
-  };
+      setObservaciones("");
+    }, "Tarea registrada");
 
   if (cargando)
     return (
       <div className="center" style={{ minHeight: 240 }}>
         <div className="spinner" />
+      </div>
+    );
+
+  if (errorCarga)
+    return (
+      <div className="card">
+        <p>No se pudo actualizar la tarea. Reconectá y reintentá para continuar.</p>
+        <button className="btn btn-primary" disabled={busy} onClick={() => cargarActiva()}>
+          Reintentar
+        </button>
       </div>
     );
 
@@ -153,7 +191,7 @@ export default function Registrar({ arts, peds, notify, reloadPeds, reloadTars, 
           >
             <MiniStat lab="Piezas OK" val={nf(hecha.ok)} />
             <MiniStat lab="Scrap" val={nf(hecha.scrap)} />
-            <MiniStat lab="Tiempo" val={fmtClock(hecha.realSec)} />
+            <MiniStat lab="Tiempo operativo" val={fmtClock(hecha.realSec)} />
           </div>
           <div
             style={{
@@ -176,16 +214,20 @@ export default function Registrar({ arts, peds, notify, reloadPeds, reloadTars, 
     );
   }
 
-  /* tarea abierta: sólo finalizar */
+  /* La tarea sigue reservada mientras trabaja o está pausada. */
   if (activa && !activa.fin) {
     return (
       <>
         <div className="banner">
-          <span className="dotcalm" /> Tarea en curso desde las {fmtHora(activa.inicio)}
+          <span className="dotcalm" />
+          <span>Tarea en curso desde las {fmtHora(activa.inicio)}</span>
+          <strong className="mono" role="timer" aria-label="Tiempo total transcurrido">
+            {fmtClock(totalSec)}
+          </strong>
         </div>
         <div className="locked">
           <div className="lrow">
-            <span className="k">Pedido</span>
+            <span className="k">Orden</span>
             <span className="v">{activa.pedidoCodigo}</span>
           </div>
           <div className="lrow">
@@ -220,6 +262,38 @@ export default function Registrar({ arts, peds, notify, reloadPeds, reloadTars, 
         >
           <Lock size={13} /> Los datos quedan fijos hasta finalizar
         </div>
+        <div className="card" style={{ marginTop: 14 }}>
+          <div>
+            Tiempo no operativo: <strong className="mono">{fmtClock(pausaSec)}</strong>
+          </div>
+          {activa.pausaId ? (
+            <>
+              <p>
+                En pausa desde las {fmtHora(activa.pausaInicio)} · {activa.pausaMotivo}
+              </p>
+              <button className="btn btn-primary" disabled={busy} onClick={reanudar}>
+                <Play size={16} /> Reanudar tarea
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="field" style={{ marginTop: 12 }}>
+                <label htmlFor="motivo-pausa">Motivo de la pausa</label>
+                <select id="motivo-pausa" value={motivo} disabled={busy} onChange={(e) => setMotivo(e.target.value)}>
+                  <option value="">Seleccioná un motivo</option>
+                  {MOTIVOS_PAUSA.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button className="btn btn-primary" disabled={busy || !motivo} onClick={pausar}>
+                <Pause size={16} /> Pausar tarea
+              </button>
+            </>
+          )}
+        </div>
         <button className="btn btn-dark" style={{ marginTop: 14 }} disabled={busy} onClick={finalizar}>
           <Square size={15} fill="#fff" /> Finalizar tarea
         </button>
@@ -237,7 +311,7 @@ export default function Registrar({ arts, peds, notify, reloadPeds, reloadTars, 
         </div>
         <div className="locked">
           <div className="lrow">
-            <span className="k">Pedido</span>
+            <span className="k">Orden</span>
             <span className="v">{activa.pedidoCodigo}</span>
           </div>
           <div className="lrow">
@@ -251,8 +325,16 @@ export default function Registrar({ arts, peds, notify, reloadPeds, reloadTars, 
             </span>
           </div>
           <div className="lrow">
-            <span className="k">Duración</span>
+            <span className="k">Tiempo operativo neto</span>
             <span className="v mono">{fmtClock(activa.realSec)}</span>
+          </div>
+          <div className="lrow">
+            <span className="k">Tiempo total</span>
+            <span className="v mono">{fmtClock(activa.totalSec)}</span>
+          </div>
+          <div className="lrow">
+            <span className="k">Tiempo no operativo</span>
+            <span className="v mono">{fmtClock(activa.pausaSec)}</span>
           </div>
         </div>
 
@@ -267,6 +349,20 @@ export default function Registrar({ arts, peds, notify, reloadPeds, reloadTars, 
             Scrap
           </div>
           <Counter value={scrap} onChange={setScrap} steps={[1]} warn />
+        </div>
+
+        <div className="field" style={{ marginTop: 16 }}>
+          <label htmlFor="observaciones">Observaciones</label>
+          <textarea
+            id="observaciones"
+            rows={4}
+            maxLength={2000}
+            value={observaciones}
+            disabled={busy}
+            onChange={(e) => setObservaciones(e.target.value)}
+            placeholder="Ej.: apareció rebaba y se necesitó repasar las piezas"
+          />
+          <small>{observaciones.length}/2000 · Si no hubo producción, explicá el motivo.</small>
         </div>
 
         {ok > 0 && (
@@ -286,10 +382,15 @@ export default function Registrar({ arts, peds, notify, reloadPeds, reloadTars, 
           </div>
         )}
 
-        <button className="btn btn-primary" style={{ marginTop: 16 }} disabled={busy || ok <= 0} onClick={confirmar}>
+        <button
+          className="btn btn-primary"
+          style={{ marginTop: 16 }}
+          disabled={busy || (ok === 0 && scrap === 0 && !observaciones.trim())}
+          onClick={confirmar}
+        >
           <Check size={18} strokeWidth={2.5} /> Registrar tarea
         </button>
-        {ok <= 0 && (
+        {ok === 0 && scrap === 0 && !observaciones.trim() && (
           <div
             style={{
               textAlign: "center",
@@ -298,12 +399,9 @@ export default function Registrar({ arts, peds, notify, reloadPeds, reloadTars, 
               marginTop: 10,
             }}
           >
-            Cargá al menos una pieza OK para registrar.
+            Cargá las cantidades o explicá en observaciones por qué no hubo producción.
           </div>
         )}
-        <button className="linkmini" style={{ display: "block", margin: "16px auto 0" }} disabled={busy} onClick={descartar}>
-          Descartar esta tarea
-        </button>
       </>
     );
   }
@@ -315,15 +413,15 @@ export default function Registrar({ arts, peds, notify, reloadPeds, reloadTars, 
         <div className="ic">
           <Timer size={22} />
         </div>
-        No hay pedidos abiertos para registrar tareas
+        No hay órdenes abiertas para registrar tareas
       </div>
     );
 
   return (
     <>
       <div className="field" style={{ marginTop: 2 }}>
-        <label>Pedido</label>
-        <SearchBox value={qPed} onChange={setQPed} placeholder="Buscar pedido por código o artículo…" />
+        <label>Orden</label>
+        <SearchBox value={qPed} onChange={setQPed} placeholder="Buscar orden por código o artículo…" />
         <select value={pedId} onChange={(e) => setPedId(e.target.value)}>
           {opciones.map((p) => (
             <option key={p.id} value={p.id}>
@@ -331,7 +429,7 @@ export default function Registrar({ arts, peds, notify, reloadPeds, reloadTars, 
             </option>
           ))}
         </select>
-        {opciones.length === 0 && <div className="hint-err">Ningún pedido coincide con la búsqueda.</div>}
+        {opciones.length === 0 && <div className="hint-err">Ninguna orden coincide con la búsqueda.</div>}
       </div>
 
       <div className="field">
@@ -356,7 +454,7 @@ export default function Registrar({ arts, peds, notify, reloadPeds, reloadTars, 
         <div className="sec-title" style={{ margin: "0 0 10px" }}>
           Control de tarea
         </div>
-        <div className="ctl-hint">Al iniciar, el pedido y la actividad quedan fijos. El tiempo se guarda solo.</div>
+        <div className="ctl-hint">Al iniciar, la orden y la actividad quedan fijas. El tiempo se guarda solo.</div>
         <button className="btn btn-dark" style={{ marginTop: 12 }} disabled={busy || !pedId || !artSel?.std[act]} onClick={iniciar}>
           <Play size={16} fill="#fff" /> Iniciar tarea
         </button>
@@ -411,7 +509,7 @@ function AvancePedido({ cantidad, actividad, aplica, etapas }) {
   return (
     <div className="card" style={{ marginTop: 14 }}>
       <div className="sec-title" style={{ margin: "0 0 10px" }}>
-        Avance del pedido · {actLabel(actividad)}
+        Avance de la orden · {actLabel(actividad)}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         <MiniStat lab="Solicitado" val={`${nf(solicitada)} u.`} />
