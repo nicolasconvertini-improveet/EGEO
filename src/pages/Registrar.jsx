@@ -5,7 +5,7 @@ import { ACTS, actLabel } from "../lib/constants";
 import { nf, fmtClock, fmtDT, fmtHora, efficiency, effColor, findArt, findPed, norm } from "../lib/format";
 import SearchBox from "../components/SearchBox";
 
-const MOTIVOS_PAUSA = ["Logística", "Almuerzo/descanso", "Sanitario", "Acondicionamiento de máquina", "Otras"];
+const MOTIVOS_PAUSA = ["Logística", "Almuerzo/descanso", "Sanitario", "Mantenimiento", "Acondicionamiento de máquina", "Otras"];
 
 export default function Registrar({ arts, peds, notify, reloadPeds, reloadTars, reloadEnCurso }) {
   const [cargando, setCargando] = useState(true);
