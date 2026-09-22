@@ -115,11 +115,10 @@ export function PedidoDetalle({ arts, peds, tars, detail, notify }) {
     return () => {
       vivo = false;
     };
-  }, [pedidoId, notify, peds]);
+  }, [pedidoId, notify]);
 
   const p = findPed(peds, pedidoId);
   if (!p) return null;
-
   const a = findArt(arts, p.articuloId);
   const pct = Math.min(100, Math.round((p.okAcum / p.cantidad) * 100));
   const rel = tars.filter((t) => t.pedidoId === p.id);

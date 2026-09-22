@@ -1,12 +1,18 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Timer, Plus, Play, Square, Check, Lock, Pause } from "lucide-react";
-import { fetchTareaActiva, iniciarTarea, finalizarTarea, confirmarTarea, pausarTarea, reanudarTarea, fetchEtapasPedido } from "../api";
+import {
+  fetchTareaActiva,
+  iniciarTarea,
+  finalizarTarea,
+  confirmarTarea,
+  pausarTarea,
+  reanudarTarea,
+  fetchEtapasPedido,
+  fetchMotivosParada,
+} from "../api";
 import { ACTS, actLabel } from "../lib/constants";
 import { nf, fmtClock, fmtDT, fmtHora, efficiency, effColor, findArt, findPed, norm } from "../lib/format";
 import SearchBox from "../components/SearchBox";
-
-const MOTIVOS_PAUSA = ["Logística", "Almuerzo/descanso", "Sanitario", "Mantenimiento", "Acondicionamiento de máquina", "Otras"];
-
 export default function Registrar({ arts, peds, notify, reloadPeds, reloadTars, reloadEnCurso }) {
   const [cargando, setCargando] = useState(true);
   const [activa, setActiva] = useState(null);
@@ -20,6 +26,35 @@ export default function Registrar({ arts, peds, notify, reloadPeds, reloadTars, 
   const [etapas, setEtapas] = useState(null);
   const [observaciones, setObservaciones] = useState("");
   const [motivo, setMotivo] = useState("");
+  const [motivos, setMotivos] = useState([]);
+  const [cargandoMotivos, setCargandoMotivos] = useState(true);
+  const [errorMotivos, setErrorMotivos] = useState("");
+
+  useEffect(() => {
+    let vigente = true;
+    const cargar = async () => {
+      setCargandoMotivos(true);
+      try {
+        const lista = await fetchMotivosParada();
+        if (!vigente) return;
+
+        setMotivos(lista);
+        setMotivo((actual) => (lista.some((m) => m.nombre === actual) ? actual : ""));
+        setErrorMotivos("");
+      } catch {
+        if (!vigente) return;
+        setMotivos([]);
+        setMotivo("");
+        setErrorMotivos("No se pudieron cargar los motivos. Salí de Registrar y volvé a entrar.");
+      } finally {
+        if (vigente) setCargandoMotivos(false);
+      }
+    };
+    cargar();
+    return () => {
+      vigente = false;
+    };
+  }, []);
   const [ahora, setAhora] = useState(Date.now());
   const [errorCarga, setErrorCarga] = useState(false);
   const operacion = useRef(false);
@@ -70,19 +105,7 @@ export default function Registrar({ arts, peds, notify, reloadPeds, reloadTars, 
 
   useEffect(() => {
     cargarActiva();
-  }, [cargarActiva]);
-
-  useEffect(() => {
-    const actualizar = () => {
-      if (!operacion.current && document.visibilityState === "visible") cargarActiva(true);
-    };
-    const id = setInterval(actualizar, 15000);
-    window.addEventListener("focus", actualizar);
-    document.addEventListener("visibilitychange", actualizar);
     return () => {
-      clearInterval(id);
-      window.removeEventListener("focus", actualizar);
-      document.removeEventListener("visibilitychange", actualizar);
       lectura.current += 1;
     };
   }, [cargarActiva]);
@@ -107,11 +130,12 @@ export default function Registrar({ arts, peds, notify, reloadPeds, reloadTars, 
     };
   }, [pedId, activa, peds]);
 
-  // Si otra sesión termina la tarea y abre otra, no reutilizar cantidades.
+  // Al cargar una tarea distinta, no reutilizar cantidades de la anterior.
   useEffect(() => {
     setOk(0);
     setScrap(0);
     setObservaciones("");
+
     setMotivo("");
   }, [activa?.id]);
 
@@ -279,16 +303,34 @@ export default function Registrar({ arts, peds, notify, reloadPeds, reloadTars, 
             <>
               <div className="field" style={{ marginTop: 12 }}>
                 <label htmlFor="motivo-pausa">Motivo de la pausa</label>
-                <select id="motivo-pausa" value={motivo} disabled={busy} onChange={(e) => setMotivo(e.target.value)}>
-                  <option value="">Seleccioná un motivo</option>
-                  {MOTIVOS_PAUSA.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
+                <select
+                  id="motivo-pausa"
+                  value={motivo}
+                  disabled={busy || cargandoMotivos || motivos.length === 0}
+                  onChange={(e) => setMotivo(e.target.value)}
+                >
+                  <option value="">{cargandoMotivos ? "Cargando motivos…" : "Seleccioná un motivo"}</option>
+                  {motivos.map((m) => (
+                    <option key={m.id} value={m.nombre}>
+                      {m.nombre}
                     </option>
                   ))}
                 </select>
+                {errorMotivos && (
+                  <div role="alert" className="hint-err">
+                    {errorMotivos}
+                  </div>
+                )}
+                {!cargandoMotivos && !errorMotivos && motivos.length === 0 && (
+                  <div className="hint-err">No hay motivos activos. Avisá al administrador.</div>
+                )}
+                <small>Los motivos se actualizan al ingresar a esta pantalla.</small>
               </div>
-              <button className="btn btn-primary" disabled={busy || !motivo} onClick={pausar}>
+              <button
+                className="btn btn-primary"
+                disabled={busy || cargandoMotivos || !motivos.some((m) => m.nombre === motivo)}
+                onClick={pausar}
+              >
                 <Pause size={16} /> Pausar tarea
               </button>
             </>

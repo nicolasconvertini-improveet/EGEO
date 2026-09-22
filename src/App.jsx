@@ -30,10 +30,16 @@ export default function App() {
   const [tars, setTars] = useState([]);
   const [enCurso, setEnCurso] = useState(0);
   const [loadingData, setLoadingData] = useState(false);
+  const [datosCargados, setDatosCargados] = useState(null);
+  const [errorDatos, setErrorDatos] = useState(null);
+  const [reintento, setReintento] = useState(0);
+  const usuarioId = session?.user?.id;
+  const clavePantalla = JSON.stringify([usuarioId, tab, detail?.type, detail?.id, detail?.edit]);
 
   const notify = useCallback((msg, err = false) => setToast({ msg, err }), []);
   useEffect(() => {
     if (!toast) return;
+
     const id = setTimeout(() => setToast(null), 2800);
     return () => clearTimeout(id);
   }, [toast]);
@@ -50,20 +56,30 @@ export default function App() {
         setArts([]);
         setPeds([]);
         setTars([]);
+        setEnCurso(0);
+        setDatosCargados(null);
+        setErrorDatos(null);
+        setDetail(null);
       }
     });
     return () => sub.subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
-    if (!session) return;
-    fetchPerfil(session.user.id)
+    if (!usuarioId) return;
+    let vigente = true;
+    fetchPerfil(usuarioId)
       .then((p) => {
+        if (!vigente) return;
         setPerfil(p);
         setTab(ROLES[p.rol]?.tabs[0] || "registrar");
+        setDetail(null);
       })
-      .catch(() => notify("No se pudo cargar el perfil", true));
-  }, [session, notify]);
+      .catch(() => vigente && notify("No se pudo cargar el perfil", true));
+    return () => {
+      vigente = false;
+    };
+  }, [usuarioId, notify]);
 
   const reloadArts = useCallback(
     () =>
@@ -94,31 +110,33 @@ export default function App() {
     [],
   );
 
+  // Leer datos compartidos sólo al entrar a una pantalla o detalle.
+  // No depender del objeto session: renovar el token no debe recargar la vista.
   useEffect(() => {
-    if (!perfil || !perfil.activo) return;
+    if (!usuarioId || perfil?.id !== usuarioId || !perfil?.activo) return;
+    let vigente = true;
     setLoadingData(true);
-    Promise.all([reloadArts(), reloadPeds(), reloadTars(), reloadEnCurso()]).finally(() => setLoadingData(false));
-  }, [perfil, reloadArts, reloadPeds, reloadTars, reloadEnCurso]);
-
-  useEffect(() => {
-    if (!perfil?.activo) return;
-    let enVuelo = false;
-    const actualizar = async () => {
-      if (enVuelo || document.visibilityState !== "visible") return;
-      enVuelo = true;
-      try {
-        await Promise.all([reloadPeds(), reloadTars(), reloadEnCurso()]);
-      } finally {
-        enVuelo = false;
-      }
-    };
-    const id = setInterval(actualizar, 15000);
-    window.addEventListener("focus", actualizar);
+    setErrorDatos(null);
+    Promise.all([fetchArticulos(), fetchPedidos(), fetchTareas({ desdeDias: 60, limit: 500 }), contarTareasEnCurso()])
+      .then(([nuevosArts, nuevosPeds, nuevasTars, nuevoEnCurso]) => {
+        if (!vigente) return;
+        setArts(nuevosArts);
+        setPeds(nuevosPeds);
+        setTars(nuevasTars);
+        setEnCurso(nuevoEnCurso);
+        setDatosCargados(clavePantalla);
+      })
+      .catch(() => {
+        if (vigente) setErrorDatos({ clave: clavePantalla, mensaje: "No se pudieron cargar los datos de la pantalla." });
+      })
+      .finally(() => {
+        if (vigente) setLoadingData(false);
+      });
+    // Ignorar respuestas de una pantalla que ya se abandonó.
     return () => {
-      clearInterval(id);
-      window.removeEventListener("focus", actualizar);
+      vigente = false;
     };
-  }, [perfil?.id, perfil?.activo, reloadPeds, reloadTars, reloadEnCurso]);
+  }, [usuarioId, perfil?.id, perfil?.activo, clavePantalla, reintento]);
 
   if (booting)
     return (
@@ -145,7 +163,7 @@ export default function App() {
         </div>
       </Shell>
     );
-  if (!perfil)
+  if (!perfil || perfil.id !== usuarioId)
     return (
       <Shell>
         <div className="center">
@@ -184,12 +202,19 @@ export default function App() {
         onExportar={() => setDetail({ type: "exportar" })}
       />
       <div className={"body" + (tabs.length === 1 ? " nonav" : "")}>
-        {loadingData ? (
+        {errorDatos?.clave === clavePantalla ? (
+          <div className="card" role="alert">
+            <p>{errorDatos.mensaje}</p>
+            <button className="btn btn-primary" onClick={() => setReintento((n) => n + 1)}>
+              Reintentar
+            </button>
+          </div>
+        ) : loadingData || datosCargados !== clavePantalla ? (
           <div className="center" style={{ minHeight: 260 }}>
             <div className="spinner" />
           </div>
         ) : (
-          <Screen {...shared} tab={tab} detail={detail} />
+          <Screen key={clavePantalla} {...shared} tab={tab} detail={detail} />
         )}
       </div>
 

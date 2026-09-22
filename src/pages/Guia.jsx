@@ -40,7 +40,7 @@ const SECCIONES = [
       ],
       [
         "2 · Trabajar",
-        "El contador total sigue avanzando. Podés pausar con motivo, reanudar o finalizar incluso desde una pausa. Cada pausa se guarda como tiempo no operativo y se resta del total para calcular la eficiencia. No podés iniciar otra tarea hasta registrar la actual, aunque esté pausada. Al volver a la app se recupera su estado.",
+        "El contador total sigue avanzando. Podés pausar con motivo, reanudar o finalizar incluso desde una pausa. Cada pausa se guarda como tiempo no operativo y se resta del total para calcular la eficiencia. No podés iniciar otra tarea hasta registrar la actual, aunque esté pausada. Al ingresar nuevamente a Registrar se recupera su estado. Cambiar de ventana no recarga los datos.",
       ],
       [
         "3 · Cargar piezas",
@@ -87,7 +87,7 @@ const SECCIONES = [
     titulo: "Tablero de control",
     resumen: "Indicadores de desempeño de la operación.",
     bloques: [
-      ["Situación actual", "Órdenes y tareas en curso en este momento."],
+      ["Situación actual", "Órdenes y tareas en curso al ingresar al tablero. Para ver cambios de otros usuarios, salí y volvé a entrar."],
       ["Día vencido", "El resto muestra la jornada anterior completa: unidades, productividad, tiempo estimado y scrap."],
       ["Real vs objetivo", "Compara la productividad con el objetivo de 100 % (cumplir el tiempo estándar)."],
       ["Operarios y evolución", "Producción por persona y tendencia de los últimos 7 días."],
@@ -128,6 +128,10 @@ const SECCIONES = [
 
 const FAQ = [
   [
+    "¿Cuándo se actualizan los datos?",
+    "Al ingresar a cada pantalla o detalle. No hay recargas periódicas ni al volver a la ventana. Las acciones propias muestran su resultado y las descargas consultan los datos cuando las solicitás. El timer avanza localmente sin consultar la base.",
+  ],
+  [
     "¿Pueden trabajar varios operarios a la vez?",
     "Sí, cada uno con su propia cuenta y una tarea pendiente como máximo. Pueden trabajar sobre la misma orden o actividad; cada uno registra únicamente sus propias piezas.",
   ],
@@ -142,7 +146,7 @@ const FAQ = [
   ],
   [
     "El tablero no muestra hoy",
-    "Es a propósito: trabaja a día vencido y muestra la jornada anterior. Los indicadores “en curso” sí son del momento.",
+    "Es a propósito: trabaja a día vencido y muestra la jornada anterior. Los indicadores “en curso” muestran los datos obtenidos al ingresar al tablero.",
   ],
 ];
 
