@@ -6,9 +6,31 @@ const rango = (r) => ({ admin: 3, supervisor: 2, operario: 1 })[r] || 0;
 
 const SECCIONES = [
   {
+    id: "exportar",
+    min: 3,
+    icon: ClipboardList,
+    titulo: "Exportar datos a Excel",
+    resumen: "Descargá tablas completas desde el botón de descarga de la cabecera.",
+    bloques: [
+      [
+        "Descargas",
+        "Cada botón genera un Excel independiente de tarea_pausas, tareas, articulos o pedidos. Incluye todas las filas y columnas, sin filtros.",
+      ],
+      [
+        "Contenido",
+        "Se incluyen tareas sin confirmar, pausas abiertas, artículos inactivos y órdenes finalizadas. La hoja Exportacion indica la cantidad de registros y la fecha de lectura.",
+      ],
+      [
+        "Formato",
+        "Las fechas y los decimales se conservan como texto para mantener su precisión. Los valores nulos aparecen como celdas vacías.",
+      ],
+    ],
+  },
+  {
     id: "registrar",
     min: 1,
     icon: PlayCircle,
+
     titulo: "Registrar una tarea",
     resumen: "Iniciá, pausá o finalizá y registrá las cantidades y observaciones.",
     bloques: [

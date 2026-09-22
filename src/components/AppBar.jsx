@@ -1,10 +1,10 @@
 import React from "react";
-import { ChevronLeft, LogOut, HelpCircle, LayoutDashboard, Package, ClipboardList, Timer, Boxes, Users } from "lucide-react";
+import { ChevronLeft, LogOut, HelpCircle, LayoutDashboard, Package, ClipboardList, Timer, Boxes, Users, Download } from "lucide-react";
 import { supabase } from "../supabaseClient";
 import { ROLES } from "../lib/constants";
 import { findArt, findPed } from "../lib/format";
 
-export default function AppBar({ rol, tab, detail, arts, peds, onBack, onGuia }) {
+export default function AppBar({ rol, tab, detail, arts, peds, onBack, onGuia, onExportar }) {
   let title = tabLabel(tab),
     sub = null,
     back = false;
@@ -29,6 +29,9 @@ export default function AppBar({ rol, tab, detail, arts, peds, onBack, onGuia })
     back = true;
   } else if (detail?.type === "guia") {
     title = "Guía de uso";
+    back = true;
+  } else if (detail?.type === "exportar") {
+    title = "Exportar";
     back = true;
   } else if (tab === "tablero") sub = "Desempeño de la operación";
 
@@ -61,6 +64,11 @@ export default function AppBar({ rol, tab, detail, arts, peds, onBack, onGuia })
           }}
         >
           <span className="chip-role">{ROLES[rol].full}</span>
+          {rol === "admin" && (
+            <button className="iconbtn" title="Exportar datos" aria-label="Exportar datos" onClick={onExportar}>
+              <Download size={17} />
+            </button>
+          )}
           <button className="iconbtn" title="Guía de uso" onClick={onGuia}>
             <HelpCircle size={17} />
           </button>

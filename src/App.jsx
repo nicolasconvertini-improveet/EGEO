@@ -15,6 +15,7 @@ import Tareas from "./pages/Tareas";
 import Registrar from "./pages/Registrar";
 import Usuarios, { UsuarioForm } from "./pages/Usuarios";
 import Guia from "./pages/Guia";
+import Exportar from "./pages/Exportar";
 
 export default function App() {
   const [session, setSession] = useState(null);
@@ -180,6 +181,7 @@ export default function App() {
         peds={peds}
         onBack={() => setDetail(null)}
         onGuia={() => setDetail({ type: "guia" })}
+        onExportar={() => setDetail({ type: "exportar" })}
       />
       <div className={"body" + (tabs.length === 1 ? " nonav" : "")}>
         {loadingData ? (
@@ -228,6 +230,7 @@ function Screen(props) {
   if (detail?.type === "pedNew") return <PedidoForm {...props} />;
   if (detail?.type === "usrNew") return <UsuarioForm {...props} />;
   if (detail?.type === "guia") return <Guia rol={props.rol} />;
+  if (detail?.type === "exportar") return <Exportar rol={props.rol} />;
   if (tab === "tablero") return <Tablero {...props} />;
   if (tab === "articulos") return <Articulos {...props} />;
   if (tab === "pedidos") return <Pedidos {...props} />;
