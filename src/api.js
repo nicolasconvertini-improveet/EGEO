@@ -240,3 +240,14 @@ export function confirmarTarea(tarea, { ok, scrap, observaciones }) {
     p_observaciones: observaciones,
   });
 }
+
+export async function fetchMotivosParada() {
+  const { data, error } = await supabase
+    .from("motivos_parada")
+    .select("id,nombre,orden")
+    .eq("activo", true)
+    .order("orden", { ascending: true })
+    .order("nombre", { ascending: true });
+  if (error) throw error;
+  return data || [];
+}

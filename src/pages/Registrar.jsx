@@ -328,6 +328,7 @@ export default function Registrar({ arts, peds, notify, reloadPeds, reloadTars, 
               </div>
               <button
                 className="btn btn-primary"
+                style={{ marginTop: 12 }}
                 disabled={busy || cargandoMotivos || !motivos.some((m) => m.nombre === motivo)}
                 onClick={pausar}
               >
