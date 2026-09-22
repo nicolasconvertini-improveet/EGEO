@@ -21,7 +21,7 @@ begin
   end if;
 
   if p_tabla is null or p_tabla not in
-    ('tarea_pausas', 'tareas', 'articulos', 'pedidos') then
+    ('tarea_pausas', 'tareas', 'articulos', 'pedidos', 'perfiles') then
     raise exception 'Tabla no habilitada para exportación'
       using errcode = '22023';
   end if;

@@ -1,4 +1,4 @@
-const TABLAS = new Set(["tarea_pausas", "tareas", "articulos", "pedidos"]);
+const TABLAS = new Set(["tarea_pausas", "tareas", "articulos", "pedidos", "perfiles"]);
 const MAX_FILAS_DATOS = 1048575; // La primera fila se reserva para encabezados.
 
 function valorExcel(valor, columna) {
