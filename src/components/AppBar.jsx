@@ -1,7 +1,20 @@
 import React from "react";
-import { ChevronLeft, LogOut, HelpCircle, LayoutDashboard, Package, ClipboardList, Timer, Boxes, Users, Download } from "lucide-react";
+import {
+  ChevronLeft,
+  LogOut,
+  HelpCircle,
+  LayoutDashboard,
+  Package,
+  ClipboardList,
+  Timer,
+  Boxes,
+  Users,
+  Download,
+  Wrench,
+} from "lucide-react";
 import { supabase } from "../supabaseClient";
 import { ROLES } from "../lib/constants";
+
 import { findArt, findPed } from "../lib/format";
 
 export default function AppBar({ rol, tab, detail, arts, peds, onBack, onGuia, onExportar }) {
@@ -89,6 +102,7 @@ export function tabIcon(t) {
   if (t === "pedidos") return <ClipboardList size={s} />;
   if (t === "tareas") return <Boxes size={s} />;
   if (t === "usuarios") return <Users size={s} />;
+  if (t === "mantenimiento") return <Wrench size={s} />;
   return <Timer size={s} />;
 }
 
@@ -100,4 +114,5 @@ export const tabLabel = (t) =>
     tareas: "Tareas",
     registrar: "Registrar",
     usuarios: "Usuarios",
+    mantenimiento: "Mantenimiento",
   })[t];

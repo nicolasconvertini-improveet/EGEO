@@ -1,4 +1,4 @@
-const TABLAS = new Set(["tarea_pausas", "tareas", "articulos", "pedidos", "perfiles"]);
+const TABLAS = new Set(["tarea_pausas", "tareas", "articulos", "pedidos", "perfiles", "mantenimientos"]);
 const MAX_FILAS_DATOS = 1048575; // La primera fila se reserva para encabezados.
 
 function valorExcel(valor, columna) {
@@ -73,7 +73,8 @@ export async function descargarTablaExcel(tabla, { signal, onEstado = () => {} }
   const [{ supabase }, XLSX] = await Promise.all([import("../supabaseClient"), import("xlsx")]);
   signal?.throwIfAborted();
   onEstado("Leyendo la tabla completa…");
-  let consulta = supabase.rpc("exportar_tabla_completa", { p_tabla: tabla });
+  let consulta =
+    tabla === "mantenimientos" ? supabase.rpc("exportar_mantenimientos") : supabase.rpc("exportar_tabla_completa", { p_tabla: tabla });
   if (signal) consulta = consulta.abortSignal(signal);
   const { data, error } = await consulta;
   signal?.throwIfAborted();

@@ -16,6 +16,8 @@ import Registrar from "./pages/Registrar";
 import Usuarios, { UsuarioForm } from "./pages/Usuarios";
 import Guia from "./pages/Guia";
 import Exportar from "./pages/Exportar";
+import Mantenimiento from "./pages/Mantenimiento";
+import "./mantenimiento.css";
 
 export default function App() {
   const [session, setSession] = useState(null);
@@ -262,5 +264,6 @@ function Screen(props) {
   if (tab === "tareas") return <Tareas {...props} />;
   if (tab === "registrar") return <Registrar {...props} />;
   if (tab === "usuarios") return <Usuarios {...props} />;
+  if (tab === "mantenimiento") return <Mantenimiento {...props} />;
   return null;
 }

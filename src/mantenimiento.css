@@ -1,0 +1,7 @@
+/* Permite recorrer todas las pestañas en teléfonos pequeños. */
+.app .nav {
+  overflow-x: auto;
+}
+.app .nav button {
+  flex: 1 0 58px;
+}

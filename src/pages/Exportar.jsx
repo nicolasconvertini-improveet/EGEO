@@ -3,6 +3,11 @@ import { Download } from "lucide-react";
 import { descargarTablaExcel } from "../lib/exportarExcel";
 
 const TABLAS = [
+  {
+    nombre: "mantenimientos",
+    titulo: "Mantenimientos",
+    detalle: "Todo el historial, con registrante, ejecutor, fecha, detalle, tipo y minutos.",
+  },
   { nombre: "tarea_pausas", titulo: "Pausas de tareas", detalle: "Todos los motivos e intervalos, incluidas las pausas abiertas." },
   { nombre: "tareas", titulo: "Tareas", detalle: "Todo el historial, incluidas las tareas en curso y sin confirmar." },
   { nombre: "articulos", titulo: "Artículos", detalle: "Todo el maestro, incluidos los artículos inactivos." },

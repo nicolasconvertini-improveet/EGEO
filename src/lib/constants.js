@@ -10,18 +10,11 @@ export const actLabel = (k) => ACTS.find((a) => a.key === k)?.label || k;
 export const ROLES = {
   admin: {
     full: "Administrador",
-    tabs: [
-      "tablero",
-      "registrar",
-      "pedidos",
-      "tareas",
-      "articulos",
-      "usuarios",
-    ],
+    tabs: ["tablero", "registrar", "pedidos", "tareas", "mantenimiento", "articulos", "usuarios"],
   },
   supervisor: {
     full: "Supervisor",
-    tabs: ["tablero", "registrar", "pedidos", "tareas"],
+    tabs: ["tablero", "registrar", "pedidos", "tareas", "mantenimiento"],
   },
   operario: { full: "Operario", tabs: ["registrar"] },
 };
