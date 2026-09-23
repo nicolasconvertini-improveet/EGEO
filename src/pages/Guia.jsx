@@ -1,10 +1,48 @@
 import React, { useState } from "react";
-import { ChevronDown, PlayCircle, ClipboardList, Package, Boxes, LayoutDashboard, Users, HelpCircle } from "lucide-react";
+import { ChevronDown, PlayCircle, ClipboardList, Package, Boxes, LayoutDashboard, Users, HelpCircle, Wrench } from "lucide-react";
 
 /* Nivel mínimo de rol que puede ver cada sección (rango: operario 1, supervisor 2, admin 3) */
 const rango = (r) => ({ admin: 3, supervisor: 2, operario: 1 })[r] || 0;
 
 const SECCIONES = [
+  {
+    id: "mantenimiento",
+    min: 2,
+    icon: Wrench,
+    titulo: "Registrar mantenimiento",
+    resumen: "Registrá acciones preventivas o correctivas y descargá su historial.",
+    bloques: [
+      ["1 · Ingresar", "Abrí la pestaña “Mantenimiento”. Esta función está disponible para administradores y supervisores."],
+      [
+        "2 · Identificar al ejecutor",
+        "“Registrado por” se completa automáticamente con tu usuario. En “Ejecutor”, elegí al usuario activo que realizó el mantenimiento. Podés seleccionarte a vos mismo o a otra persona.",
+      ],
+      [
+        "3 · Fecha y detalle",
+        "La fecha de ejecución comienza con el día de hoy; podés cambiarla con el calendario. Describí el trabajo realizado en “Detalle de la tarea”, hasta 5.000 caracteres.",
+      ],
+      [
+        "4 · Tipo y duración",
+        "Marcá “Preventivo” si corresponde a un mantenimiento preventivo. Si dejás la casilla sin marcar, se registra como correctivo. Cargá la duración en minutos enteros mayores que cero: por ejemplo, 90 para una hora y media.",
+      ],
+      [
+        "5 · Guardar",
+        "Tocá “Guardar mantenimiento” y esperá la confirmación. El registro aparece en el historial y el formulario queda listo para una nueva carga. Esta pantalla no permite editar ni borrar registros guardados.",
+      ],
+      [
+        "Si se interrumpe el guardado",
+        "Usá “Reintentar guardado” para reenviar el mismo registro sin duplicarlo. Si necesitás corregir los datos, salí y volvé a entrar; revisá primero el historial para comprobar si ya se guardó.",
+      ],
+      [
+        "Consultar el historial",
+        "El historial se carga al ingresar y muestra 20 registros por página. Para ver cargas realizadas por otros usuarios, salí de la pantalla y volvé a entrar. No se actualiza continuamente.",
+      ],
+      [
+        "Independiente de producción",
+        "Los mantenimientos se guardan por separado. No inician, pausan ni finalizan tareas de producción, y no modifican sus tiempos ni su eficiencia.",
+      ],
+    ],
+  },
   {
     id: "exportar",
     min: 3,
