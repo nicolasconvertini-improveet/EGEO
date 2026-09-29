@@ -1424,3 +1424,84 @@ mark {
   white-space: pre-wrap !important;
   overflow-wrap: anywhere;
 }
+
+/* Buscador de artículos para nuevas órdenes */
+.art-picker {
+  min-width: 0;
+  margin: 18px 0 0;
+  padding: 0;
+  border: 0;
+}
+.art-picker legend {
+  padding: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.art-picker .req {
+  color: var(--bad);
+}
+.art-picker .field input,
+.art-picker .field select {
+  box-sizing: border-box;
+}
+.art-picker-status,
+.art-picker-category {
+  font-size: 12px;
+  color: var(--ink2);
+}
+.art-picker-status {
+  margin: 12px 0;
+}
+.art-picker-results {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 10px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.art-picker-results li + li {
+  margin-top: 8px;
+}
+.art-picker-option,
+.art-picker-selected {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  text-align: left;
+  font: inherit;
+  overflow-wrap: anywhere;
+}
+.art-picker-option {
+  cursor: pointer;
+}
+.art-picker-option:hover {
+  background: #f4f6f8;
+}
+.art-picker-option:focus-visible,
+.art-picker .btn:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: -3px;
+}
+.art-picker-code {
+  font-size: 14px;
+  font-weight: 700;
+}
+.art-picker-name {
+  font-size: 14px;
+  line-height: 1.4;
+}
+.art-picker-selected {
+  margin-top: 8px;
+  border-color: var(--ink);
+}
+.art-picker-selected .btn {
+  margin-top: 8px;
+}

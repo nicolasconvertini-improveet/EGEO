@@ -95,9 +95,25 @@ const SECCIONES = [
     min: 2,
     icon: ClipboardList,
     titulo: "Órdenes",
-    resumen: "Creá órdenes de fabricación y seguí su avance.",
+    resumen: "Buscá y seleccioná el artículo, creá la orden y seguí su avance.",
     bloques: [
-      ["Crear", "“Nueva orden”: código (obligatorio y único), artículo activo y cantidad a fabricar."],
+      ["1 · Nueva orden", "Abrí “Nueva orden” y completá el código de la orden (obligatorio y único)."],
+      [
+        "2 · Buscar el artículo",
+        "Escribí el código o palabras de la descripción, por ejemplo “1204”, “VD50” o “válvula rosca”. La búsqueda ignora mayúsculas y tildes, y permite palabras en distinto orden. Si escribís un código exacto, su coincidencia aparece primero. Solo se muestran artículos activos.",
+      ],
+      [
+        "3 · Filtrar y ver resultados",
+        "Podés elegir una categoría para acotar la búsqueda o dejar “Todas las categorías”. Cada resultado muestra código, descripción y categoría. Se muestran hasta 20 resultados inicialmente; usá “Ver más resultados” para agregar otros 20. Si no hay coincidencias, cambiá la búsqueda o la categoría.",
+      ],
+      [
+        "4 · Seleccionar y revisar",
+        "Tocá el artículo correcto y revisá la ficha con su código, descripción y categoría. No se selecciona ningún artículo automáticamente. Para elegir otro, usá “Cambiar artículo”: vuelve el buscador con la búsqueda y la categoría que estabas usando.",
+      ],
+      [
+        "5 · Crear",
+        "Completá la cantidad a fabricar, mayor que cero, y tocá “Crear orden”. El botón se habilita cuando completaste el código, seleccionaste un artículo activo e ingresaste la cantidad. Esperá la confirmación; los controles se bloquean mientras se guarda.",
+      ],
       ["Estados", "Pendiente (sin producción), En curso (con avance) y Finalizada (todas las etapas llegaron a la cantidad pedida)."],
       [
         "Avance por etapa",

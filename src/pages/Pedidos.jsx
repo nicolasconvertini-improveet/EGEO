@@ -249,17 +249,42 @@ export function PedidoDetalle({ arts, peds, tars, detail, notify }) {
 }
 
 export function PedidoForm({ arts, setDetail, notify, reloadPeds }) {
-  const activos = arts.filter((a) => a.activo);
   const [codigo, setCodigo] = useState("");
-  const [artId, setArtId] = useState(activos[0]?.id || "");
+  const [artId, setArtId] = useState("");
   const [cant, setCant] = useState("");
   const [busy, setBusy] = useState(false);
-  const valid = codigo.trim() && artId && Number(cant) > 0;
+  const [busqueda, setBusqueda] = useState("");
+  const [categoria, setCategoria] = useState("");
+  const [limite, setLimite] = useState(20);
+
+  const activos = useMemo(() => arts.filter((a) => a.activo), [arts]);
+  const categorias = useMemo(
+    () => [...new Set(activos.map((a) => a.categoria).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es")),
+    [activos],
+  );
+  const seleccionado = activos.find((a) => a.id === artId);
+  const resultados = useMemo(() => {
+    const consulta = norm(busqueda.trim());
+    const palabras = consulta.split(/\s+/).filter(Boolean);
+    return activos
+      .filter((a) => {
+        if (categoria && a.categoria !== categoria) return false;
+        const texto = norm(`${a.codigo} ${a.nombre}`);
+        return palabras.every((palabra) => texto.includes(palabra));
+      })
+      .sort((a, b) => {
+        const exactoA = consulta && norm(a.codigo) === consulta ? 1 : 0;
+        const exactoB = consulta && norm(b.codigo) === consulta ? 1 : 0;
+        return exactoB - exactoA || a.nombre.localeCompare(b.nombre, "es") || a.codigo.localeCompare(b.codigo, "es", { numeric: true });
+      });
+  }, [activos, busqueda, categoria]);
+  const valid = codigo.trim() && seleccionado && Number(cant) > 0;
 
   const save = async () => {
+    if (!valid || busy) return;
     setBusy(true);
     try {
-      await createPedido({ codigo, articuloId: artId, cantidad: cant });
+      await createPedido({ codigo, articuloId: seleccionado.id, cantidad: cant });
       await reloadPeds();
       notify("Orden creada");
       setDetail(null);
@@ -273,35 +298,102 @@ export function PedidoForm({ arts, setDetail, notify, reloadPeds }) {
   return (
     <>
       <div className="field">
-        <label>
+        <label htmlFor="orden-codigo">
           Código de orden <span className="req">*</span>
         </label>
-        <input value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="Ej: 20260617" />
+        <input id="orden-codigo" value={codigo} disabled={busy} onChange={(e) => setCodigo(e.target.value)} placeholder="Ej: 20260617" />
       </div>
-      <div className="field">
-        <label>
+
+      <fieldset className="art-picker" disabled={busy}>
+        <legend>
           Artículo <span className="req">*</span>
-        </label>
+        </legend>
         {activos.length === 0 ? (
           <div className="hint-err">No hay artículos activos. Activá o creá uno primero.</div>
+        ) : seleccionado ? (
+          <div className="art-picker-selected">
+            <span className="art-picker-code">{seleccionado.codigo}</span>
+            <span className="art-picker-name">{seleccionado.nombre}</span>
+            <span className="art-picker-category">{seleccionado.categoria || "Sin categoría"}</span>
+            <button type="button" className="btn btn-ghost" onClick={() => setArtId("")}>
+              Cambiar artículo
+            </button>
+          </div>
         ) : (
-          <select value={artId} onChange={(e) => setArtId(e.target.value)}>
-            {activos.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.codigo} · {a.nombre}
-              </option>
-            ))}
-          </select>
+          <>
+            <div className="field">
+              <label htmlFor="art-busqueda">Buscar por código o descripción</label>
+              <input
+                id="art-busqueda"
+                type="search"
+                autoFocus
+                autoComplete="off"
+                placeholder="Ej: 1204, VD50 o válvula rosca"
+                value={busqueda}
+                onChange={(e) => {
+                  setBusqueda(e.target.value);
+                  setLimite(20);
+                }}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="art-categoria">Categoría (opcional)</label>
+              <select
+                id="art-categoria"
+                value={categoria}
+                onChange={(e) => {
+                  setCategoria(e.target.value);
+                  setLimite(20);
+                }}
+              >
+                <option value="">Todas las categorías</option>
+                {categorias.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <p className="art-picker-status" role="status">
+              {resultados.length === 0
+                ? "No hay coincidencias. Probá otra búsqueda o categoría."
+                : `Mostrando ${Math.min(limite, resultados.length)} de ${resultados.length} artículos. Seleccioná uno para continuar.`}
+            </p>
+            <ul className="art-picker-results" aria-label="Artículos encontrados">
+              {resultados.slice(0, limite).map((a) => (
+                <li key={a.id}>
+                  <button type="button" className="art-picker-option" onClick={() => setArtId(a.id)}>
+                    <span className="art-picker-code">{a.codigo}</span>
+                    <span className="art-picker-name">{a.nombre}</span>
+                    <span className="art-picker-category">{a.categoria || "Sin categoría"}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {resultados.length > limite && (
+              <button type="button" className="btn btn-ghost" onClick={() => setLimite((n) => n + 20)}>
+                Ver más resultados
+              </button>
+            )}
+          </>
         )}
-      </div>
+      </fieldset>
+
       <div className="field">
-        <label>
+        <label htmlFor="orden-cantidad">
           Cantidad a fabricar <span className="req">*</span>
         </label>
-        <input value={cant} inputMode="numeric" placeholder="10000" onChange={(e) => setCant(e.target.value.replace(/\D/g, ""))} />
+        <input
+          id="orden-cantidad"
+          value={cant}
+          disabled={busy}
+          inputMode="numeric"
+          placeholder="10000"
+          onChange={(e) => setCant(e.target.value.replace(/\D/g, ""))}
+        />
       </div>
-      <button className="btn btn-primary" style={{ marginTop: 22 }} disabled={!valid || busy} onClick={save}>
-        <Check size={18} strokeWidth={2.5} /> Crear orden
+      <button type="button" className="btn btn-primary" style={{ marginTop: 22 }} disabled={!valid || busy} onClick={save}>
+        <Check size={18} strokeWidth={2.5} /> {busy ? "Creando orden…" : "Crear orden"}
       </button>
     </>
   );
