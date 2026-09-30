@@ -28,10 +28,26 @@ export const handler = async (event) => {
     } catch {
       return json(400, { error: "Datos inválidos" });
     }
-    const { usuarioId, password } = body || {};
+    const { usuarioId, password, accion } = body || {};
     if (typeof usuarioId !== "string" || !/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(usuarioId))
       return json(400, { error: "Usuario inválido" });
     if (usuarioId === data.user.id) return json(400, { error: "Esta opción permite cambiar la contraseña de otros usuarios" });
+    // Solo llega aquí una solicitud de un administrador activo.
+    // Esta acción consulta el correo y termina sin cambiar la contraseña.
+    if (accion === "consultar-email") {
+      const { data: cuenta, error: cuentaError } = await admin.auth.admin.getUserById(usuarioId);
+
+      if (cuentaError || !cuenta?.user?.email) {
+        return json(503, {
+          error: "No se pudo consultar el correo del usuario.",
+        });
+      }
+
+      return json(200, {
+        ok: true,
+        email: cuenta.user.email,
+      });
+    }
     if (typeof password !== "string" || password.length < 6 || password.length > 128)
       return json(400, { error: "La contraseña debe tener entre 6 y 128 caracteres" });
 

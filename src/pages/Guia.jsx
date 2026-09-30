@@ -175,6 +175,10 @@ const SECCIONES = [
     bloques: [
       ["Crear", "Nombre, e-mail, contraseña inicial (mín. 6) y rol. La cuenta queda habilitada al instante."],
       ["Roles", "Operario (registra tareas), Supervisor (además órdenes y tablero) y Administrador (todo). Se cambian con un toque."],
+      [
+        "Cambiar contraseña",
+        "Como administrador, podés cambiar la contraseña de otros usuarios, incluidos otros administradores. En su tarjeta tocá “Cambiar contraseña”, ingresá la nueva contraseña (entre 6 y 128 caracteres), repetila y tocá “Guardar contraseña”. Esperá la confirmación y compartila con esa persona por un medio seguro. Si aparece un requisito adicional de seguridad, elegí una contraseña más fuerte. Esta opción no aparece en tu propia tarjeta y no activa las cuentas desactivadas.",
+      ],
       ["Activar / desactivar", "Podés dar de baja a alguien sin borrar su historial. No podés cambiar tu propio rol ni desactivarte."],
     ],
   },

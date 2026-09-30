@@ -130,6 +130,40 @@ export async function crearUsuario({ email, password, nombre, rol }) {
   return payload;
 }
 
+export async function consultarEmailUsuario(usuarioId) {
+  const { data } = await supabase.auth.getSession();
+  const token = data?.session?.access_token;
+
+  if (!token) {
+    throw new Error("Sesión vencida. Volvé a ingresar.");
+  }
+
+  const res = await fetch("/.netlify/functions/cambiar-password", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      usuarioId,
+      accion: "consultar-email",
+    }),
+  });
+
+  let payload;
+  try {
+    payload = await res.json();
+  } catch {
+    // La función puede no estar publicada todavía.
+  }
+
+  if (!res.ok || payload?.ok !== true || !payload?.email) {
+    throw new Error(payload?.error || "No se pudo consultar el correo del usuario.");
+  }
+
+  return payload.email;
+}
+
 export async function cambiarPasswordUsuario(usuarioId, password) {
   const { data } = await supabase.auth.getSession();
   const token = data?.session?.access_token;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Check, Users, UserPlus } from "lucide-react";
-import { fetchUsuarios, updateUsuario, crearUsuario, cambiarPasswordUsuario } from "../api";
+import { fetchUsuarios, updateUsuario, crearUsuario, cambiarPasswordUsuario, consultarEmailUsuario } from "../api";
 import { norm } from "../lib/format";
 import SearchBox from "../components/SearchBox";
 import Highlight from "../components/Highlight";
@@ -229,12 +229,32 @@ function CambioPassword({ usuario, notify }) {
   const [confirmacion, setConfirmacion] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const valid = password.length >= 6 && password.length <= 128 && password === confirmacion;
+  const [email, setEmail] = useState("");
+  const [cargandoEmail, setCargandoEmail] = useState(false);
+  const valid = Boolean(email) && !cargandoEmail && password.length >= 6 && password.length <= 128 && password === confirmacion;
+  const abrir = async () => {
+    if (cargandoEmail) return;
+
+    setEmail("");
+    setError("");
+    setCargandoEmail(true);
+
+    try {
+      const correo = await consultarEmailUsuario(usuario.id);
+      setEmail(correo);
+      setAbierto(true);
+    } catch (e) {
+      notify(e.message || "No se pudo consultar el correo", true);
+    } finally {
+      setCargandoEmail(false);
+    }
+  };
   const cerrar = () => {
     setPassword("");
     setConfirmacion("");
     setError("");
     setAbierto(false);
+    setEmail("");
   };
   const guardar = async (event) => {
     event.preventDefault();
@@ -253,12 +273,16 @@ function CambioPassword({ usuario, notify }) {
   };
   if (!abierto)
     return (
-      <button type="button" className="btn btn-ghost" style={{ marginTop: 12 }} onClick={() => setAbierto(true)}>
-        Cambiar contraseña
+      <button type="button" className="btn btn-ghost" style={{ marginTop: 12 }} disabled={cargandoEmail} onClick={abrir}>
+        {cargandoEmail ? "Consultando correo…" : "Cambiar contraseña"}
       </button>
     );
   return (
     <form onSubmit={guardar} style={{ marginTop: 12 }} aria-label={`Cambiar contraseña de ${usuario.nombre}`}>
+      <div className="field">
+        <label htmlFor={`email-${usuario.id}`}>Correo asociado</label>
+        <input id={`email-${usuario.id}`} type="email" value={email} readOnly style={{ background: "#f4f6f8", cursor: "text" }} />
+      </div>
       <p style={{ fontSize: 13 }}>
         Nueva contraseña para <strong>{usuario.nombre}</strong>. Compartila con esa persona por un medio seguro.
       </p>
