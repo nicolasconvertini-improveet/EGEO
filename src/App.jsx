@@ -22,6 +22,7 @@ import "./mantenimiento.css";
 export default function App() {
   const [session, setSession] = useState(null);
   const [perfil, setPerfil] = useState(null);
+  const [errorPerfil, setErrorPerfil] = useState("");
   const [booting, setBooting] = useState(true);
   const [tab, setTab] = useState("registrar");
   const [detail, setDetail] = useState(null);
@@ -70,6 +71,7 @@ export default function App() {
   useEffect(() => {
     if (!usuarioId) return;
     let vigente = true;
+    setErrorPerfil("");
     fetchPerfil(usuarioId)
       .then((p) => {
         if (!vigente) return;
@@ -77,7 +79,7 @@ export default function App() {
         setTab(ROLES[p.rol]?.tabs[0] || "registrar");
         setDetail(null);
       })
-      .catch(() => vigente && notify("No se pudo cargar el perfil", true));
+      .catch(() => vigente && setErrorPerfil("No se pudo validar tu sesión. Volvé a ingresar o reintentá la conexión."));
     return () => {
       vigente = false;
     };
@@ -119,9 +121,16 @@ export default function App() {
     let vigente = true;
     setLoadingData(true);
     setErrorDatos(null);
-    Promise.all([fetchArticulos(), fetchPedidos(), fetchTareas({ desdeDias: 60, limit: 500 }), contarTareasEnCurso()])
-      .then(([nuevosArts, nuevosPeds, nuevasTars, nuevoEnCurso]) => {
+    Promise.all([
+      fetchArticulos(),
+      fetchPedidos(),
+      fetchTareas({ desdeDias: 60, limit: 500 }),
+      contarTareasEnCurso(),
+      fetchPerfil(usuarioId),
+    ])
+      .then(([nuevosArts, nuevosPeds, nuevasTars, nuevoEnCurso, perfilActual]) => {
         if (!vigente) return;
+        setPerfil(perfilActual);
         setArts(nuevosArts);
         setPeds(nuevosPeds);
         setTars(nuevasTars);
@@ -129,7 +138,12 @@ export default function App() {
         setDatosCargados(clavePantalla);
       })
       .catch(() => {
-        if (vigente) setErrorDatos({ clave: clavePantalla, mensaje: "No se pudieron cargar los datos de la pantalla." });
+        if (vigente) {
+          setArts([]);
+          setPeds([]);
+          setTars([]);
+          setErrorDatos({ clave: clavePantalla, mensaje: "No se pudieron validar la sesión y los datos. Reintentá o volvé a ingresar." });
+        }
       })
       .finally(() => {
         if (vigente) setLoadingData(false);
@@ -152,6 +166,20 @@ export default function App() {
     return (
       <Shell>
         <Login />
+      </Shell>
+    );
+  if (errorPerfil)
+    return (
+      <Shell>
+        <div className="center" style={{ padding: 30 }}>
+          <p role="alert">{errorPerfil}</p>
+          <button className="btn btn-ghost" onClick={() => window.location.reload()}>
+            Reintentar
+          </button>
+          <button className="btn btn-ghost" onClick={() => supabase.auth.signOut()}>
+            Volver a ingresar
+          </button>
+        </div>
       </Shell>
     );
   if (perfil && !perfil.activo)
@@ -210,6 +238,9 @@ export default function App() {
             <button className="btn btn-primary" onClick={() => setReintento((n) => n + 1)}>
               Reintentar
             </button>
+            <button className="btn btn-ghost" onClick={() => supabase.auth.signOut()}>
+              Volver a ingresar
+            </button>
           </div>
         ) : loadingData || datosCargados !== clavePantalla ? (
           <div className="center" style={{ minHeight: 260 }}>
@@ -251,6 +282,22 @@ export default function App() {
 /* ---------- Router de pantallas ---------- */
 function Screen(props) {
   const { tab, detail } = props;
+  const permitidas = ROLES[props.rol]?.tabs || [];
+  const permisoDetalle = {
+    art: ["admin"],
+    artNew: ["admin"],
+    ped: ["admin", "supervisor"],
+    pedNew: ["admin", "supervisor"],
+    usrNew: ["admin"],
+    exportar: ["admin"],
+    guia: ["admin", "supervisor", "operario"],
+  };
+  if ((detail && !permisoDetalle[detail.type]?.includes(props.rol)) || (!detail && !permitidas.includes(tab)))
+    return (
+      <div className="card" role="alert">
+        Tu rol no tiene acceso a esta pantalla. Elegí una opción habilitada.
+      </div>
+    );
   if (detail?.type === "art") return <ArticuloDetalle {...props} />;
   if (detail?.type === "artNew") return <ArticuloForm {...props} />;
   if (detail?.type === "ped") return <PedidoDetalle {...props} />;

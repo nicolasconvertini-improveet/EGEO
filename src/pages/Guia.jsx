@@ -114,7 +114,22 @@ const SECCIONES = [
         "5 · Crear",
         "Completá la cantidad a fabricar, mayor que cero, y tocá “Crear orden”. El botón se habilita cuando completaste el código, seleccionaste un artículo activo e ingresaste la cantidad. Esperá la confirmación; los controles se bloquean mientras se guarda.",
       ],
-      ["Estados", "Pendiente (sin producción), En curso (con avance) y Finalizada (todas las etapas llegaron a la cantidad pedida)."],
+      [
+        "Estados",
+        "Pendiente, En curso, Cancelada y Finalizada. Al iniciar una tarea, la orden pasa a En curso. Se finaliza automáticamente al alcanzar la cantidad requerida en todas las etapas, o manualmente por un supervisor o administrador.",
+      ],
+      [
+        "Cambiar estado",
+        "Desde el detalle de la orden, supervisores y administradores pueden pasar de Pendiente a En curso o Cancelada, y de En curso a Finalizada. Elegí la acción, escribí el motivo obligatorio y tocá “Confirmar cambio de estado”. Para cancelar o finalizar manualmente, primero deben registrarse todas las tareas abiertas, pausadas o pendientes de confirmar. El cierre manual no modifica las piezas producidas.",
+      ],
+      [
+        "Reabrir una cancelada",
+        "Elegí “Reabrir automáticamente”. El sistema decide Pendiente si nunca tuvo tareas, o En curso si tuvo actividad, incluso con cero piezas. Las órdenes finalizadas no admiten cambios manuales. No se pueden iniciar tareas en órdenes canceladas o finalizadas.",
+      ],
+      [
+        "Historial de estados",
+        "En el detalle se conserva el estado anterior y nuevo, la fecha, el usuario, su rol y el motivo de cada cambio manual. Usá “Ver más cambios” para consultar registros anteriores. El historial no se puede editar ni borrar desde la aplicación. Si se pierde la respuesta del guardado, usá “Reintentar el mismo cambio”.",
+      ],
       [
         "Avance por etapa",
         "Una pieza se considera completa cuando pasó por todas las etapas que el artículo requiere. El avance es el de la etapa más atrasada.",

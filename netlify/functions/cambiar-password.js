@@ -1,27 +1,11 @@
-import { createClient } from "@supabase/supabase-js";
-
-const json = (statusCode, body) => ({
-  statusCode,
-  headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
-  body: JSON.stringify(body),
-});
+import { exigirSesion, json } from "../lib/sesion.js";
 
 export const handler = async (event) => {
   if (event.httpMethod !== "POST") return json(405, { error: "Método no permitido" });
-  const token = /^Bearer\s+(.+)$/i.exec(event.headers?.authorization || event.headers?.Authorization || "")?.[1];
-  if (!token) return json(401, { error: "Falta la sesión" });
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) return json(500, { error: "Faltan variables de entorno en el servidor" });
-
+  const acceso = await exigirSesion(event, ["admin"]);
+  if (acceso.response) return acceso.response;
+  const { admin, user } = acceso;
   try {
-    const admin = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
-    const { data, error } = await admin.auth.getUser(token);
-    if (error || !data?.user) return json(401, { error: "Sesión inválida. Volvé a ingresar." });
-    const { data: perfil, error: perfilError } = await admin.from("perfiles").select("rol, activo").eq("id", data.user.id).single();
-    if (perfilError || perfil?.rol !== "admin" || perfil.activo !== true)
-      return json(403, { error: "Sólo un administrador activo puede cambiar contraseñas" });
-
     let body;
     try {
       body = JSON.parse(event.body || "{}");
@@ -31,7 +15,7 @@ export const handler = async (event) => {
     const { usuarioId, password, accion } = body || {};
     if (typeof usuarioId !== "string" || !/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(usuarioId))
       return json(400, { error: "Usuario inválido" });
-    if (usuarioId === data.user.id) return json(400, { error: "Esta opción permite cambiar la contraseña de otros usuarios" });
+    if (usuarioId === user.id) return json(400, { error: "Esta opción permite cambiar la contraseña de otros usuarios" });
     // Solo llega aquí una solicitud de un administrador activo.
     // Esta acción consulta el correo y termina sin cambiar la contraseña.
     if (accion === "consultar-email") {

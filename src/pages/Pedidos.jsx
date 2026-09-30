@@ -5,6 +5,7 @@ import { ACTS, actLabel, rango } from "../lib/constants";
 import { nf, fmtDT, fmtHora, fmtClock, efficiency, effColor, estadoLabel, estadoBadge, findArt, findPed, norm } from "../lib/format";
 import SearchBox from "../components/SearchBox";
 import Highlight from "../components/Highlight";
+import EstadoPedido from "../components/EstadoPedido";
 
 export default function Pedidos({ rol, peds, setDetail }) {
   const [q, setQ] = useState("");
@@ -94,7 +95,7 @@ export default function Pedidos({ rol, peds, setDetail }) {
   );
 }
 
-export function PedidoDetalle({ arts, peds, tars, detail, notify }) {
+export function PedidoDetalle({ arts, peds, tars, detail, notify, rol, reloadPeds }) {
   const [etapas, setEtapas] = useState(null);
   const pedidoId = detail?.id;
 
@@ -172,10 +173,17 @@ export function PedidoDetalle({ arts, peds, tars, detail, notify }) {
             {p.etapasCompletas} de {p.etapasReq} etapa
             {p.etapasReq === 1 ? "" : "s"} completa
             {p.etapasCompletas === 1 ? "" : "s"}
-            {p.etapasCompletas < p.etapasReq && " · falta terminar las demás para cerrar la orden"}
+            {p.etapasCompletas < p.etapasReq &&
+              (p.estado === "finalizado"
+                ? " · cerrada con etapas incompletas"
+                : p.estado === "cancelado"
+                  ? " · orden cancelada"
+                  : " · quedan etapas para completar la producción")}
           </div>
         )}
       </div>
+
+      {rango(rol) >= 2 && <EstadoPedido key={p.id} pedidoId={p.id} notify={notify} reloadPeds={reloadPeds} />}
 
       <div className="sec-title" style={{ marginTop: 18 }}>
         Totales por etapa
@@ -315,6 +323,29 @@ export function PedidoForm({ arts, setDetail, notify, reloadPeds }) {
             <span className="art-picker-code">{seleccionado.codigo}</span>
             <span className="art-picker-name">{seleccionado.nombre}</span>
             <span className="art-picker-category">{seleccionado.categoria || "Sin categoría"}</span>
+            <section aria-label="Tiempos estándar del artículo" style={{ marginTop: 10 }}>
+              <div style={{ fontSize: 13, fontWeight: 600 }}>Tiempos estándar por pieza</div>
+              <div className="stds">
+                {ACTS.map((proceso) => {
+                  const segundos = Number(seleccionado.std?.[proceso.key]);
+                  const aplica = Number.isFinite(segundos) && segundos > 0;
+                  return (
+                    <div className="std" key={proceso.key}>
+                      <div className="l">{proceso.label}</div>
+                      <div className="v">
+                        {aplica ? (
+                          <>
+                            {nf(segundos)} <small>s/pieza</small>
+                          </>
+                        ) : (
+                          "no aplica"
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
             <button type="button" className="btn btn-ghost" onClick={() => setArtId("")}>
               Cambiar artículo
             </button>

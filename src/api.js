@@ -2,8 +2,9 @@ import { supabase } from "./supabaseClient";
 
 /* ---------- Perfil / rol ---------- */
 export async function fetchPerfil(userId) {
-  const { data, error } = await supabase.from("perfiles").select("*").eq("id", userId).single();
+  const { data, error } = await supabase.rpc("validar_sesion");
   if (error) throw error;
+  if (data?.id !== userId) throw new Error("La sesión cambió. Volvé a ingresar.");
   return data; // { id, nombre, rol, activo }
 }
 
@@ -71,12 +72,56 @@ export async function fetchPedidos() {
     articuloCodigo: p.articulo_codigo,
     cantidad: p.cantidad,
     estado: p.estado,
+    estadoRevision: p.estado_revision,
     okAcum: p.ok_acum, // piezas completas (etapa más atrasada)
     okBruto: p.ok_bruto, // volumen total trabajado
     etapasReq: p.etapas_req,
     etapasCompletas: p.etapas_completas,
     scrapAcum: p.scrap_acum,
   }));
+}
+
+export async function consultarEstadoPedido(id) {
+  const { data, error } = await supabase.from("pedidos").select("id, estado, estado_revision").eq("id", id).single();
+  if (error) throw error;
+  return data;
+}
+
+export async function fetchHistorialEstado(id, limite = 20) {
+  const registros = [];
+  let count = 0;
+  // Páginas pequeñas: permite consultar el historial más allá del límite
+  // de filas por respuesta de Supabase, sin truncarlo silenciosamente.
+  while (registros.length < limite) {
+    const {
+      data,
+      count: total,
+      error,
+    } = await supabase
+      .from("pedido_estado_historial")
+      .select("*", { count: "exact" })
+      .eq("pedido_id", id)
+      .order("creado", { ascending: false })
+      .order("id", { ascending: false })
+      .range(registros.length, Math.min(registros.length + 99, limite - 1));
+    if (error) throw error;
+    count = total;
+    registros.push(...data);
+    if (!data.length || registros.length >= count) break;
+  }
+  return { data: registros, count };
+}
+
+export async function cambiarEstadoPedido({ id, pedidoId, revision, accion, motivo }) {
+  const { data, error } = await supabase.rpc("cambiar_estado_pedido", {
+    p_solicitud: id,
+    p_pedido: pedidoId,
+    p_revision: revision,
+    p_accion: accion,
+    p_motivo: motivo,
+  });
+  if (error) throw error;
+  return data;
 }
 
 export async function createPedido({ codigo, articuloId, cantidad }) {

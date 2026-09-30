@@ -75,7 +75,7 @@ export default function Registrar({ arts, peds, notify, reloadPeds, reloadTars, 
     (activa?.pausaSec || 0) +
     (activa?.pausaId ? Math.max(0, Math.floor((servidorAhora - new Date(activa.servidorAhora).getTime()) / 1000)) : 0);
 
-  const disponibles = useMemo(() => peds.filter((p) => p.estado !== "finalizado"), [peds]);
+  const disponibles = useMemo(() => peds.filter((p) => ["pendiente", "en_curso"].includes(p.estado)), [peds]);
   const opciones = useMemo(() => {
     const nq = norm(qPed.trim());
     if (!nq) return disponibles;
