@@ -53,9 +53,17 @@ export function effColor(e) {
 }
 
 export const estadoLabel = (e) =>
-  ({ pendiente: "Pendiente", en_curso: "En curso", finalizado: "Finalizada", cancelado: "Cancelada" })[e] || e;
+  ({
+    pendiente: "Pendiente",
+    en_curso: "En curso",
+    finalizado: "Finalizada",
+    cancelado: "Cancelada",
+    finalizado_pendientes: "Finalizada con pendientes",
+  })[e] || e;
 
-export const estadoBadge = (e) => ({ pendiente: "b-pend", en_curso: "b-curso", finalizado: "b-fin", cancelado: "b-off" })[e] || "b-pend";
+export const estadoBadge = (e) =>
+  ({ pendiente: "b-pend", en_curso: "b-curso", finalizado: "b-fin", cancelado: "b-off", finalizado_pendientes: "b-pendientes" })[e] ||
+  "b-pend";
 
 export const findArt = (arts, id) => arts.find((a) => a.id === id);
 

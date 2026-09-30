@@ -288,6 +288,14 @@ body {
   background: #eef1f4;
   color: #67707a;
 }
+.b-pendientes {
+  background: #fff3cd;
+  color: #755600;
+  white-space: normal;
+  max-width: 145px;
+  flex-shrink: 0;
+  text-align: center;
+}
 .b-fin {
   background: #e9edfa;
   color: #4a5aa8;

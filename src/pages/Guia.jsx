@@ -116,19 +116,19 @@ const SECCIONES = [
       ],
       [
         "Estados",
-        "Pendiente, En curso, Cancelada y Finalizada. Al iniciar una tarea, la orden pasa a En curso. Se finaliza automáticamente al alcanzar la cantidad requerida en todas las etapas, o manualmente por un supervisor o administrador.",
+        "Pendiente, En curso, Cancelada, Finalizada y Finalizada con pendientes. El cierre automático por producción completa queda Finalizada. Al cerrar manualmente, si faltan piezas en alguna etapa requerida queda Finalizada con pendientes; si se completó todo, queda Finalizada.",
       ],
       [
         "Cambiar estado",
         "Desde el detalle de la orden, supervisores y administradores pueden pasar de Pendiente a En curso o Cancelada, y de En curso a Finalizada. Elegí la acción, escribí el motivo obligatorio y tocá “Confirmar cambio de estado”. Para cancelar o finalizar manualmente, primero deben registrarse todas las tareas abiertas, pausadas o pendientes de confirmar. El cierre manual no modifica las piezas producidas.",
       ],
       [
-        "Reabrir una cancelada",
-        "Elegí “Reabrir automáticamente”. El sistema decide Pendiente si nunca tuvo tareas, o En curso si tuvo actividad, incluso con cero piezas. Las órdenes finalizadas no admiten cambios manuales. No se pueden iniciar tareas en órdenes canceladas o finalizadas.",
+        "Reabrir una orden",
+        "Una orden Cancelada o Finalizada con pendientes permite “Reabrir automáticamente”, con motivo obligatorio. El sistema decide Pendiente si nunca tuvo tareas, o En curso si tuvo actividad, incluso con cero piezas. Las Finalizadas con producción completa no se reabren. Para iniciar nuevas tareas, primero hay que reabrir las órdenes cerradas o canceladas.",
       ],
       [
         "Historial de estados",
-        "En el detalle se conserva el estado anterior y nuevo, la fecha, el usuario, su rol y el motivo de cada cambio manual. Usá “Ver más cambios” para consultar registros anteriores. El historial no se puede editar ni borrar desde la aplicación. Si se pierde la respuesta del guardado, usá “Reintentar el mismo cambio”.",
+        "Se registra cada cambio efectivo de estado, tanto manual como automático. Los cambios del proceso, como iniciar actividad o completar la producción, tienen motivo “automatico”, una explicación adicional y el usuario que originó la operación cuando está disponible. Los manuales conservan el motivo escrito; no se puede usar “automatico” como motivo manual. La actualización de cierres antiguos incompletos aparece como “Reclasificación del sistema”. Usá “Ver más cambios” para consultar registros anteriores. El historial no se puede editar ni borrar desde la aplicación. No se reconstruyen cambios automáticos anteriores a la activación de este registro.",
       ],
       [
         "Avance por etapa",

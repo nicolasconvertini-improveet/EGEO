@@ -9,6 +9,7 @@ const OPCIONES = {
   ],
   en_curso: [["finalizado", "Finalizar orden"]],
   cancelado: [["reabrir", "Reabrir automáticamente"]],
+  finalizado_pendientes: [["reabrir", "Reabrir automáticamente"]],
   finalizado: [],
 };
 
@@ -18,6 +19,12 @@ export default function EstadoPedido({ pedidoId, notify, reloadPeds }) {
   const [total, setTotal] = useState(0);
   const [accion, setAccion] = useState("");
   const [motivo, setMotivo] = useState("");
+  const motivoAutomatico =
+    motivo
+      .trim()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase() === "automatico";
   const [busy, setBusy] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
@@ -46,7 +53,7 @@ export default function EstadoPedido({ pedidoId, notify, reloadPeds }) {
 
   const guardar = async (event) => {
     event.preventDefault();
-    if (enviando.current || !actual || cargando || (!pendiente && (!accion || !motivo.trim()))) return;
+    if (enviando.current || !actual || cargando || (!pendiente && (!accion || !motivo.trim() || motivoAutomatico))) return;
     const solicitud = pendiente || {
       id: crypto.randomUUID(),
       pedidoId,
@@ -130,7 +137,12 @@ export default function EstadoPedido({ pedidoId, notify, reloadPeds }) {
             </select>
           </div>
           {accion === "reabrir" && <p>Quedará Pendiente si nunca tuvo tareas o En curso si tuvo actividad, incluso con cero piezas.</p>}
-          {accion === "finalizado" && <p>Este cierre es manual: no modifica las piezas ni completa las etapas faltantes.</p>}
+          {accion === "finalizado" && (
+            <p>
+              Si falta producción, quedará Finalizada con pendientes y podrá reabrirse. Si ya se completó, quedará Finalizada. Este cierre
+              no modifica las piezas ni completa etapas.
+            </p>
+          )}
           {["cancelado", "finalizado"].includes(accion) && <p>Primero deben confirmarse todas las tareas de la orden.</p>}
           <div className="field">
             <label htmlFor="estado-motivo">Motivo obligatorio</label>
@@ -144,29 +156,37 @@ export default function EstadoPedido({ pedidoId, notify, reloadPeds }) {
               onChange={(e) => setMotivo(e.target.value)}
             />
           </div>
+          {motivoAutomatico && <p className="hint-err">“automatico” está reservado al proceso. Escribí el motivo del cambio manual.</p>}
           {pendiente && !busy && <p>La respuesta no pudo confirmarse. Reintentá la misma solicitud para evitar duplicados.</p>}
           <button
             type="submit"
             className="btn btn-primary"
             style={{ marginTop: 12 }}
-            disabled={busy || cargando || (!pendiente && (!accion || !motivo.trim()))}
+            disabled={busy || cargando || (!pendiente && (!accion || !motivo.trim() || motivoAutomatico))}
           >
             {busy ? "Guardando…" : pendiente ? "Reintentar el mismo cambio" : "Confirmar cambio de estado"}
           </button>
         </form>
       )}
-      {actual?.estado === "finalizado" && !pendiente && <p>La orden finalizada no admite cambios manuales.</p>}
-      <h3>Historial de cambios manuales</h3>
-      {!cargando && !historial.length && !error && <p>Sin cambios manuales registrados.</p>}
+      {actual?.estado === "finalizado" && !pendiente && <p>La orden finalizada con producción completa no admite cambios manuales.</p>}
+      {actual?.estado === "finalizado_pendientes" && (
+        <p>La orden está cerrada con producción pendiente. Reabrila para continuar trabajando.</p>
+      )}
+      <h3>Historial de estados</h3>
+      {!cargando && !historial.length && !error && <p>Sin cambios de estado registrados.</p>}
       {historial.map((h) => (
         <div key={h.id} style={{ borderTop: "1px solid var(--line)", padding: "12px 0" }}>
           <strong>
             {estadoLabel(h.estado_anterior)} → {estadoLabel(h.estado_nuevo)}
           </strong>
           <div>
-            {fmtDT(h.creado)} · {h.usuario_nombre} · {h.usuario_rol === "admin" ? "Administrador" : "Supervisor"}
+            {fmtDT(h.creado)} ·{" "}
+            {h.origen === "migracion_09"
+              ? "Reclasificación del sistema"
+              : `${h.origen === "automatico" ? "Automático" : h.origen === "sistema" ? "Cambio técnico" : "Manual"} · ${h.usuario_nombre} · ${{ admin: "Administrador", supervisor: "Supervisor", operario: "Operario", sistema: "Sistema" }[h.usuario_rol] || h.usuario_rol}`}
           </div>
           <p style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{h.motivo}</p>
+          {h.detalle_proceso && <p style={{ fontSize: 13, color: "var(--ink2)" }}>{h.detalle_proceso}</p>}
         </div>
       ))}
       {total > historial.length && (

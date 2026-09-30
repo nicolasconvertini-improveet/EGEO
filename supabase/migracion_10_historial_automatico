@@ -1,0 +1,161 @@
+-- Aplicar DESPUÉS de la 09. Audita todos los cambios efectivos de estado.
+-- No inventa transiciones anteriores que no fueron registradas.
+begin;
+
+-- Reservar el valor sin reescribir silenciosamente motivos históricos.
+do $$ begin
+  if exists (select 1 from public.pedido_estado_historial
+             where origen <> 'automatico' and motivo = 'automatico') then
+    raise exception 'Existe un registro histórico no automático con motivo automatico. Revisar ese historial antes de aplicar la migración 10.';
+  end if;
+end $$;
+
+alter table public.pedido_estado_historial add column if not exists detalle_proceso text;
+alter table public.pedido_estado_historial drop constraint if exists pedido_estado_historial_usuario_rol_check;
+alter table public.pedido_estado_historial add constraint pedido_estado_historial_usuario_rol_check
+  check (usuario_rol in ('operario','supervisor','admin','sistema'));
+alter table public.pedido_estado_historial drop constraint if exists pedido_estado_historial_accion_check;
+alter table public.pedido_estado_historial add constraint pedido_estado_historial_accion_check
+  check (accion in ('en_curso','cancelado','finalizado','reabrir','reclasificar','automatico','sistema'));
+alter table public.pedido_estado_historial drop constraint if exists pedido_estado_historial_origen_check;
+alter table public.pedido_estado_historial add constraint pedido_estado_historial_origen_check check (
+  (origen = 'manual' and usuario_id is not null and usuario_rol in ('supervisor','admin')
+    and accion in ('en_curso','cancelado','finalizado','reabrir') and motivo <> 'automatico')
+  or (origen = 'migracion_09' and usuario_id is null and usuario_rol = 'sistema'
+    and accion = 'reclasificar' and motivo <> 'automatico')
+  or (origen = 'automatico' and accion = 'automatico' and motivo = 'automatico'
+    and ((usuario_id is null and usuario_rol = 'sistema')
+      or (usuario_id is not null and usuario_rol in ('operario','supervisor','admin'))))
+  or (origen = 'sistema' and accion = 'sistema' and motivo <> 'automatico'
+    and ((usuario_id is null and usuario_rol = 'sistema')
+      or (usuario_id is not null and usuario_rol in ('operario','supervisor','admin'))))
+);
+
+-- Cada revisión de estado puede tener un solo evento, cualquiera sea su origen.
+create unique index if not exists pedido_historial_revision_unica
+  on public.pedido_estado_historial(pedido_id, revision_nueva);
+
+create or replace function egeo_privado.auditar_estado_pedido()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare
+  v_historial public.pedido_estado_historial%rowtype;
+  v_actor public.perfiles%rowtype;
+  v_automatico boolean := pg_trigger_depth() > 1;
+  v_detalle text;
+begin
+  if new.estado is not distinct from old.estado then return new; end if;
+
+  -- La RPC manual inserta su evento ANTES del UPDATE, en la misma transacción.
+  -- Si ya existe, verificarlo y no fabricar un segundo evento automático.
+  select * into v_historial from public.pedido_estado_historial
+    where pedido_id = new.id and revision_nueva = new.estado_revision;
+  if found then
+    if v_historial.estado_anterior is distinct from old.estado
+       or v_historial.estado_nuevo is distinct from new.estado
+       or v_historial.revision_anterior is distinct from old.estado_revision then
+      raise exception 'El evento de historial no coincide con el cambio de estado';
+    end if;
+    return new;
+  end if;
+
+  select * into v_actor from public.perfiles where id = auth.uid();
+  v_detalle := case
+    when v_automatico and old.estado = 'pendiente' and new.estado = 'en_curso'
+      then 'El proceso registró actividad en la orden.'
+    when v_automatico and new.estado = 'finalizado'
+      then 'La producción registrada alcanzó la cantidad requerida en las etapas aplicables.'
+    when v_automatico then 'El proceso recalculó el estado de la orden.'
+    else 'Cambio directo en la base de datos, fuera de la acción manual de la aplicación.'
+  end;
+  insert into public.pedido_estado_historial (
+    id, pedido_id, estado_anterior, estado_nuevo, accion,
+    revision_anterior, revision_nueva, usuario_id, usuario_nombre,
+    usuario_rol, motivo, origen, detalle_proceso
+  ) values (
+    gen_random_uuid(), new.id, old.estado, new.estado,
+    case when v_automatico then 'automatico' else 'sistema' end,
+    old.estado_revision, new.estado_revision, v_actor.id,
+    coalesce(v_actor.nombre, 'Sistema'), coalesce(v_actor.rol, 'sistema'),
+    case when v_automatico then 'automatico' else 'Cambio directo en la base de datos' end,
+    case when v_automatico then 'automatico' else 'sistema' end,
+    v_detalle
+  );
+  return new;
+end $$;
+revoke all on function egeo_privado.auditar_estado_pedido() from public, anon, authenticated;
+drop trigger if exists trg_historial_estado_pedido on public.pedidos;
+create trigger trg_historial_estado_pedido after update on public.pedidos
+  for each row when (old.estado is distinct from new.estado)
+  execute function egeo_privado.auditar_estado_pedido();
+
+-- Redefinir la RPC manual para que su evento preceda al UPDATE auditado.
+create or replace function public.cambiar_estado_pedido(
+  p_solicitud uuid, p_pedido uuid, p_revision integer, p_accion text, p_motivo text
+) returns jsonb language plpgsql security definer set search_path = '' as $$
+declare
+  v_usuario public.perfiles%rowtype;
+  v_pedido public.pedidos%rowtype;
+  v_historial public.pedido_estado_historial%rowtype;
+  v_destino text;
+begin
+  perform public.validar_sesion();
+  -- Mismo orden de bloqueos que gestionar_tarea: perfil y luego pedido.
+  select * into v_usuario from public.perfiles where id = auth.uid() for share;
+  if not v_usuario.activo or v_usuario.rol not in ('supervisor','admin') then
+    raise exception 'Sólo supervisores y administradores pueden cambiar estados' using errcode = '42501';
+  end if;
+  if p_solicitud is null or p_pedido is null or p_revision is null or p_revision < 0
+     or p_accion is null or p_accion not in ('en_curso','cancelado','finalizado','reabrir')
+     or p_motivo is null or char_length(btrim(p_motivo)) not between 1 and 1000 then
+    raise exception 'Indicá una acción y un motivo de 1 a 1000 caracteres' using errcode = '22023';
+  end if;
+  if translate(lower(btrim(p_motivo)), 'áéíóú', 'aeiou') = 'automatico' then
+    raise exception 'El motivo automatico está reservado al proceso. Escribí el motivo real del cambio manual.' using errcode = '22023';
+  end if;
+  select * into v_pedido from public.pedidos where id = p_pedido for no key update;
+  if not found then raise exception 'La orden no existe' using errcode = '22023'; end if;
+  -- Un reintento conserva su UUID y no genera dos movimientos.
+  select * into v_historial from public.pedido_estado_historial where id = p_solicitud;
+  if found then
+    if v_historial.pedido_id <> p_pedido or v_historial.usuario_id <> v_usuario.id
+       or v_historial.accion <> p_accion or v_historial.motivo <> btrim(p_motivo)
+       or v_historial.revision_anterior <> p_revision then
+      raise exception 'La solicitud ya corresponde a otro cambio' using errcode = '22023';
+    end if;
+    return to_jsonb(v_historial);
+  end if;
+  if v_pedido.estado_revision <> p_revision then
+    raise exception 'La orden cambió. Actualizá el estado antes de continuar.' using errcode = '40001';
+  end if;
+  if v_pedido.estado = 'pendiente' and p_accion in ('en_curso','cancelado') then
+    v_destino := p_accion;
+  elsif v_pedido.estado = 'en_curso' and p_accion = 'finalizado' then
+    v_destino := case when coalesce((select avance from public.avance_pedido(p_pedido)), 0) >= v_pedido.cantidad
+      then 'finalizado' else 'finalizado_pendientes' end;
+  elsif v_pedido.estado in ('cancelado','finalizado_pendientes') and p_accion = 'reabrir' then
+    v_destino := case when exists(select 1 from public.tareas where pedido_id = p_pedido)
+      then 'en_curso' else 'pendiente' end;
+  else
+    raise exception 'Ese cambio de estado no está permitido' using errcode = '22023';
+  end if;
+  if v_destino in ('cancelado','finalizado','finalizado_pendientes') and exists (
+    select 1 from public.tareas where pedido_id = p_pedido and not confirmada
+  ) then
+    raise exception 'Hay tareas abiertas, pausadas o pendientes de confirmar. Registralas primero.' using errcode = '22023';
+  end if;
+
+  insert into public.pedido_estado_historial(
+    id, pedido_id, estado_anterior, estado_nuevo, accion, revision_anterior, revision_nueva,
+    usuario_id, usuario_nombre, usuario_rol, motivo
+  ) values (
+    p_solicitud, p_pedido, v_pedido.estado, v_destino, p_accion, p_revision, p_revision + 1,
+    v_usuario.id, v_usuario.nombre, v_usuario.rol, btrim(p_motivo)
+  ) returning * into v_historial;
+  update public.pedidos set estado = v_destino where id = p_pedido;
+  return to_jsonb(v_historial);
+end $$;
+
+revoke all on function public.cambiar_estado_pedido(uuid,uuid,integer,text,text) from public, anon;
+grant execute on function public.cambiar_estado_pedido(uuid,uuid,integer,text,text) to authenticated;
+notify pgrst, 'reload schema';
+commit;

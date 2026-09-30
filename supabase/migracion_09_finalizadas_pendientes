@@ -1,0 +1,306 @@
+-- Aplicar completa DESPUÉS de la migración 08. Preserva sesiones y auditoría.
+begin;
+
+alter table public.pedidos drop constraint if exists pedidos_estado_check;
+alter table public.pedidos add constraint pedidos_estado_check
+  check (estado in ('pendiente','en_curso','finalizado','cancelado','finalizado_pendientes'));
+
+-- Registrar la reclasificación de órdenes existentes sin atribuirla a un usuario.
+-- Las operaciones de la aplicación continúan siendo manuales y con autor.
+alter table public.pedido_estado_historial
+  add column if not exists origen text not null default 'manual';
+alter table public.pedido_estado_historial alter column usuario_id drop not null;
+alter table public.pedido_estado_historial drop constraint if exists pedido_estado_historial_usuario_rol_check;
+alter table public.pedido_estado_historial add constraint pedido_estado_historial_usuario_rol_check
+  check (usuario_rol in ('supervisor','admin','sistema'));
+alter table public.pedido_estado_historial drop constraint if exists pedido_estado_historial_accion_check;
+alter table public.pedido_estado_historial add constraint pedido_estado_historial_accion_check
+  check (accion in ('en_curso','cancelado','finalizado','reabrir','reclasificar'));
+alter table public.pedido_estado_historial drop constraint if exists pedido_estado_historial_origen_check;
+alter table public.pedido_estado_historial add constraint pedido_estado_historial_origen_check check (
+  (origen = 'manual' and usuario_id is not null and usuario_rol in ('supervisor','admin')
+    and accion in ('en_curso','cancelado','finalizado','reabrir'))
+  or (origen = 'migracion_09' and usuario_id is null and usuario_rol = 'sistema' and accion = 'reclasificar')
+);
+
+-- El cálculo interno solo lo usan funciones del propietario y la migración.
+-- La RPC pública conserva validar_sesion antes de devolver datos.
+create or replace function egeo_privado.avance_pedido_interno(p_pedido uuid)
+returns table(avance int, bruto int, etapas_req int, etapas_completas int)
+language plpgsql stable security definer set search_path = public as $$
+declare
+  v_meta  int;
+  v_std   jsonb;
+  k       text;
+  v_ok    int;
+  v_min   int := null;
+  v_sum   int := 0;
+  v_req   int := 0;
+  v_comp  int := 0;
+begin
+
+  select p.cantidad,
+         jsonb_build_object(
+           'inyectado', a.std_inyectado, 'rebabado', a.std_rebabado,
+           'armado',    a.std_armado,    'embolsado', a.std_embolsado)
+    into v_meta, v_std
+    from public.pedidos p
+    join public.articulos a on a.id = p.articulo_id
+   where p.id = p_pedido;
+
+  if v_meta is null then
+    return;
+  end if;
+
+  -- recorre las cuatro etapas y considera sólo las que el artículo usa
+  for k in select jsonb_object_keys(v_std) loop
+    if coalesce((v_std->>k)::numeric, 0) > 0 then
+      select coalesce(sum(piezas_ok), 0)::int into v_ok
+        from public.tareas
+       where pedido_id = p_pedido and actividad = k and confirmada = true;
+
+      v_req := v_req + 1;
+      v_sum := v_sum + v_ok;
+      if v_min is null or v_ok < v_min then v_min := v_ok; end if;
+      if v_ok >= v_meta then v_comp := v_comp + 1; end if;
+    end if;
+  end loop;
+
+  -- si el artículo no tiene ningún estándar cargado, se toma el total
+  if v_req = 0 then
+    select coalesce(sum(piezas_ok), 0)::int into v_sum
+      from public.tareas where pedido_id = p_pedido and confirmada = true;
+    v_min := v_sum;
+  end if;
+
+  avance := coalesce(v_min, 0);
+  bruto := v_sum;
+  etapas_req := v_req;
+  etapas_completas := v_comp;
+  return next;
+end; $$;
+revoke all on function egeo_privado.avance_pedido_interno(uuid) from public, anon, authenticated;
+
+create or replace function public.avance_pedido(p_pedido uuid)
+returns table(avance int, bruto int, etapas_req int, etapas_completas int)
+language plpgsql stable security definer set search_path = '' as $$
+begin
+  perform public.validar_sesion();
+  return query select * from egeo_privado.avance_pedido_interno(p_pedido);
+end $$;
+revoke all on function public.avance_pedido(uuid) from public, anon;
+grant execute on function public.avance_pedido(uuid) to authenticated;
+create or replace function public.cambiar_estado_pedido(
+  p_solicitud uuid, p_pedido uuid, p_revision integer, p_accion text, p_motivo text
+) returns jsonb language plpgsql security definer set search_path = '' as $$
+declare
+  v_usuario public.perfiles%rowtype;
+  v_pedido public.pedidos%rowtype;
+  v_historial public.pedido_estado_historial%rowtype;
+  v_destino text;
+begin
+  perform public.validar_sesion();
+  -- Mismo orden de bloqueos que gestionar_tarea: perfil y luego pedido.
+  select * into v_usuario from public.perfiles where id = auth.uid() for share;
+  if not v_usuario.activo or v_usuario.rol not in ('supervisor','admin') then
+    raise exception 'Sólo supervisores y administradores pueden cambiar estados' using errcode = '42501';
+  end if;
+  if p_solicitud is null or p_pedido is null or p_revision is null or p_revision < 0
+     or p_accion is null or p_accion not in ('en_curso','cancelado','finalizado','reabrir')
+     or p_motivo is null or char_length(btrim(p_motivo)) not between 1 and 1000 then
+    raise exception 'Indicá una acción y un motivo de 1 a 1000 caracteres' using errcode = '22023';
+  end if;
+  select * into v_pedido from public.pedidos where id = p_pedido for no key update;
+  if not found then raise exception 'La orden no existe' using errcode = '22023'; end if;
+  -- Un reintento conserva su UUID y no genera dos movimientos.
+  select * into v_historial from public.pedido_estado_historial where id = p_solicitud;
+  if found then
+    if v_historial.pedido_id <> p_pedido or v_historial.usuario_id <> v_usuario.id
+       or v_historial.accion <> p_accion or v_historial.motivo <> btrim(p_motivo)
+       or v_historial.revision_anterior <> p_revision then
+      raise exception 'La solicitud ya corresponde a otro cambio' using errcode = '22023';
+    end if;
+    return to_jsonb(v_historial);
+  end if;
+  if v_pedido.estado_revision <> p_revision then
+    raise exception 'La orden cambió. Actualizá el estado antes de continuar.' using errcode = '40001';
+  end if;
+  if v_pedido.estado = 'pendiente' and p_accion in ('en_curso','cancelado') then
+    v_destino := p_accion;
+  elsif v_pedido.estado = 'en_curso' and p_accion = 'finalizado' then
+    v_destino := case when coalesce((select avance from public.avance_pedido(p_pedido)), 0) >= v_pedido.cantidad
+      then 'finalizado' else 'finalizado_pendientes' end;
+  elsif v_pedido.estado in ('cancelado','finalizado_pendientes') and p_accion = 'reabrir' then
+    v_destino := case when exists(select 1 from public.tareas where pedido_id = p_pedido)
+      then 'en_curso' else 'pendiente' end;
+  else
+    raise exception 'Ese cambio de estado no está permitido' using errcode = '22023';
+  end if;
+  if v_destino in ('cancelado','finalizado','finalizado_pendientes') and exists (
+    select 1 from public.tareas where pedido_id = p_pedido and not confirmada
+  ) then
+    raise exception 'Hay tareas abiertas, pausadas o pendientes de confirmar. Registralas primero.' using errcode = '22023';
+  end if;
+  update public.pedidos set estado = v_destino where id = p_pedido;
+  insert into public.pedido_estado_historial(
+    id, pedido_id, estado_anterior, estado_nuevo, accion, revision_anterior, revision_nueva,
+    usuario_id, usuario_nombre, usuario_rol, motivo
+  ) values (
+    p_solicitud, p_pedido, v_pedido.estado, v_destino, p_accion, p_revision, p_revision + 1,
+    v_usuario.id, v_usuario.nombre, v_usuario.rol, btrim(p_motivo)
+  ) returning * into v_historial;
+  return to_jsonb(v_historial);
+end $$;
+create or replace function public.recalcular_estado_pedido()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare
+  v_id uuid := coalesce(new.pedido_id, old.pedido_id);
+  v_p public.pedidos%rowtype;
+  v_av integer;
+begin
+  select * into v_p from public.pedidos where id = v_id for no key update;
+  if not found or v_p.estado in ('cancelado','finalizado','finalizado_pendientes') then return null; end if;
+  select avance into v_av from public.avance_pedido(v_id);
+  update public.pedidos set estado = case
+    when v_p.cantidad > 0 and v_av >= v_p.cantidad then 'finalizado'
+    when v_p.estado = 'en_curso' or exists(select 1 from public.tareas where pedido_id = v_id) then 'en_curso'
+    else 'pendiente' end where id = v_id;
+  return null;
+end $$;
+create or replace function public.gestionar_tarea(
+  p_accion text,
+  p_tarea uuid default null,
+  p_pedido uuid default null,
+  p_actividad text default null,
+  p_motivo text default null,
+  p_ok integer default null,
+  p_scrap integer default null,
+  p_observaciones text default '',
+  p_revision integer default null
+) returns uuid language plpgsql security definer set search_path = '' as $$
+declare
+  v_uid uuid := auth.uid();
+  v_t public.tareas%rowtype;
+  v_p public.pedidos%rowtype;
+  v_a public.articulos%rowtype;
+  v_pausa public.tarea_pausas%rowtype;
+  v_ahora timestamptz;
+  v_id uuid;
+  v_std numeric;
+  v_motivo_id uuid;
+begin
+  perform public.validar_sesion();
+  -- El perfil serializa solicitudes de un mismo operario, incluso al iniciar.
+  perform 1 from public.perfiles
+    where id = v_uid and activo and rol in ('operario','supervisor','admin')
+    for update;
+  if not found then raise exception 'Sesión inválida o cuenta inactiva'; end if;
+
+  if p_accion = 'iniciar' then
+    if exists (select 1 from public.tareas
+               where operario_id = v_uid and not confirmada) then
+      raise exception 'Ya tenés una tarea pendiente';
+    end if;
+    select * into v_p from public.pedidos where id = p_pedido for no key update;
+    if not found then raise exception 'La orden no existe'; end if;
+    if v_p.estado in ('finalizado','cancelado','finalizado_pendientes') then raise exception 'La orden está cerrada o cancelada. Reabrila antes de iniciar tareas.'; end if;
+    select * into v_a from public.articulos where id = v_p.articulo_id;
+    v_std := case p_actividad
+      when 'inyectado' then v_a.std_inyectado
+      when 'rebabado' then v_a.std_rebabado
+      when 'armado' then v_a.std_armado
+      when 'embolsado' then v_a.std_embolsado end;
+    if not v_a.activo or coalesce(v_std, 0) <= 0 then
+      raise exception 'El artículo o la actividad no están habilitados';
+    end if;
+    insert into public.tareas(pedido_id, actividad, operario_id, inicio)
+      values(p_pedido, p_actividad, v_uid, clock_timestamp()) returning id into v_id;
+    return v_id;
+  end if;
+
+  select * into v_t from public.tareas
+    where id = p_tarea and operario_id = v_uid for update;
+  if not found then raise exception 'La tarea no existe o no te pertenece'; end if;
+  if v_t.confirmada then raise exception 'La tarea ya está registrada'; end if;
+  if p_revision is distinct from v_t.revision then
+    raise exception 'La tarea cambió en otra sesión. Se actualizará la pantalla';
+  end if;
+  perform 1 from public.pedidos where id = v_t.pedido_id for no key update;
+  -- Se toma después de esperar los bloqueos, no al comienzo de la transacción.
+  v_ahora := clock_timestamp();
+  select * into v_pausa from public.tarea_pausas
+    where tarea_id = v_t.id and fin is null;
+
+  if p_accion = 'pausar' then
+    if v_t.fin is not null or v_pausa.id is not null then
+      raise exception 'La tarea no está trabajando';
+    end if;
+    select id into v_motivo_id from public.motivos_parada
+      where nombre = p_motivo and activo
+      for share;
+    if not found then
+      raise exception 'El motivo cambió o está inactivo. Actualizá los motivos y elegí otro';
+    end if;
+    -- Conservar el texto que se eligió y el ID permanente del catálogo.
+    insert into public.tarea_pausas(tarea_id, motivo_id, motivo, inicio)
+      values(v_t.id, v_motivo_id, p_motivo, clock_timestamp());
+  elsif p_accion = 'reanudar' then
+    if v_t.fin is not null or v_pausa.id is null then
+      raise exception 'La tarea no está pausada';
+    end if;
+    update public.tarea_pausas set fin = v_ahora where id = v_pausa.id;
+  elsif p_accion = 'finalizar' then
+    if v_t.fin is not null then raise exception 'La tarea ya está finalizada'; end if;
+    update public.tarea_pausas set fin = v_ahora where id = v_pausa.id;
+    update public.tareas set fin = v_ahora where id = v_t.id;
+  elsif p_accion = 'confirmar' then
+    if v_t.fin is null or v_pausa.id is not null then
+      raise exception 'Primero finalizá la tarea';
+    end if;
+    if p_ok is null or p_scrap is null or p_ok < 0 or p_scrap < 0 then
+      raise exception 'Las cantidades deben ser enteros no negativos';
+    end if;
+    if char_length(coalesce(p_observaciones, '')) > 2000 then
+      raise exception 'Las observaciones admiten hasta 2000 caracteres';
+    end if;
+    if p_ok = 0 and p_scrap = 0 and btrim(coalesce(p_observaciones, '')) = '' then
+      raise exception 'Explicá en observaciones por qué no hubo producción';
+    end if;
+    update public.tareas set piezas_ok = p_ok, piezas_scrap = p_scrap,
+      observaciones = btrim(coalesce(p_observaciones, '')), confirmada = true
+      where id = v_t.id;
+  elsif p_accion = 'descartar' then
+    -- Preservar tiempos y pausas: registrar con cero piezas y una observación.
+    raise exception 'Registrá la tarea con cero piezas y explicá el motivo';
+  else
+    raise exception 'Acción no válida';
+  end if;
+  update public.tareas set revision = revision + 1 where id = v_t.id;
+  return v_t.id;
+end $$;
+
+-- Convertir los cierres históricos incompletos una sola vez. La migración
+-- conserva el evento de cierre original y agrega un evento técnico de sistema.
+do $$
+declare r record;
+begin
+  for r in
+    select p.id, p.estado_revision from public.pedidos p
+    cross join lateral egeo_privado.avance_pedido_interno(p.id) av
+    where p.estado = 'finalizado' and av.avance < p.cantidad
+  loop
+    update public.pedidos set estado = 'finalizado_pendientes' where id = r.id;
+    insert into public.pedido_estado_historial (
+      id, pedido_id, estado_anterior, estado_nuevo, accion, revision_anterior,
+      revision_nueva, usuario_id, usuario_nombre, usuario_rol, motivo, origen
+    ) values (
+      gen_random_uuid(), r.id, 'finalizado', 'finalizado_pendientes', 'reclasificar',
+      r.estado_revision, r.estado_revision + 1, null, 'Sistema', 'sistema',
+      'Migración 09: cierre existente con producción pendiente según las etapas y cantidades actuales.',
+      'migracion_09'
+    );
+  end loop;
+end $$;
+
+notify pgrst, 'reload schema';
+commit;

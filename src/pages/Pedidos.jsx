@@ -174,7 +174,7 @@ export function PedidoDetalle({ arts, peds, tars, detail, notify, rol, reloadPed
             {p.etapasReq === 1 ? "" : "s"} completa
             {p.etapasCompletas === 1 ? "" : "s"}
             {p.etapasCompletas < p.etapasReq &&
-              (p.estado === "finalizado"
+              (["finalizado", "finalizado_pendientes"].includes(p.estado)
                 ? " · cerrada con etapas incompletas"
                 : p.estado === "cancelado"
                   ? " · orden cancelada"
