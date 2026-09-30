@@ -109,7 +109,7 @@ export default function Mantenimiento({ rol, perfil }) {
               <option value="">Seleccioná un usuario</option>
               {datos.usuarios.map((u) => (
                 <option key={u.id} value={u.id}>
-                  {u.nombre || "Sin nombre"} · {u.id.slice(0, 8)}
+                  {u.nombre || "Sin nombre"}
                 </option>
               ))}
             </select>
@@ -132,7 +132,7 @@ export default function Mantenimiento({ rol, perfil }) {
           </div>
           <label style={{ display: "flex", gap: 10, alignItems: "center", margin: "16px 0" }}>
             <input type="checkbox" checked={form.preventivo} onChange={(e) => cambiar("preventivo", e.target.checked)} />
-            Preventivo (sin marcar: correctivo)
+            Tarea Preventiva
           </label>
           <div className="field">
             <label htmlFor="mant-minutos">Tiempo de mantenimiento (minutos)</label>
