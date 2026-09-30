@@ -38,7 +38,23 @@ export const handler = async (event) => {
     const { data: destino, error: destinoError } = await admin.from("perfiles").select("id").eq("id", usuarioId).maybeSingle();
     if (destinoError) return json(500, { error: "No se pudo verificar el usuario" });
     if (!destino) return json(404, { error: "El usuario ya no existe" });
-    // Se permiten todos los roles de destino, incluidos otros administradores.
+    // Consultar el correo real en Auth, sin confiar en datos del navegador.
+    const { data: cuenta, error: cuentaError } = await admin.auth.admin.getUserById(usuarioId);
+
+    if (cuentaError || !cuenta?.user?.email) {
+      return json(503, {
+        error: "No se pudo verificar la cuenta. No se cambió la contraseña.",
+      });
+    }
+
+    const emailProtegido = "nicolas.convertini@improveet.com";
+    const emailDestino = cuenta.user.email.trim().toLowerCase();
+
+    if (emailDestino === emailProtegido) {
+      return json(403, {
+        error: "Esta cuenta está protegida. No se permite cambiar su contraseña desde Usuarios.",
+      });
+    }
     const { error: updateError } = await admin.auth.admin.updateUserById(usuarioId, { password });
     if (updateError) {
       if (updateError.code === "weak_password")
