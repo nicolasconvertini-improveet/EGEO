@@ -130,6 +130,27 @@ export async function crearUsuario({ email, password, nombre, rol }) {
   return payload;
 }
 
+export async function cambiarPasswordUsuario(usuarioId, password) {
+  const { data } = await supabase.auth.getSession();
+  const token = data?.session?.access_token;
+  if (!token) throw new Error("Sesión vencida. Volvé a ingresar.");
+  const res = await fetch("/.netlify/functions/cambiar-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ usuarioId, password }),
+  });
+  let payload;
+  try {
+    payload = await res.json();
+  } catch {
+    /* Netlify no disponible */
+  }
+  if (!res.ok || payload?.ok !== true)
+    throw new Error(
+      payload?.error || "No se pudo cambiar la contraseña. Verificá que el sitio tenga publicada la función de cambio de contraseña.",
+    );
+}
+
 /* ---------- Tareas ---------- */
 function mapTarea(t) {
   return {

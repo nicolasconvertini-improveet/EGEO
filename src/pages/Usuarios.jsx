@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Check, Users, UserPlus } from "lucide-react";
-import { fetchUsuarios, updateUsuario, crearUsuario } from "../api";
+import { fetchUsuarios, updateUsuario, crearUsuario, cambiarPasswordUsuario } from "../api";
 import { norm } from "../lib/format";
 import SearchBox from "../components/SearchBox";
 import Highlight from "../components/Highlight";
@@ -124,6 +124,7 @@ export default function Usuarios({ perfil, notify, setDetail }) {
             ))}
           </div>
           {!u.activo && <div className="uoff">Cuenta desactivada · no puede ingresar</div>}
+          {perfil.rol === "admin" && perfil.activo && u.id !== perfil.id && <CambioPassword usuario={u} notify={notify} />}
         </div>
       ))}
 
@@ -219,5 +220,90 @@ export function UsuarioForm({ setDetail, notify }) {
         <Check size={18} strokeWidth={2.5} /> Crear usuario
       </button>
     </>
+  );
+}
+
+function CambioPassword({ usuario, notify }) {
+  const [abierto, setAbierto] = useState(false);
+  const [password, setPassword] = useState("");
+  const [confirmacion, setConfirmacion] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const valid = password.length >= 6 && password.length <= 128 && password === confirmacion;
+  const cerrar = () => {
+    setPassword("");
+    setConfirmacion("");
+    setError("");
+    setAbierto(false);
+  };
+  const guardar = async (event) => {
+    event.preventDefault();
+    if (!valid || busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      await cambiarPasswordUsuario(usuario.id, password);
+      cerrar();
+      notify(`Contraseña actualizada para ${usuario.nombre || "el usuario"}`);
+    } catch (e) {
+      setError(e.message || "No se pudo cambiar la contraseña");
+    } finally {
+      setBusy(false);
+    }
+  };
+  if (!abierto)
+    return (
+      <button type="button" className="btn btn-ghost" style={{ marginTop: 12 }} onClick={() => setAbierto(true)}>
+        Cambiar contraseña
+      </button>
+    );
+  return (
+    <form onSubmit={guardar} style={{ marginTop: 12 }} aria-label={`Cambiar contraseña de ${usuario.nombre}`}>
+      <p style={{ fontSize: 13 }}>
+        Nueva contraseña para <strong>{usuario.nombre}</strong>. Compartila con esa persona por un medio seguro.
+      </p>
+      <div className="field">
+        <label htmlFor={`password-${usuario.id}`}>Nueva contraseña</label>
+        <input
+          id={`password-${usuario.id}`}
+          type="password"
+          autoComplete="new-password"
+          autoFocus
+          required
+          minLength={6}
+          maxLength={128}
+          disabled={busy}
+          value={password}
+          placeholder="Entre 6 y 128 caracteres"
+          onChange={(e) => setPassword(e.target.value)}
+        />
+      </div>
+      <div className="field">
+        <label htmlFor={`confirmacion-${usuario.id}`}>Repetir contraseña</label>
+        <input
+          id={`confirmacion-${usuario.id}`}
+          type="password"
+          autoComplete="new-password"
+          required
+          minLength={6}
+          maxLength={128}
+          disabled={busy}
+          value={confirmacion}
+          onChange={(e) => setConfirmacion(e.target.value)}
+        />
+      </div>
+      {confirmacion && confirmacion !== password && <p className="hint-err">Las contraseñas no coinciden</p>}
+      {error && (
+        <p className="hint-err" role="alert">
+          {error}
+        </p>
+      )}
+      <button type="submit" className="btn btn-primary" style={{ marginTop: 12 }} disabled={!valid || busy}>
+        {busy ? "Guardando…" : "Guardar contraseña"}
+      </button>
+      <button type="button" className="btn btn-ghost" style={{ marginTop: 8 }} disabled={busy} onClick={cerrar}>
+        Cancelar
+      </button>
+    </form>
   );
 }
