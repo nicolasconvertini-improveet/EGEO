@@ -43,6 +43,9 @@ export default function AppBar({ rol, tab, detail, arts, peds, onBack, onGuia, o
   } else if (detail?.type === "guia") {
     title = "Guía de uso";
     back = true;
+  } else if (detail?.type === "indicadores") {
+    title = "Indicadores";
+    back = true;
   } else if (detail?.type === "exportar") {
     title = "Exportar";
     back = true;

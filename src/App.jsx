@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { Circle, Check } from "lucide-react";
 import { supabase } from "./supabaseClient";
 import { fetchPerfil, fetchArticulos, fetchPedidos, fetchTareas, contarTareasEnCurso } from "./api";
@@ -18,6 +18,8 @@ import Guia from "./pages/Guia";
 import Exportar from "./pages/Exportar";
 import Mantenimiento from "./pages/Mantenimiento";
 import "./mantenimiento.css";
+
+const Indicadores = lazy(() => import("./pages/Indicadores"));
 
 export default function App() {
   const [session, setSession] = useState(null);
@@ -121,20 +123,22 @@ export default function App() {
     let vigente = true;
     setLoadingData(true);
     setErrorDatos(null);
+    // Indicadores tiene su propia consulta completa; solo revalidar el perfil aquí.
+    const soloIndicadores = detail?.type === "indicadores";
     Promise.all([
-      fetchArticulos(),
-      fetchPedidos(),
-      fetchTareas({ desdeDias: 60, limit: 500 }),
-      contarTareasEnCurso(),
+      soloIndicadores ? null : fetchArticulos(),
+      soloIndicadores ? null : fetchPedidos(),
+      soloIndicadores ? null : fetchTareas({ desdeDias: 60, limit: 500 }),
+      soloIndicadores ? null : contarTareasEnCurso(),
       fetchPerfil(usuarioId),
     ])
       .then(([nuevosArts, nuevosPeds, nuevasTars, nuevoEnCurso, perfilActual]) => {
         if (!vigente) return;
         setPerfil(perfilActual);
-        setArts(nuevosArts);
-        setPeds(nuevosPeds);
-        setTars(nuevasTars);
-        setEnCurso(nuevoEnCurso);
+        if (nuevosArts !== null) setArts(nuevosArts);
+        if (nuevosPeds !== null) setPeds(nuevosPeds);
+        if (nuevasTars !== null) setTars(nuevasTars);
+        if (nuevoEnCurso !== null) setEnCurso(nuevoEnCurso);
         setDatosCargados(clavePantalla);
       })
       .catch(() => {
@@ -290,6 +294,7 @@ function Screen(props) {
     pedNew: ["admin", "supervisor"],
     usrNew: ["admin"],
     exportar: ["admin"],
+    indicadores: ["admin"],
     guia: ["admin", "supervisor", "operario"],
   };
   if ((detail && !permisoDetalle[detail.type]?.includes(props.rol)) || (!detail && !permitidas.includes(tab)))
@@ -305,6 +310,12 @@ function Screen(props) {
   if (detail?.type === "usrNew") return <UsuarioForm {...props} />;
   if (detail?.type === "guia") return <Guia rol={props.rol} />;
   if (detail?.type === "exportar") return <Exportar rol={props.rol} />;
+  if (detail?.type === "indicadores")
+    return (
+      <Suspense fallback={<p role="status">Cargando indicadores…</p>}>
+        <Indicadores rol={props.rol} />
+      </Suspense>
+    );
   if (tab === "tablero") return <Tablero {...props} />;
   if (tab === "articulos") return <Articulos {...props} />;
   if (tab === "pedidos") return <Pedidos {...props} />;

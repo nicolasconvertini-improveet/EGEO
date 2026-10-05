@@ -3,7 +3,7 @@ import { LayoutDashboard, TrendingUp } from "lucide-react";
 import { OBJETIVO } from "../lib/constants";
 import { nf, dayKey, dayShort, effColor } from "../lib/format";
 
-export default function Tablero({ tars, peds, enCurso }) {
+export default function Tablero({ tars, peds, enCurso, setDetail, rol }) {
   const ayer = new Date();
   ayer.setDate(ayer.getDate() - 1);
   const ayerKey = dayKey(ayer);
@@ -36,6 +36,9 @@ export default function Tablero({ tars, peds, enCurso }) {
 
   return (
     <>
+      {rol === "admin" && <button className="btn btn-primary" style={{ marginBottom: 18 }} onClick={() => setDetail({ type: "indicadores" })}>
+        Ver indicadores
+      </button>}
       <div className="sec-title" style={{ marginTop: 0 }}>
         Situación actual
       </div>
