@@ -43,7 +43,10 @@ export default function Tablero({ tars, peds, enCurso, setDetail, rol, reloadTar
     d,
     prod: agg(tars.filter((t) => t.fin && dayKey(t.fin) === dayKey(d))).prod,
   }));
-  const maxProd = Math.max(OBJETIVO, ...evo.map((e) => e.prod || 0), a.prod || 0);
+  // Escalas separadas: un día atípico de la semana no debe achicar la comparación de hoy.
+  const maxComp = Math.max(OBJETIVO, a.prod || 0);
+  // Tope de 200 %: un valor atípico llega arriba de todo pero no aplasta al resto.
+  const maxEvo = Math.max(OBJETIVO, Math.min(200, Math.max(0, ...evo.map((e) => e.prod || 0))));
   const scrapPct = a.ok + a.scrap > 0 ? (a.scrap / (a.ok + a.scrap)) * 100 : 0;
 
   return (
@@ -91,8 +94,8 @@ export default function Tablero({ tars, peds, enCurso, setDetail, rol, reloadTar
           </div>
           <div className="card">
             <div className="compare">
-              <CBar label="Real" pct={a.prod || 0} max={maxProd} color={effColor(a.prod)} />
-              <CBar label="Objetivo" pct={OBJETIVO} max={maxProd} color="var(--ink2)" />
+              <CBar label="Real" pct={a.prod || 0} max={maxComp} color={effColor(a.prod)} />
+              <CBar label="Objetivo" pct={OBJETIVO} max={maxComp} color="var(--ink2)" />
             </div>
             <div style={{ fontSize: 12, color: "var(--ink2)", marginTop: 12 }}>
               {a.prod == null
@@ -138,7 +141,7 @@ export default function Tablero({ tars, peds, enCurso, setDetail, rol, reloadTar
               <div
                 className="bar"
                 style={{
-                  height: (e.prod ? (e.prod / maxProd) * 100 : 0) + "%",
+                  height: (e.prod ? Math.min(100, (e.prod / maxEvo) * 100) : 0) + "%",
                   background: effColor(e.prod),
                   opacity: e.prod == null ? 0.15 : 1,
                 }}

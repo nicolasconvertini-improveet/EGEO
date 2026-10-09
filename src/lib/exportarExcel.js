@@ -1,4 +1,6 @@
-const TABLAS = new Set(["tarea_pausas", "tareas", "articulos", "pedidos", "perfiles", "mantenimientos"]);
+const TABLAS = new Set(["tarea_pausas", "tareas", "articulos", "pedidos", "perfiles", "mantenimientos", "pausas"]);
+// Reportes con columnas elegidas (migración 16). El resto exporta la tabla completa.
+const REPORTES = new Set(["mantenimientos", "pausas", "tareas"]);
 const MAX_FILAS_DATOS = 1048575; // La primera fila se reserva para encabezados.
 
 function valorExcel(valor, columna) {
@@ -53,9 +55,9 @@ export function construirLibro(datos, XLSX, filasPorHoja = MAX_FILAS_DATOS) {
     ["Tabla", datos.tabla],
     ["Fecha de exportación UTC", datos.exportado_en],
     ["Cantidad de registros", datos.filas.length],
-    ["Alcance", "Todas las filas y columnas de la tabla; sin filtros"],
+    ["Alcance", datos.alcance || "Todas las filas y columnas de la tabla; sin filtros"],
     ["Valores nulos", "Celdas vacías"],
-    ["Fechas", "Texto ISO con zona horaria; sin conversión local"],
+    ["Fechas", datos.fechas || "Texto ISO con zona horaria; sin conversión local"],
     ["Decimales e importes numeric", "Texto para conservar toda la precisión original"],
     ["Hojas de datos", hojas],
     [],
@@ -73,8 +75,9 @@ export async function descargarTablaExcel(tabla, { signal, onEstado = () => {} }
   const [{ supabase }, XLSX] = await Promise.all([import("../supabaseClient"), import("xlsx")]);
   signal?.throwIfAborted();
   onEstado("Leyendo la tabla completa…");
-  let consulta =
-    tabla === "mantenimientos" ? supabase.rpc("exportar_mantenimientos") : supabase.rpc("exportar_tabla_completa", { p_tabla: tabla });
+  let consulta = REPORTES.has(tabla)
+    ? supabase.rpc("exportar_reporte", { p_reporte: tabla })
+    : supabase.rpc("exportar_tabla_completa", { p_tabla: tabla });
   if (signal) consulta = consulta.abortSignal(signal);
   const { data, error } = await consulta;
   signal?.throwIfAborted();

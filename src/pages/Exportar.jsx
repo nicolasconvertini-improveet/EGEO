@@ -6,17 +6,20 @@ const TABLAS = [
   {
     nombre: "mantenimientos",
     titulo: "Mantenimientos",
-    detalle: "Todo el historial, con registrante, ejecutor, fecha, detalle, tipo y minutos.",
+    detalle: "Registrado por, fecha de ejecución, detalle, preventivo (Sí/No) y minutos.",
   },
-  { nombre: "tarea_pausas", titulo: "Pausas de tareas", detalle: "Todos los motivos e intervalos, incluidas las pausas abiertas." },
-  { nombre: "tareas", titulo: "Tareas", detalle: "Todo el historial, incluidas las tareas en curso y sin confirmar." },
-  { nombre: "articulos", titulo: "Artículos", detalle: "Todo el maestro, incluidos los artículos inactivos." },
-  { nombre: "pedidos", titulo: "Órdenes", detalle: "Todas las órdenes, cualquiera sea su estado." },
   {
-    nombre: "perfiles",
-    titulo: "Usuarios",
-    detalle: "Todos los usuarios, incluidos los inactivos, con su nombre, rol y fecha de creación.",
+    nombre: "pausas",
+    titulo: "Pausas",
+    detalle: "Nro. de orden, usuario, motivo, inicio, fin y tiempo total de cada pausa (HH:MM:SS).",
   },
+  {
+    nombre: "tareas",
+    titulo: "Tareas",
+    detalle:
+      "Nro. de orden, actividad, inicio, fin, operario, piezas OK, piezas scrap, observaciones, código y descripción del artículo y cantidad a fabricar de la orden. Solo tareas registradas.",
+  },
+  { nombre: "articulos", titulo: "Artículos", detalle: "Maestro de artículos completo, incluidos los inactivos." },
 ];
 
 export default function Exportar({ rol }) {
@@ -53,9 +56,7 @@ export default function Exportar({ rol }) {
 
   return (
     <>
-      <p style={{ color: "var(--ink2)", marginTop: 0 }}>
-        Descargá cada tabla completa en un Excel independiente, sin filtros de fecha, estado ni operario. Incluye todas sus columnas.
-      </p>
+      <p style={{ color: "var(--ink2)", marginTop: 0 }}>Descargá cada reporte en un Excel independiente.</p>
       {TABLAS.map((tabla) => (
         <div className="card" key={tabla.nombre} style={{ marginBottom: 14 }}>
           <h2 style={{ fontSize: 17, margin: "0 0 6px" }}>{tabla.titulo}</h2>
