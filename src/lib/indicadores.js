@@ -21,7 +21,15 @@ export function agrupar(tareas, modo) {
   const mapa = new Map();
   for (const t of tareas) {
     const key =
-      modo === "orden" ? t.pedido_id : modo === "articulo" ? t.articulo_id : modo === "proceso" ? t.articulo_id + "|" + t.actividad : t.id;
+      modo === "usuario"
+        ? t.operario_id
+        : modo === "orden"
+          ? t.pedido_id
+          : modo === "articulo"
+            ? t.articulo_id
+            : modo === "proceso"
+              ? t.articulo_id + "|" + t.actividad
+              : t.id;
     if (!mapa.has(key)) mapa.set(key, []);
     mapa.get(key).push(t);
   }
@@ -29,13 +37,15 @@ export function agrupar(tareas, modo) {
     .map(([key, ts]) => ({
       key,
       nombre:
-        modo === "orden"
-          ? ts[0].pedido_codigo
-          : modo === "articulo"
-            ? ts[0].articulo_codigo + " — " + ts[0].articulo_nombre
-            : modo === "proceso"
-              ? ts[0].articulo_codigo + " / " + ts[0].actividad
-              : ts[0].dia + " · " + ts[0].pedido_codigo + " · " + ts[0].actividad + " · " + ts[0].id.slice(0, 8),
+        modo === "usuario"
+          ? ts[0].operario_nombre
+          : modo === "orden"
+            ? ts[0].pedido_codigo
+            : modo === "articulo"
+              ? ts[0].articulo_codigo + " — " + ts[0].articulo_nombre
+              : modo === "proceso"
+                ? ts[0].articulo_codigo + " / " + ts[0].actividad
+                : ts[0].dia + " · " + ts[0].pedido_codigo + " · " + ts[0].actividad + " · " + ts[0].id.slice(0, 8),
       ...resumen(ts),
     }))
     .sort((a, b) => a.nombre.localeCompare(b.nombre));

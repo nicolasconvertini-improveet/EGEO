@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { Boxes } from "lucide-react";
 import { ACTS, actLabel } from "../lib/constants";
-import { nf, fmtDT, fmtClock, isoDate, efficiency, effColor, findArt } from "../lib/format";
+import { nf, fmtDT, isoDate, efficiency, effColor, findArt } from "../lib/format";
 
 const FILTROS_VACIOS = {
   desde: "",
@@ -115,14 +115,14 @@ export default function Tareas({ arts, tars, setDetail }) {
               {e == null ? "—" : Math.round(e)}
             </div>
             <div className="mid">
-              <div className="t">
-                {t.pedidoCodigo} · {actLabel(t.actividad)}
+              <div className="t t-wrap">
+                {t.pedidoCodigo} · {actLabel(t.actividad)} · {t.articuloNombre}
               </div>
               <div className="s mono">
-                {fmtDT(t.fin)} · {nf(t.ok)} OK · {t.operario}
+                Inicio {fmtDT(t.inicio)} · Fin {fmtDT(t.fin)}
               </div>
-              <div className="s">
-                Total {fmtClock(t.totalSec)} · Pausas {fmtClock(t.pausaSec)} · Neto {fmtClock(t.realSec)}
+              <div className="s mono">
+                OK {nf(t.ok)} · Falladas {nf(t.scrap)} · {t.operario}
               </div>
               {t.observaciones && <div className="s observacion">{t.observaciones}</div>}
             </div>

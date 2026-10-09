@@ -133,6 +133,20 @@ export async function createPedido({ codigo, articuloId, cantidad }) {
   if (error) throw error;
 }
 
+/* Cambia la cantidad a fabricar. La base valida: > 0 y no menor a lo ya
+   fabricado en los procesos que aplican al artículo. Recalcula el estado. */
+export async function editarCantidadPedido(pedidoId, cantidad) {
+  const { data, error } = await supabase.rpc("editar_cantidad_pedido", {
+    p_pedido: pedidoId,
+    p_cantidad: Number(cantidad),
+  });
+  if (error) {
+    if (error.code === "PGRST202") throw new Error("Falta aplicar la migración 15 en Supabase.");
+    throw new Error(error.message || "No se pudo cambiar la cantidad");
+  }
+  return data; // { id, cantidad, estado, minimo }
+}
+
 /* ---------- Usuarios (sólo administradores) ---------- */
 export async function fetchUsuarios() {
   const { data, error } = await supabase.from("perfiles").select("*").order("nombre", { ascending: true });

@@ -228,7 +228,7 @@ export default function Registrar({ arts, peds, notify, reloadPeds, reloadTars, 
           >
             {hecha.art?.nombre} · {actLabel(hecha.act)}
             <br />
-            Estándar {hecha.art?.std[hecha.act]}s/u — real {(hecha.realSec / (hecha.ok || 1)).toFixed(1)}s/u
+            Estándar {hecha.art?.std[hecha.act]}s/u — real {Math.round(hecha.realSec / (hecha.ok || 1))}s/u
           </div>
         </div>
         <button className="btn btn-primary" style={{ marginTop: 14 }} onClick={() => setHecha(null)}>

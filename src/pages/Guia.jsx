@@ -156,8 +156,8 @@ const SECCIONES = [
     titulo: "Tablero de control",
     resumen: "Indicadores de desempeño de la operación.",
     bloques: [
-      ["Situación actual", "Órdenes y tareas en curso al ingresar al tablero. Para ver cambios de otros usuarios, salí y volvé a entrar."],
-      ["Día vencido", "El resto muestra la jornada anterior completa: unidades, productividad, tiempo estimado y scrap."],
+      ["Situación actual", "Órdenes y tareas en curso. Se actualiza solo cada minuto mientras el tablero está abierto."],
+      ["En vivo", "El resto muestra la jornada de hoy: unidades, productividad, tiempo estimado y scrap de las tareas ya registradas."],
       ["Real vs objetivo", "Compara la productividad con el objetivo de 100 % (cumplir el tiempo estándar)."],
       ["Operarios y evolución", "Producción por persona y tendencia de los últimos 7 días."],
     ],
