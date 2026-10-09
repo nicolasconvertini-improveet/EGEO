@@ -7,7 +7,7 @@ const rango = (r) => ({ admin: 3, supervisor: 2, operario: 1 })[r] || 0;
 const SECCIONES = [
   {
     id: "mantenimiento",
-    min: 2,
+    min: 1,
     icon: Wrench,
     titulo: "Registrar mantenimiento",
     resumen: "Registrá acciones preventivas o correctivas y descargá su historial.",
@@ -92,7 +92,7 @@ const SECCIONES = [
   },
   {
     id: "pedidos",
-    min: 2,
+    min: 1,
     icon: ClipboardList,
     titulo: "Órdenes",
     resumen: "Buscá y seleccioná el artículo, creá la orden y seguí su avance.",
@@ -151,7 +151,7 @@ const SECCIONES = [
 
   {
     id: "tablero",
-    min: 2,
+    min: 3,
     icon: LayoutDashboard,
     titulo: "Tablero de control",
     resumen: "Indicadores de desempeño de la operación.",

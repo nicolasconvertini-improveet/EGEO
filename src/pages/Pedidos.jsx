@@ -9,7 +9,7 @@ import EstadoPedido from "../components/EstadoPedido";
 
 export default function Pedidos({ rol, peds, setDetail }) {
   const [q, setQ] = useState("");
-  const canCreate = rango(rol) >= 2;
+  const canCreate = rango(rol) >= 1;
   const lista = useMemo(() => {
     const nq = norm(q.trim());
     if (!nq) return peds;
@@ -188,7 +188,15 @@ export function PedidoDetalle({ arts, peds, tars, detail, notify, rol, reloadPed
       {rango(rol) >= 2 && <EditarCantidad pedido={p} articulo={a} etapas={etapas} notify={notify} reloadPeds={reloadPeds} />}
 
       {/* La key incluye la cantidad: si el cambio recalculó el estado, el bloque se vuelve a leer. */}
-      {rango(rol) >= 2 && <EstadoPedido key={p.id + ":" + p.cantidad} pedidoId={p.id} notify={notify} reloadPeds={reloadPeds} />}
+      {rango(rol) >= 2 && (
+        <EstadoPedido
+          key={p.id + ":" + p.cantidad}
+          pedidoId={p.id}
+          notify={notify}
+          reloadPeds={reloadPeds}
+          puedeCambiar={rol === "admin"}
+        />
+      )}
 
       <div className="sec-title" style={{ marginTop: 18 }}>
         Totales por etapa

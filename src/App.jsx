@@ -294,8 +294,8 @@ function Screen(props) {
   const permisoDetalle = {
     art: ["admin"],
     artNew: ["admin"],
-    ped: ["admin", "supervisor"],
-    pedNew: ["admin", "supervisor"],
+    ped: ["admin", "supervisor", "operario"],
+    pedNew: ["admin", "supervisor", "operario"],
     usrNew: ["admin"],
     exportar: ["admin"],
     indicadores: ["admin"],

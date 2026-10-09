@@ -13,7 +13,7 @@ const OPCIONES = {
   finalizado: [],
 };
 
-export default function EstadoPedido({ pedidoId, notify, reloadPeds }) {
+export default function EstadoPedido({ pedidoId, notify, reloadPeds, puedeCambiar = true }) {
   const [actual, setActual] = useState(null);
   const [historial, setHistorial] = useState([]);
   const [total, setTotal] = useState(0);
@@ -92,7 +92,7 @@ export default function EstadoPedido({ pedidoId, notify, reloadPeds }) {
   };
   return (
     <section className="card" style={{ marginTop: 18 }} aria-label="Estado e historial de la orden">
-      <h3 style={{ marginTop: 0 }}>Cambiar estado</h3>
+      <h3 style={{ marginTop: 0 }}>{puedeCambiar ? "Cambiar estado" : "Estado de la orden"}</h3>
       {actual && (
         <p>
           Estado actual: <strong>{estadoLabel(actual.estado)}</strong>
@@ -115,7 +115,7 @@ export default function EstadoPedido({ pedidoId, notify, reloadPeds }) {
       >
         Actualizar estado e historial
       </button>
-      {actual && (OPCIONES[actual.estado]?.length > 0 || pendiente) && (
+      {puedeCambiar && actual && (OPCIONES[actual.estado]?.length > 0 || pendiente) && (
         <form onSubmit={guardar}>
           <div className="field">
             <label htmlFor="estado-accion">Acción</label>
@@ -168,8 +168,10 @@ export default function EstadoPedido({ pedidoId, notify, reloadPeds }) {
           </button>
         </form>
       )}
-      {actual?.estado === "finalizado" && !pendiente && <p>La orden finalizada con producción completa no admite cambios manuales.</p>}
-      {actual?.estado === "finalizado_pendientes" && (
+      {puedeCambiar && actual?.estado === "finalizado" && !pendiente && (
+        <p>La orden finalizada con producción completa no admite cambios manuales.</p>
+      )}
+      {puedeCambiar && actual?.estado === "finalizado_pendientes" && (
         <p>La orden está cerrada con producción pendiente. Reabrila para continuar trabajando.</p>
       )}
       <h3>Historial de estados</h3>
