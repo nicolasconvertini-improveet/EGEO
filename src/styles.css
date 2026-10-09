@@ -1513,3 +1513,115 @@ mark {
 .art-picker-selected .btn {
   margin-top: 8px;
 }
+/* =====================================================================
+   Vista adaptativa
+   Base (sin media query) = mobile. Tablet desde 768px. PC desde 1024px.
+   ===================================================================== */
+.contenido {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.contenido.angosta {
+  max-width: 680px;
+}
+.lista {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+.lista > .rowitem + .rowitem {
+  margin-top: 0;
+}
+/* Título que puede ocupar dos líneas (orden · proceso · producto). */
+.rowitem .mid .t.t-wrap {
+  white-space: normal;
+}
+
+/* --- Tablet --- */
+@media (min-width: 768px) {
+  .app {
+    max-width: none;
+    box-shadow: none;
+  }
+  .body {
+    padding: 24px 28px 32px;
+  }
+  .kpis {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .lista {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .evo {
+    height: 170px;
+  }
+  .evo .d,
+  .evo .pv {
+    font-size: 12px;
+  }
+  .nav {
+    height: 64px;
+  }
+  .nav button {
+    flex-direction: row;
+    gap: 8px;
+    font-size: 13px;
+  }
+  /* Login: fondo a pantalla completa, formulario centrado y angosto. */
+  .login {
+    padding-left: max(28px, calc((100% - 420px) / 2));
+    padding-right: max(28px, calc((100% - 420px) / 2));
+  }
+}
+
+/* --- PC: navegación como barra lateral --- */
+@media (min-width: 1024px) {
+  .app {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .appbar {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    border-bottom: 1px solid var(--line);
+  }
+  .nav {
+    grid-column: 1;
+    grid-row: 2;
+    flex-direction: column;
+    justify-content: flex-start;
+    height: auto;
+    gap: 4px;
+    padding: 16px 12px;
+    border-top: 0;
+    border-right: 1px solid var(--line);
+  }
+  /* .app .nav button le gana a la regla de mantenimiento.css */
+  .app .nav button {
+    flex: none;
+    justify-content: flex-start;
+    padding: 6px 8px;
+    font-size: 14px;
+  }
+  .body {
+    grid-column: 2;
+    grid-row: 2;
+    padding: 28px 40px 40px;
+  }
+  .body.nonav {
+    grid-column: 1 / -1;
+  }
+  .lista {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .toast {
+    bottom: 24px;
+  }
+  /* Pantallas sin barra ni menú (login, carga, errores): ocupan todo el ancho. */
+  .app > :only-child {
+    grid-column: 1 / -1;
+    grid-row: 1 / -1;
+  }
+}

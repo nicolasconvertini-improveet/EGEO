@@ -208,6 +208,8 @@ export default function App() {
 
   const rol = perfil.rol;
   const tabs = ROLES[rol].tabs;
+  // Formularios y pantallas de una columna: ancho de lectura cómodo en tablet/PC.
+  const angosta = (!detail && tab === "registrar") || ["artNew", "pedNew", "usrNew", "guia", "exportar"].includes(detail?.type);
   const shared = {
     rol,
     perfil,
@@ -251,7 +253,9 @@ export default function App() {
             <div className="spinner" />
           </div>
         ) : (
-          <Screen key={clavePantalla} {...shared} tab={tab} detail={detail} />
+          <div className={"contenido" + (angosta ? " angosta" : "")}>
+            <Screen key={clavePantalla} {...shared} tab={tab} detail={detail} />
+          </div>
         )}
       </div>
 

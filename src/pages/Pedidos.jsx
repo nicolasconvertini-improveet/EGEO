@@ -37,52 +37,54 @@ export default function Pedidos({ rol, peds, setDetail }) {
         </div>
       )}
 
-      {lista.map((p) => {
-        const pct = Math.min(100, Math.round((p.okAcum / p.cantidad) * 100));
-        return (
-          <div
-            className="rowitem"
-            key={p.id}
-            style={{ flexDirection: "column", alignItems: "stretch" }}
-            onClick={() => setDetail({ type: "ped", id: p.id })}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div className="mid">
-                <div className="t">
-                  <Highlight text={p.codigo} query={q} />
-                </div>
-                <div className="s">
-                  <Highlight text={p.articuloNombre} query={q} /> · {nf(p.cantidad)} u.
-                </div>
-              </div>
-              <span className={"badge " + estadoBadge(p.estado)}>{estadoLabel(p.estado)}</span>
-            </div>
-            <div className="prog">
-              <i
-                style={{
-                  width: pct + "%",
-                  background: p.estado === "finalizado" ? "var(--good)" : "var(--ink)",
-                }}
-              />
-            </div>
+      <div className="lista">
+        {lista.map((p) => {
+          const pct = Math.min(100, Math.round((p.okAcum / p.cantidad) * 100));
+          return (
             <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                fontSize: 11.5,
-                color: "var(--ink2)",
-                marginTop: 6,
-              }}
-              className="mono"
+              className="rowitem"
+              key={p.id}
+              style={{ flexDirection: "column", alignItems: "stretch" }}
+              onClick={() => setDetail({ type: "ped", id: p.id })}
             >
-              <span>
-                {nf(p.okAcum)} / {nf(p.cantidad)} completas
-              </span>
-              <span>{pct}%</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div className="mid">
+                  <div className="t">
+                    <Highlight text={p.codigo} query={q} />
+                  </div>
+                  <div className="s">
+                    <Highlight text={p.articuloNombre} query={q} /> · {nf(p.cantidad)} u.
+                  </div>
+                </div>
+                <span className={"badge " + estadoBadge(p.estado)}>{estadoLabel(p.estado)}</span>
+              </div>
+              <div className="prog">
+                <i
+                  style={{
+                    width: pct + "%",
+                    background: p.estado === "finalizado" ? "var(--good)" : "var(--ink)",
+                  }}
+                />
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: 11.5,
+                  color: "var(--ink2)",
+                  marginTop: 6,
+                }}
+                className="mono"
+              >
+                <span>
+                  {nf(p.okAcum)} / {nf(p.cantidad)} completas
+                </span>
+                <span>{pct}%</span>
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
       {lista.length === 0 && (
         <div className="empty">
           <div className="ic">

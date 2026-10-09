@@ -106,29 +106,31 @@ export default function Tareas({ arts, tars, setDetail }) {
         {lista.length} tarea{lista.length === 1 ? "" : "s"} · {nf(tot)} piezas OK
       </div>
 
-      {lista.map((t) => {
-        const a = findArt(arts, t.articuloId);
-        const e = efficiency(a, t.actividad, t.ok, t.realSec);
-        return (
-          <div className="rowitem" key={t.id} onClick={() => setDetail({ type: "ped", id: t.pedidoId })}>
-            <div className="lead" style={{ background: effColor(e), color: "#fff" }}>
-              {e == null ? "—" : Math.round(e)}
+      <div className="lista">
+        {lista.map((t) => {
+          const a = findArt(arts, t.articuloId);
+          const e = efficiency(a, t.actividad, t.ok, t.realSec);
+          return (
+            <div className="rowitem" key={t.id} onClick={() => setDetail({ type: "ped", id: t.pedidoId })}>
+              <div className="lead" style={{ background: effColor(e), color: "#fff" }}>
+                {e == null ? "—" : Math.round(e)}
+              </div>
+              <div className="mid">
+                <div className="t t-wrap">
+                  {t.pedidoCodigo} · {actLabel(t.actividad)} · {t.articuloNombre}
+                </div>
+                <div className="s mono">
+                  Inicio {fmtDT(t.inicio)} · Fin {fmtDT(t.fin)}
+                </div>
+                <div className="s mono">
+                  OK {nf(t.ok)} · Falladas {nf(t.scrap)} · {t.operario}
+                </div>
+                {t.observaciones && <div className="s observacion">{t.observaciones}</div>}
+              </div>
             </div>
-            <div className="mid">
-              <div className="t t-wrap">
-                {t.pedidoCodigo} · {actLabel(t.actividad)} · {t.articuloNombre}
-              </div>
-              <div className="s mono">
-                Inicio {fmtDT(t.inicio)} · Fin {fmtDT(t.fin)}
-              </div>
-              <div className="s mono">
-                OK {nf(t.ok)} · Falladas {nf(t.scrap)} · {t.operario}
-              </div>
-              {t.observaciones && <div className="s observacion">{t.observaciones}</div>}
-            </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
       {lista.length === 0 && (
         <div className="empty">
           <div className="ic">
