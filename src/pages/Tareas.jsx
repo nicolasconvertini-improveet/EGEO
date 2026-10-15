@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { Boxes } from "lucide-react";
 import { ACTS, actLabel } from "../lib/constants";
-import { nf, fmtDT, fmtClock, isoDate, efficiency, effColor, findArt } from "../lib/format";
+import { nf, fmtDT, isoDate, efficiency, effColor, findArt } from "../lib/format";
 
 const FILTROS_VACIOS = {
   desde: "",
@@ -106,29 +106,31 @@ export default function Tareas({ arts, tars, setDetail }) {
         {lista.length} tarea{lista.length === 1 ? "" : "s"} · {nf(tot)} piezas OK
       </div>
 
-      {lista.map((t) => {
-        const a = findArt(arts, t.articuloId);
-        const e = efficiency(a, t.actividad, t.ok, t.realSec);
-        return (
-          <div className="rowitem" key={t.id} onClick={() => setDetail({ type: "ped", id: t.pedidoId })}>
-            <div className="lead" style={{ background: effColor(e), color: "#fff" }}>
-              {e == null ? "—" : Math.round(e)}
+      <div className="lista">
+        {lista.map((t) => {
+          const a = findArt(arts, t.articuloId);
+          const e = efficiency(a, t.actividad, t.ok, t.realSec);
+          return (
+            <div className="rowitem" key={t.id} onClick={() => setDetail({ type: "ped", id: t.pedidoId })}>
+              <div className="lead" style={{ background: effColor(e), color: "#fff" }}>
+                {e == null ? "—" : Math.round(e)}
+              </div>
+              <div className="mid">
+                <div className="t t-wrap">
+                  {t.pedidoCodigo} · {actLabel(t.actividad)} · {t.articuloNombre}
+                </div>
+                <div className="s mono">
+                  Inicio {fmtDT(t.inicio)} · Fin {fmtDT(t.fin)}
+                </div>
+                <div className="s mono">
+                  OK {nf(t.ok)} · Falladas {nf(t.scrap)} · {t.operario}
+                </div>
+                {t.observaciones && <div className="s observacion">{t.observaciones}</div>}
+              </div>
             </div>
-            <div className="mid">
-              <div className="t">
-                {t.pedidoCodigo} · {actLabel(t.actividad)}
-              </div>
-              <div className="s mono">
-                {fmtDT(t.fin)} · {nf(t.ok)} OK · {t.operario}
-              </div>
-              <div className="s">
-                Total {fmtClock(t.totalSec)} · Pausas {fmtClock(t.pausaSec)} · Neto {fmtClock(t.realSec)}
-              </div>
-              {t.observaciones && <div className="s observacion">{t.observaciones}</div>}
-            </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
       {lista.length === 0 && (
         <div className="empty">
           <div className="ic">

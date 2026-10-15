@@ -14,9 +14,9 @@ export const ROLES = {
   },
   supervisor: {
     full: "Supervisor",
-    tabs: ["tablero", "registrar", "pedidos", "tareas", "mantenimiento"],
+    tabs: ["registrar", "pedidos", "tareas", "mantenimiento"],
   },
-  operario: { full: "Operario", tabs: ["registrar"] },
+  operario: { full: "Operario", tabs: ["registrar", "pedidos", "mantenimiento"] },
 };
 
 export const rango = (r) => ({ admin: 3, supervisor: 2, operario: 1 })[r] || 0;

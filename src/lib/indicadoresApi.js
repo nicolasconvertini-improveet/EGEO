@@ -9,10 +9,11 @@ export async function cargarIndicadores(consulta, signal) {
       // null = todos; [] = ninguno. No intercambiar estos dos significados.
       p_articulos: consulta.articulos,
       p_proceso: consulta.proceso,
+      p_operario: consulta.operario || null, // null = todos los usuarios
     })
     .abortSignal(signal);
   if (error) {
-    if (error.code === "PGRST202") throw new Error("Falta aplicar la migración 12 en Supabase para habilitar los indicadores.");
+    if (error.code === "PGRST202") throw new Error("Falta aplicar la migración 14 en Supabase para habilitar los indicadores.");
     if (error.code === "42501") throw new Error("Se requiere una sesión activa de administrador. Volvé a ingresar.");
     throw new Error(error.message || "No se pudieron cargar los indicadores.");
   }

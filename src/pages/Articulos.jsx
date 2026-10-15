@@ -80,22 +80,24 @@ export default function Articulos({ arts, setDetail }) {
         </div>
       ) : null}
 
-      {lista.map((a) => (
-        <div className="rowitem" key={a.id} onClick={() => setDetail({ type: "art", id: a.id })} style={{ opacity: a.activo ? 1 : 0.6 }}>
-          <div className="lead">{a.codigo.slice(0, 3)}</div>
-          <div className="mid">
-            <div className="t">
-              <Highlight text={a.nombre} query={q} />
+      <div className="lista">
+        {lista.map((a) => (
+          <div className="rowitem" key={a.id} onClick={() => setDetail({ type: "art", id: a.id })} style={{ opacity: a.activo ? 1 : 0.6 }}>
+            <div className="lead">{a.codigo.slice(0, 3)}</div>
+            <div className="mid">
+              <div className="t">
+                <Highlight text={a.nombre} query={q} />
+              </div>
+              <div className="s">
+                <Highlight text={a.codigo} query={q} />
+                {a.categoria ? ` · ${a.categoria}` : ""}
+              </div>
             </div>
-            <div className="s">
-              <Highlight text={a.codigo} query={q} />
-              {a.categoria ? ` · ${a.categoria}` : ""}
-            </div>
+            {!a.activo && <span className="badge b-off">Inactivo</span>}
+            <ChevronLeft size={17} style={{ transform: "rotate(180deg)", color: "#C0C6CD" }} />
           </div>
-          {!a.activo && <span className="badge b-off">Inactivo</span>}
-          <ChevronLeft size={17} style={{ transform: "rotate(180deg)", color: "#C0C6CD" }} />
-        </div>
-      ))}
+        ))}
+      </div>
       {lista.length === 0 && (
         <div className="empty">
           <div className="ic">

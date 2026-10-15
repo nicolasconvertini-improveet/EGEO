@@ -6,8 +6,8 @@ import SearchBox from "../components/SearchBox";
 import Highlight from "../components/Highlight";
 
 const ROL_OPCIONES = [
-  { key: "operario", label: "Operario", desc: "Registra tareas" },
-  { key: "supervisor", label: "Supervisor", desc: "Además crea órdenes" },
+  { key: "operario", label: "Operario", desc: "Registra tareas, crea órdenes y mantenimientos" },
+  { key: "supervisor", label: "Supervisor", desc: "Además ve tareas de todos y el historial de estados" },
   { key: "admin", label: "Administrador", desc: "Acceso total" },
 ];
 

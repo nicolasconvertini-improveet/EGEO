@@ -3,7 +3,7 @@
 Aplicación web (mobile-first) para registrar tareas de producción de piezas inyectadas y consultar el desempeño diario de la operación.
 
 - **Roles acumulativos:** `operario` (registra tareas) → `supervisor` (además crea pedidos y ve tareas) → `admin` (además administra el maestro de artículos).
-- **Tablero** de control con datos a día vencido (día anterior).
+- **Tablero** de control en vivo con los datos de hoy (se actualiza cada minuto).
 - Backend gratuito en **Supabase** (Postgres + Auth + RLS), frontend gratuito en **Netlify**.
 
 ---
@@ -18,6 +18,7 @@ Aplicación web (mobile-first) para registrar tareas de producción de piezas in
    - **anon public key** → `VITE_SUPABASE_ANON_KEY`
 
 ### Crear el primer administrador
+
 1. Ingresá a la app y usá **Crear una** cuenta (o **Authentication → Users → Add user** en Supabase).
 2. Convertí ese usuario en admin desde **SQL Editor**:
    ```sql
@@ -26,7 +27,7 @@ Aplicación web (mobile-first) para registrar tareas de producción de piezas in
    ```
 3. Los roles `supervisor` / `operario` se asignan igual, cambiando el valor de `rol`.
 
-> Para uso interno sin confirmación por mail: **Authentication → Providers → Email** y desactivá *Confirm email*. Así las cuentas nuevas ingresan directo.
+> Para uso interno sin confirmación por mail: **Authentication → Providers → Email** y desactivá _Confirm email_. Así las cuentas nuevas ingresan directo.
 
 ---
 

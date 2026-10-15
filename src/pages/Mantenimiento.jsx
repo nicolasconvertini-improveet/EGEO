@@ -11,7 +11,7 @@ const ordenar = (a, b) =>
   b.fecha_ejecucion.localeCompare(a.fecha_ejecucion) || b.creado.localeCompare(a.creado) || a.id.localeCompare(b.id);
 
 export default function Mantenimiento({ rol, perfil }) {
-  const permitido = ["admin", "supervisor"].includes(rol);
+  const permitido = ["admin", "supervisor", "operario"].includes(rol);
   const [form, setForm] = useState(inicial);
   const [datos, setDatos] = useState(null);
   const [errorCarga, setErrorCarga] = useState("");
@@ -47,7 +47,7 @@ export default function Mantenimiento({ rol, perfil }) {
     return () => control.abort();
   }, [permitido, reintento]);
 
-  if (!permitido) return <div className="empty">Acceso para administradores y supervisores.</div>;
+  if (!permitido) return <div className="empty">Tu rol no tiene acceso a mantenimiento.</div>;
   if (errorCarga)
     return (
       <div className="card" role="alert">

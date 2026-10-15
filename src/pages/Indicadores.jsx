@@ -17,7 +17,7 @@ const SERIES_TIEMPOS = [
   { key: "mantenimiento", label: "Mantenimiento", color: "#4369a8" },
 ];
 export default function Indicadores({ rol }) {
-  const [form, setForm] = useState(() => ({ ...rango("semana"), articulos: null, proceso: "" }));
+  const [form, setForm] = useState(() => ({ ...rango("semana"), articulos: null, proceso: "", operario: "" }));
   const [consulta, setConsulta] = useState(form),
     [tick, setTick] = useState(0);
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
@@ -27,6 +27,7 @@ export default function Indicadores({ rol }) {
   const [modo, setModo] = useState("proceso"),
     [pagina, setPagina] = useState(1);
   const [catalogo, setCatalogo] = useState([]);
+  const [usuarios, setUsuarios] = useState([]);
   const [selectorAbierto, setSelectorAbierto] = useState(false);
   const [errorFormulario, setErrorFormulario] = useState("");
   const permitido = rol === "admin";
@@ -43,6 +44,7 @@ export default function Indicadores({ rol }) {
         if (!vigente) return;
         setDatos(data);
         setCatalogo(data.catalogo);
+        setUsuarios(data.usuarios || []);
       })
       .catch((e) => {
         if (vigente) setError(e.message || "No se pudieron cargar los indicadores");
@@ -146,6 +148,17 @@ export default function Indicadores({ rol }) {
               ))}
             </select>
           </label>
+          <label>
+            Usuario
+            <select value={form.operario} onChange={(e) => setForm({ ...form, operario: e.target.value })}>
+              <option value="">Todos</option>
+              {usuarios.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.nombre}
+                </option>
+              ))}
+            </select>
+          </label>
           {errorFormulario && (
             <p className="ind-error-formulario" role="alert">
               {errorFormulario}
@@ -181,6 +194,8 @@ export default function Indicadores({ rol }) {
           <p className="ind-nota">
             Período consultado: {consulta.desde} al {consulta.hasta}. Artículos:{" "}
             {consulta.articulos === null ? "todos" : consulta.articulos.length + " seleccionados"}. Proceso: {consulta.proceso || "todos"}.
+            Usuario: {consulta.operario ? usuarios.find((u) => u.id === consulta.operario)?.nombre || "seleccionado" : "todos"}.
+            {consulta.operario && " Órdenes terminadas y mantenimiento no dependen del usuario."}
           </p>
           {!ts.length && (
             <p role="status">
@@ -295,6 +310,7 @@ export default function Indicadores({ rol }) {
                 <option value="orden">Orden</option>
                 <option value="articulo">Artículo</option>
                 <option value="tarea">Tarea</option>
+                <option value="usuario">Usuario</option>
               </select>
             </label>
             <p className="ind-nota">

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { ClipboardList, Boxes, Plus, Check } from "lucide-react";
-import { createPedido, fetchEtapasPedido } from "../api";
+import { ClipboardList, Boxes, Plus, Check, Pencil } from "lucide-react";
+import { createPedido, fetchEtapasPedido, editarCantidadPedido } from "../api";
 import { ACTS, actLabel, rango } from "../lib/constants";
 import { nf, fmtDT, fmtHora, fmtClock, efficiency, effColor, estadoLabel, estadoBadge, findArt, findPed, norm } from "../lib/format";
 import SearchBox from "../components/SearchBox";
@@ -9,7 +9,7 @@ import EstadoPedido from "../components/EstadoPedido";
 
 export default function Pedidos({ rol, peds, setDetail }) {
   const [q, setQ] = useState("");
-  const canCreate = rango(rol) >= 2;
+  const canCreate = rango(rol) >= 1;
   const lista = useMemo(() => {
     const nq = norm(q.trim());
     if (!nq) return peds;
@@ -37,52 +37,54 @@ export default function Pedidos({ rol, peds, setDetail }) {
         </div>
       )}
 
-      {lista.map((p) => {
-        const pct = Math.min(100, Math.round((p.okAcum / p.cantidad) * 100));
-        return (
-          <div
-            className="rowitem"
-            key={p.id}
-            style={{ flexDirection: "column", alignItems: "stretch" }}
-            onClick={() => setDetail({ type: "ped", id: p.id })}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div className="mid">
-                <div className="t">
-                  <Highlight text={p.codigo} query={q} />
-                </div>
-                <div className="s">
-                  <Highlight text={p.articuloNombre} query={q} /> · {nf(p.cantidad)} u.
-                </div>
-              </div>
-              <span className={"badge " + estadoBadge(p.estado)}>{estadoLabel(p.estado)}</span>
-            </div>
-            <div className="prog">
-              <i
-                style={{
-                  width: pct + "%",
-                  background: p.estado === "finalizado" ? "var(--good)" : "var(--ink)",
-                }}
-              />
-            </div>
+      <div className="lista">
+        {lista.map((p) => {
+          const pct = Math.min(100, Math.round((p.okAcum / p.cantidad) * 100));
+          return (
             <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                fontSize: 11.5,
-                color: "var(--ink2)",
-                marginTop: 6,
-              }}
-              className="mono"
+              className="rowitem"
+              key={p.id}
+              style={{ flexDirection: "column", alignItems: "stretch" }}
+              onClick={() => setDetail({ type: "ped", id: p.id })}
             >
-              <span>
-                {nf(p.okAcum)} / {nf(p.cantidad)} completas
-              </span>
-              <span>{pct}%</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div className="mid">
+                  <div className="t">
+                    <Highlight text={p.codigo} query={q} />
+                  </div>
+                  <div className="s">
+                    <Highlight text={p.articuloNombre} query={q} /> · {nf(p.cantidad)} u.
+                  </div>
+                </div>
+                <span className={"badge " + estadoBadge(p.estado)}>{estadoLabel(p.estado)}</span>
+              </div>
+              <div className="prog">
+                <i
+                  style={{
+                    width: pct + "%",
+                    background: p.estado === "finalizado" ? "var(--good)" : "var(--ink)",
+                  }}
+                />
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: 11.5,
+                  color: "var(--ink2)",
+                  marginTop: 6,
+                }}
+                className="mono"
+              >
+                <span>
+                  {nf(p.okAcum)} / {nf(p.cantidad)} completas
+                </span>
+                <span>{pct}%</span>
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
       {lista.length === 0 && (
         <div className="empty">
           <div className="ic">
@@ -183,7 +185,18 @@ export function PedidoDetalle({ arts, peds, tars, detail, notify, rol, reloadPed
         )}
       </div>
 
-      {rango(rol) >= 2 && <EstadoPedido key={p.id} pedidoId={p.id} notify={notify} reloadPeds={reloadPeds} />}
+      {rango(rol) >= 2 && <EditarCantidad pedido={p} articulo={a} etapas={etapas} notify={notify} reloadPeds={reloadPeds} />}
+
+      {/* La key incluye la cantidad: si el cambio recalculó el estado, el bloque se vuelve a leer. */}
+      {rango(rol) >= 2 && (
+        <EstadoPedido
+          key={p.id + ":" + p.cantidad}
+          pedidoId={p.id}
+          notify={notify}
+          reloadPeds={reloadPeds}
+          puedeCambiar={rol === "admin"}
+        />
+      )}
 
       <div className="sec-title" style={{ marginTop: 18 }}>
         Totales por etapa
@@ -253,6 +266,83 @@ export function PedidoDetalle({ arts, peds, tars, detail, notify, rol, reloadPed
         );
       })}
     </>
+  );
+}
+
+function EditarCantidad({ pedido, articulo, etapas, notify, reloadPeds }) {
+  const [abierto, setAbierto] = useState(false);
+  const [valor, setValor] = useState(String(pedido.cantidad));
+  const [busy, setBusy] = useState(false);
+
+  // Mínimo orientativo: mayor cantidad OK entre los procesos que aplican.
+  // La base de datos vuelve a validarlo al guardar.
+  const aplican = ACTS.filter((ac) => (articulo?.std?.[ac.key] || 0) > 0).map((ac) => ac.key);
+  const okDe = (k) => Number(etapas?.find((e) => e.actividad === k)?.ok) || 0;
+  const minimo = aplican.length ? Math.max(0, ...aplican.map(okDe)) : (etapas || []).reduce((s, e) => s + (Number(e.ok) || 0), 0);
+  const n = Number(valor);
+  const error =
+    !valor || n <= 0 ? "Ingresá una cantidad mayor que cero." : n < minimo ? `No puede ser menor a ${nf(minimo)} (ya fabricadas).` : "";
+
+  const guardar = async () => {
+    if (error || busy || n === pedido.cantidad) return;
+    setBusy(true);
+    try {
+      const r = await editarCantidadPedido(pedido.id, n);
+      await reloadPeds();
+      notify(`Cantidad actualizada a ${nf(r.cantidad)}`);
+      setAbierto(false);
+    } catch (e) {
+      notify(e.message, true);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!abierto)
+    return (
+      <button
+        type="button"
+        className="btn btn-ghost"
+        style={{ marginTop: 12 }}
+        onClick={() => {
+          setValor(String(pedido.cantidad));
+          setAbierto(true);
+        }}
+      >
+        <Pencil size={16} /> Editar cantidad a fabricar
+      </button>
+    );
+
+  return (
+    <div className="card" style={{ marginTop: 12 }}>
+      <div className="field" style={{ marginTop: 0 }}>
+        <label htmlFor="editar-cantidad">Cantidad a fabricar</label>
+        <input
+          id="editar-cantidad"
+          inputMode="numeric"
+          value={valor}
+          disabled={busy}
+          onChange={(e) => setValor(e.target.value.replace(/\D/g, ""))}
+        />
+        <small>
+          Actual: {nf(pedido.cantidad)} u. · Mínimo permitido: {etapas == null ? "…" : `${nf(Math.max(1, minimo))} u.`}
+        </small>
+        {error && <div className="hint-err">{error}</div>}
+      </div>
+      <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+        <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => setAbierto(false)}>
+          Cancelar
+        </button>
+        <button
+          type="button"
+          className="btn btn-primary"
+          disabled={busy || !!error || etapas == null || n === pedido.cantidad}
+          onClick={guardar}
+        >
+          <Check size={16} /> {busy ? "Guardando…" : "Guardar"}
+        </button>
+      </div>
+    </div>
   );
 }
 

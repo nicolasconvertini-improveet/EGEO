@@ -1,19 +1,31 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { LayoutDashboard, TrendingUp } from "lucide-react";
 import { OBJETIVO } from "../lib/constants";
-import { nf, dayKey, dayShort, effColor } from "../lib/format";
+import { nf, dayKey, dayShort, fmtHora, effColor } from "../lib/format";
 
-export default function Tablero({ tars, peds, enCurso, setDetail, rol }) {
-  const ayer = new Date();
-  ayer.setDate(ayer.getDate() - 1);
-  const ayerKey = dayKey(ayer);
-  const tAyer = tars.filter((t) => t.fin && dayKey(t.fin) === ayerKey);
-  const a = agg(tAyer);
+const REFRESCO_MS = 60000; // cada 1 minuto
+
+export default function Tablero({ tars, peds, enCurso, setDetail, rol, reloadTars, reloadPeds, reloadEnCurso }) {
+  const [actualizado, setActualizado] = useState(() => new Date());
+
+  // Refresco automático mientras la pantalla está abierta y visible.
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (document.hidden) return;
+      Promise.all([reloadTars(), reloadPeds(), reloadEnCurso()]).then(() => setActualizado(new Date()));
+    }, REFRESCO_MS);
+    return () => clearInterval(id);
+  }, [reloadTars, reloadPeds, reloadEnCurso]);
+
+  const hoy = new Date();
+  const hoyKey = dayKey(hoy);
+  const tHoy = tars.filter((t) => t.fin && dayKey(t.fin) === hoyKey);
+  const a = agg(tHoy);
 
   const pedidosEnCurso = peds.filter((p) => p.estado === "en_curso").length;
 
   const porOp = {};
-  tAyer.forEach((t) => {
+  tHoy.forEach((t) => {
     (porOp[t.operario] ||= []).push(t);
   });
   const operarios = Object.entries(porOp)
@@ -23,22 +35,27 @@ export default function Tablero({ tars, peds, enCurso, setDetail, rol }) {
 
   const dias = [];
   for (let i = 6; i >= 0; i--) {
-    const d = new Date(ayer);
-    d.setDate(ayer.getDate() - i);
+    const d = new Date(hoy);
+    d.setDate(hoy.getDate() - i);
     dias.push(d);
   }
   const evo = dias.map((d) => ({
     d,
     prod: agg(tars.filter((t) => t.fin && dayKey(t.fin) === dayKey(d))).prod,
   }));
-  const maxProd = Math.max(OBJETIVO, ...evo.map((e) => e.prod || 0), a.prod || 0);
+  // Escalas separadas: un día atípico de la semana no debe achicar la comparación de hoy.
+  const maxComp = Math.max(OBJETIVO, a.prod || 0);
+  // Tope de 200 %: un valor atípico llega arriba de todo pero no aplasta al resto.
+  const maxEvo = Math.max(OBJETIVO, Math.min(200, Math.max(0, ...evo.map((e) => e.prod || 0))));
   const scrapPct = a.ok + a.scrap > 0 ? (a.scrap / (a.ok + a.scrap)) * 100 : 0;
 
   return (
     <>
-      {rol === "admin" && <button className="btn btn-primary" style={{ marginBottom: 18 }} onClick={() => setDetail({ type: "indicadores" })}>
-        Ver indicadores
-      </button>}
+      {rol === "admin" && (
+        <button className="btn btn-primary" style={{ marginBottom: 18 }} onClick={() => setDetail({ type: "indicadores" })}>
+          Ver indicadores
+        </button>
+      )}
       <div className="sec-title" style={{ marginTop: 0 }}>
         Situación actual
       </div>
@@ -50,20 +67,20 @@ export default function Tablero({ tars, peds, enCurso, setDetail, rol }) {
       <div className="dash-note" style={{ marginTop: 18 }}>
         <TrendingUp size={16} />
         <span>
-          Datos a día vencido — <b>{dayShort(ayer)}</b> (día anterior)
+          En vivo — <b>hoy {dayShort(hoy)}</b> · actualizado {fmtHora(actualizado)}
         </span>
       </div>
 
-      {tAyer.length === 0 && (
+      {tHoy.length === 0 && (
         <div className="empty">
           <div className="ic">
             <LayoutDashboard size={22} />
           </div>
-          Sin producción registrada el día anterior
+          Todavía no hay tareas registradas hoy{" "}
         </div>
       )}
 
-      {tAyer.length > 0 && (
+      {tHoy.length > 0 && (
         <>
           <div className="kpis">
             <Kpi lab="Unidades procesadas" val={nf(a.ok)} col="var(--good)" />
@@ -77,8 +94,8 @@ export default function Tablero({ tars, peds, enCurso, setDetail, rol }) {
           </div>
           <div className="card">
             <div className="compare">
-              <CBar label="Real" pct={a.prod || 0} max={maxProd} color={effColor(a.prod)} />
-              <CBar label="Objetivo" pct={OBJETIVO} max={maxProd} color="var(--ink2)" />
+              <CBar label="Real" pct={a.prod || 0} max={maxComp} color={effColor(a.prod)} />
+              <CBar label="Objetivo" pct={OBJETIVO} max={maxComp} color="var(--ink2)" />
             </div>
             <div style={{ fontSize: 12, color: "var(--ink2)", marginTop: 12 }}>
               {a.prod == null
@@ -124,12 +141,12 @@ export default function Tablero({ tars, peds, enCurso, setDetail, rol }) {
               <div
                 className="bar"
                 style={{
-                  height: (e.prod ? (e.prod / maxProd) * 100 : 0) + "%",
+                  height: (e.prod ? Math.min(100, (e.prod / maxEvo) * 100) : 0) + "%",
                   background: effColor(e.prod),
                   opacity: e.prod == null ? 0.15 : 1,
                 }}
               />
-              <div className="d">{String(new Date(e.d).getDate()).padStart(2, "0")}</div>
+              <div className="d">{dayShort(e.d)}</div>
             </div>
           ))}
         </div>

@@ -7,7 +7,7 @@ const { PGlite } = await import(
 import fs from "node:fs";
 import assert from "node:assert/strict";
 const db = new PGlite();
-await db.exec(`
+await dasdasdasdasdasdasdasdasb.exec(`
 create role anon; create role authenticated; create schema egeo_privado;
 create function egeo_privado.sesion_activa() returns boolean language sql as $$select current_setting('test.active',true)='yes'$$;
 create function public.rol_actual() returns text language sql as $$select current_setting('test.role',true)$$;
