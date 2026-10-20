@@ -1625,3 +1625,222 @@ mark {
     grid-row: 1 / -1;
   }
 }
+
+/* =====================================================================
+   AJUSTES 2026-10 — tablero, modal, contraseña, edición admin
+   ===================================================================== */
+
+/* --- leyenda de colores de productividad --- */
+.leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line2);
+  font-size: 11.5px;
+  color: var(--ink2);
+}
+.leyenda span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.leyenda i {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  display: inline-block;
+}
+.leyenda .leyenda-obj {
+  width: 2px;
+  height: 14px;
+  border-radius: 0;
+  background: var(--ink);
+}
+
+/* --- selector de fecha del tablero --- */
+.dash-fecha {
+  flex-wrap: wrap;
+}
+.dash-fecha > span {
+  flex: 1;
+  min-width: 160px;
+}
+.dash-fecha input[type="date"] {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 5px 8px;
+  font-family: inherit;
+  font-size: 12.5px;
+  background: #fff;
+}
+
+/* --- KPIs que navegan --- */
+.kpi-link {
+  font: inherit;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+  color: inherit;
+}
+.kpi-link:hover {
+  border-color: var(--ink2);
+}
+.kpi-link .lab::after {
+  content: " →";
+}
+.kpis-5 {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  margin-top: 8px;
+}
+.kpis-5 .kpi .val {
+  font-size: 20px;
+}
+
+/* --- desplegable por operario --- */
+.opbloque + .opbloque {
+  border-top: 1px solid var(--line2);
+}
+.opbar-btn {
+  width: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.opbar-btn + .opbar {
+  border-top: 0;
+}
+.opbar-btn .nm {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.opbar-btn .tr {
+  position: relative;
+  display: block;
+}
+.opbar-btn .tr i {
+  display: block;
+  height: 100%;
+}
+.opbar .obj {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  background: var(--ink);
+}
+.opdet {
+  padding: 4px 0 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.opdet-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px;
+  background: var(--bg, #f6f7f9);
+}
+.opdet-card .rowitem {
+  width: 100%;
+  border: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* --- filtro activo (órdenes) --- */
+.filtro-activo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+  color: var(--ink2);
+  margin: 8px 0;
+}
+
+/* --- acciones admin en lista de tareas --- */
+.row-acciones {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: none;
+}
+.iconbtn.danger {
+  color: var(--bad);
+}
+
+/* --- modal de confirmación --- */
+.confirm-modal {
+  border: 0;
+  border-radius: 16px;
+  padding: 20px;
+  width: min(420px, calc(100vw - 32px));
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+}
+.confirm-modal::backdrop {
+  background: rgba(15, 18, 22, 0.55);
+}
+.confirm-modal h3 {
+  margin: 0 0 10px;
+  font-size: 17px;
+}
+.confirm-cuerpo {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.confirm-acciones {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+.btn-danger {
+  background: var(--bad);
+  color: #fff;
+}
+
+/* --- mostrar contraseña --- */
+.login .lf-pass {
+  position: relative;
+}
+.login .lf-pass input {
+  padding-right: 48px;
+}
+.login .ver-pass {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 38px;
+  border: 0;
+  background: none;
+  color: #9aa2ab;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.check-ver-pass {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+/* --- edición admin de tareas --- */
+.fgrid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 10px;
+}
+.pausa-edit + .pausa-edit {
+  margin-top: 10px;
+}

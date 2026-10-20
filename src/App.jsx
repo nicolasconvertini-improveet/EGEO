@@ -17,6 +17,7 @@ import Usuarios, { UsuarioForm } from "./pages/Usuarios";
 import Guia from "./pages/Guia";
 import Exportar from "./pages/Exportar";
 import Mantenimiento from "./pages/Mantenimiento";
+import TareaEditar from "./pages/TareaEditar";
 import "./mantenimiento.css";
 
 const Indicadores = lazy(() => import("./pages/Indicadores"));
@@ -29,6 +30,8 @@ export default function App() {
   const [tab, setTab] = useState("registrar");
   const [detail, setDetail] = useState(null);
   const [toast, setToast] = useState(null);
+  // Filtros con los que se abre una pantalla al navegar desde el tablero.
+  const [prefiltro, setPrefiltro] = useState(null);
 
   const [arts, setArts] = useState([]);
   const [peds, setPeds] = useState([]);
@@ -39,6 +42,8 @@ export default function App() {
   const [errorDatos, setErrorDatos] = useState(null);
   const [reintento, setReintento] = useState(0);
   const usuarioId = session?.user?.id;
+  // El operario sólo trae sus propias tareas; supervisor y admin, todas.
+  const soloPropias = perfil?.rol === "operario" ? usuarioId : null;
   const clavePantalla = JSON.stringify([usuarioId, tab, detail?.type, detail?.id, detail?.edit]);
 
   const notify = useCallback((msg, err = false) => setToast({ msg, err }), []);
@@ -103,10 +108,10 @@ export default function App() {
   );
   const reloadTars = useCallback(
     () =>
-      fetchTareas({ desdeDias: 60, limit: 500 })
+      fetchTareas({ desdeDias: 60, limit: 500, operarioId: soloPropias })
         .then(setTars)
         .catch(() => notify("Error al cargar tareas", true)),
-    [notify],
+    [notify, soloPropias],
   );
   const reloadEnCurso = useCallback(
     () =>
@@ -128,7 +133,7 @@ export default function App() {
     Promise.all([
       soloIndicadores ? null : fetchArticulos(),
       soloIndicadores ? null : fetchPedidos(),
-      soloIndicadores ? null : fetchTareas({ desdeDias: 60, limit: 500 }),
+      soloIndicadores ? null : fetchTareas({ desdeDias: 60, limit: 500, operarioId: soloPropias }),
       soloIndicadores ? null : contarTareasEnCurso(),
       fetchPerfil(usuarioId),
     ])
@@ -156,7 +161,7 @@ export default function App() {
     return () => {
       vigente = false;
     };
-  }, [usuarioId, perfil?.id, perfil?.activo, clavePantalla, reintento]);
+  }, [usuarioId, perfil?.id, perfil?.activo, soloPropias, clavePantalla, reintento]);
 
   if (booting)
     return (
@@ -210,8 +215,16 @@ export default function App() {
   const tabs = ROLES[rol].tabs;
   // Formularios y pantallas de una columna: ancho de lectura cómodo en tablet/PC.
   const angosta = (!detail && tab === "registrar") || ["artNew", "pedNew", "usrNew", "guia", "exportar"].includes(detail?.type);
+  // Navegar a otra pestaña con filtros precargados (ej.: desde el tablero).
+  const irA = (t, filtro = null) => {
+    setPrefiltro(filtro);
+    setTab(t);
+    setDetail(null);
+  };
   const shared = {
     rol,
+    prefiltro,
+    irA,
     perfil,
     arts,
     peds,
@@ -273,6 +286,7 @@ export default function App() {
               key={t}
               className={tab === t && !detail ? "on" : ""}
               onClick={() => {
+                setPrefiltro(null);
                 setTab(t);
                 setDetail(null);
               }}
@@ -300,6 +314,7 @@ function Screen(props) {
     exportar: ["admin"],
     indicadores: ["admin"],
     guia: ["admin", "supervisor", "operario"],
+    tareaEdit: ["admin"],
   };
   if ((detail && !permisoDetalle[detail.type]?.includes(props.rol)) || (!detail && !permitidas.includes(tab)))
     return (
@@ -312,6 +327,7 @@ function Screen(props) {
   if (detail?.type === "ped") return <PedidoDetalle {...props} />;
   if (detail?.type === "pedNew") return <PedidoForm {...props} />;
   if (detail?.type === "usrNew") return <UsuarioForm {...props} />;
+  if (detail?.type === "tareaEdit") return <TareaEditar {...props} />;
   if (detail?.type === "guia") return <Guia rol={props.rol} />;
   if (detail?.type === "exportar") return <Exportar rol={props.rol} />;
   if (detail?.type === "indicadores")

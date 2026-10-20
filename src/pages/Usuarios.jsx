@@ -227,6 +227,7 @@ function CambioPassword({ usuario, notify }) {
   const [abierto, setAbierto] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmacion, setConfirmacion] = useState("");
+  const [verPass, setVerPass] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [email, setEmail] = useState("");
@@ -290,7 +291,7 @@ function CambioPassword({ usuario, notify }) {
         <label htmlFor={`password-${usuario.id}`}>Nueva contraseña</label>
         <input
           id={`password-${usuario.id}`}
-          type="password"
+          type={verPass ? "text" : "password"}
           autoComplete="new-password"
           autoFocus
           required
@@ -306,7 +307,7 @@ function CambioPassword({ usuario, notify }) {
         <label htmlFor={`confirmacion-${usuario.id}`}>Repetir contraseña</label>
         <input
           id={`confirmacion-${usuario.id}`}
-          type="password"
+          type={verPass ? "text" : "password"}
           autoComplete="new-password"
           required
           minLength={6}
@@ -316,6 +317,9 @@ function CambioPassword({ usuario, notify }) {
           onChange={(e) => setConfirmacion(e.target.value)}
         />
       </div>
+      <label className="check-ver-pass">
+        <input type="checkbox" checked={verPass} onChange={(e) => setVerPass(e.target.checked)} /> Mostrar contraseñas
+      </label>
       {confirmacion && confirmacion !== password && <p className="hint-err">Las contraseñas no coinciden</p>}
       {error && (
         <p className="hint-err" role="alert">

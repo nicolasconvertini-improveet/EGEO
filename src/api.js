@@ -274,13 +274,18 @@ function mapTarea(t) {
   };
 }
 
-export async function fetchTareas({ desdeDias = null, limit = 500 } = {}) {
+/* desde/hasta: ISO, rango [desde, hasta) sobre la hora de fin.
+   operarioId: si viene, sólo las tareas de ese usuario (rol operario). */
+export async function fetchTareas({ desdeDias = null, desde = null, hasta = null, operarioId = null, limit = 500 } = {}) {
   let q = supabase.from("v_tareas").select("*").eq("confirmada", true).order("fin", { ascending: false });
   if (desdeDias != null) {
     const d = new Date();
     d.setDate(d.getDate() - desdeDias);
     q = q.gte("fin", d.toISOString());
   }
+  if (desde) q = q.gte("fin", desde);
+  if (hasta) q = q.lt("fin", hasta);
+  if (operarioId) q = q.eq("operario_id", operarioId);
   q = q.limit(limit);
   const { data, error } = await q;
   if (error) throw error;
@@ -365,3 +370,79 @@ export async function fetchMotivosParada() {
   if (error) throw error;
   return data || [];
 }
+
+/* ---------- Tareas en curso (abiertas o pendientes de confirmar) ---------- */
+export async function fetchTareasAbiertas({ operarioId = null } = {}) {
+  let q = supabase.from("v_tareas").select("*").eq("confirmada", false).order("inicio", { ascending: false });
+  if (operarioId) q = q.eq("operario_id", operarioId);
+  const { data, error } = await q;
+  if (error) throw error;
+  return data.map(mapTarea);
+}
+
+/* ---------- Pausas ---------- */
+/* Pausas iniciadas en el rango [desde, hasta), con el operario de la tarea. */
+export async function fetchPausas({ desde, hasta }) {
+  const { data, error } = await supabase
+    .from("tarea_pausas")
+    .select("id, tarea_id, motivo, inicio, fin, tareas!inner(operario_id)")
+    .gte("inicio", desde)
+    .lt("inicio", hasta);
+  if (error) throw error;
+  const ahora = Date.now();
+  return (data || []).map((p) => ({
+    id: p.id,
+    tareaId: p.tarea_id,
+    motivo: p.motivo,
+    inicio: p.inicio,
+    fin: p.fin,
+    operarioId: p.tareas?.operario_id,
+    seg: Math.max(0, ((p.fin ? new Date(p.fin).getTime() : ahora) - new Date(p.inicio).getTime()) / 1000),
+  }));
+}
+
+export async function fetchPausasTarea(tareaId) {
+  const { data, error } = await supabase
+    .from("tarea_pausas")
+    .select("id, motivo, motivo_id, inicio, fin")
+    .eq("tarea_id", tareaId)
+    .order("inicio", { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function fetchMotivosTodos() {
+  const { data, error } = await supabase.from("motivos_parada").select("id,nombre,activo").order("orden").order("nombre");
+  if (error) throw error;
+  return data || [];
+}
+
+/* ---------- Administración de tareas y pausas (sólo admin, migración 18) ---------- */
+async function rpcAdmin(nombre, params) {
+  const { data, error } = await supabase.rpc(nombre, params);
+  if (error) {
+    if (error.code === "PGRST202") throw new Error("Falta aplicar la migración 18 en Supabase.");
+    throw new Error(error.message || "No se pudo guardar");
+  }
+  return data;
+}
+
+export const adminEditarTarea = (t, { inicio, fin, ok, scrap, observaciones, motivo }) =>
+  rpcAdmin("admin_editar_tarea", {
+    p_tarea: t.id,
+    p_revision: t.revision,
+    p_inicio: inicio,
+    p_fin: fin,
+    p_ok: Number(ok),
+    p_scrap: Number(scrap),
+    p_observaciones: observaciones,
+    p_motivo: motivo,
+  });
+
+export const adminEliminarTarea = (t, motivo) =>
+  rpcAdmin("admin_eliminar_tarea", { p_tarea: t.id, p_revision: t.revision, p_motivo: motivo });
+
+export const adminEditarPausa = (pausaId, { inicio, fin, motivoId, motivo }) =>
+  rpcAdmin("admin_editar_pausa", { p_pausa: pausaId, p_inicio: inicio, p_fin: fin, p_motivo_id: motivoId, p_motivo: motivo });
+
+export const adminEliminarPausa = (pausaId, motivo) => rpcAdmin("admin_eliminar_pausa", { p_pausa: pausaId, p_motivo: motivo });
