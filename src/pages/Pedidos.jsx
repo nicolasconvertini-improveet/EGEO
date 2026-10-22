@@ -7,20 +7,23 @@ import SearchBox from "../components/SearchBox";
 import Highlight from "../components/Highlight";
 import EstadoPedido from "../components/EstadoPedido";
 
-export default function Pedidos({ rol, peds, setDetail }) {
+export default function Pedidos({ rol, peds, setDetail, prefiltro }) {
   const [q, setQ] = useState("");
+  // Filtro de estado precargado al llegar desde el tablero (ej.: "en_curso").
+  const [estado, setEstado] = useState(prefiltro?.estado || "");
   const canCreate = rango(rol) >= 1;
   const lista = useMemo(() => {
     const nq = norm(q.trim());
-    if (!nq) return peds;
-    return peds.filter(
+    const base = estado ? peds.filter((p) => p.estado === estado) : peds;
+    if (!nq) return base;
+    return base.filter(
       (p) =>
         norm(p.codigo).includes(nq) ||
         norm(p.articuloNombre).includes(nq) ||
         norm(p.articuloCodigo).includes(nq) ||
         norm(estadoLabel(p.estado)).includes(nq),
     );
-  }, [peds, q]);
+  }, [peds, q, estado]);
 
   return (
     <>
@@ -31,7 +34,15 @@ export default function Pedidos({ rol, peds, setDetail }) {
       )}
 
       <SearchBox value={q} onChange={setQ} placeholder="Buscar por código o artículo…" />
-      {q && (
+      {estado && (
+        <div className="filtro-activo">
+          Mostrando sólo: <b>{estadoLabel(estado)}</b>
+          <button className="linkmini" onClick={() => setEstado("")}>
+            Quitar filtro
+          </button>
+        </div>
+      )}
+      {(q || estado) && (
         <div className="search-count">
           {lista.length} de {peds.length} órdenes
         </div>

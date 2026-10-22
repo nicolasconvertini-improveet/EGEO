@@ -45,12 +45,40 @@ export function efficiency(art, actividad, ok, realSec) {
   return ((ok * std) / realSec) * 100;
 }
 
+/* Escala única de colores de productividad: la usan los gráficos y su leyenda. */
+export const ESCALA_EFF = [
+  { desde: 95, color: "var(--good)", label: "≥ 95 %", desc: "Cumple el estándar" },
+  { desde: 80, color: "var(--warn)", label: "80 – 94 %", desc: "Por debajo del estándar" },
+  { desde: -Infinity, color: "var(--bad)", label: "< 80 %", desc: "Crítico" },
+];
+
 export function effColor(e) {
   if (e == null) return "var(--ink2)";
-  if (e >= 95) return "var(--good)";
-  if (e >= 80) return "var(--warn)";
-  return "var(--bad)";
+  return ESCALA_EFF.find((x) => e >= x.desde).color;
 }
+
+/* Fecha/hora ISO <-> valor de <input type="datetime-local"> (hora local). */
+export const toInputDT = (iso) => {
+  if (!iso) return "";
+  const d = new Date(iso),
+    p = (x) => String(x).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+};
+export const fromInputDT = (v) => (v ? new Date(v).toISOString() : null);
+
+/* Límites [desde, hasta) de un día local, en ISO, para consultar la base. */
+export const limitesDia = (fechaISO, diasAtras = 0) => {
+  const [y, m, d] = fechaISO.split("-").map(Number);
+  return {
+    desde: new Date(y, m - 1, d - diasAtras).toISOString(),
+    hasta: new Date(y, m - 1, d + 1).toISOString(),
+  };
+};
+
+export const fmtMin = (sec) => {
+  const m = Math.round((sec || 0) / 60);
+  return m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")} min` : `${m} min`;
+};
 
 export const estadoLabel = (e) =>
   ({

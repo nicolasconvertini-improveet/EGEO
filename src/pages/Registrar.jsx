@@ -13,6 +13,7 @@ import {
 import { ACTS, actLabel } from "../lib/constants";
 import { nf, fmtClock, fmtDT, fmtHora, efficiency, effColor, findArt, findPed, norm } from "../lib/format";
 import SearchBox from "../components/SearchBox";
+import ConfirmDialog from "../components/ConfirmDialog";
 export default function Registrar({ arts, peds, notify, reloadPeds, reloadTars, reloadEnCurso }) {
   const [cargando, setCargando] = useState(true);
   const [activa, setActiva] = useState(null);
@@ -29,6 +30,7 @@ export default function Registrar({ arts, peds, notify, reloadPeds, reloadTars, 
   const [motivos, setMotivos] = useState([]);
   const [cargandoMotivos, setCargandoMotivos] = useState(true);
   const [errorMotivos, setErrorMotivos] = useState("");
+  const [confirmarFin, setConfirmarFin] = useState(false);
 
   useEffect(() => {
     let vigente = true;
@@ -163,7 +165,10 @@ export default function Registrar({ arts, peds, notify, reloadPeds, reloadTars, 
   };
 
   const iniciar = () => pedId && ejecutar(() => iniciarTarea({ pedidoId: pedId, actividad: act }), "Tarea iniciada");
-  const finalizar = () => ejecutar(() => finalizarTarea(activa));
+  const finalizar = async () => {
+    await ejecutar(() => finalizarTarea(activa));
+    setConfirmarFin(false);
+  };
   const pausar = () => motivo && ejecutar(() => pausarTarea(activa, motivo), "Tarea pausada");
   const reanudar = () => ejecutar(() => reanudarTarea(activa), "Tarea reanudada");
   const confirmar = () =>
@@ -337,9 +342,25 @@ export default function Registrar({ arts, peds, notify, reloadPeds, reloadTars, 
             </>
           )}
         </div>
-        <button className="btn btn-dark" style={{ marginTop: 14 }} disabled={busy} onClick={finalizar}>
+        <button className="btn btn-dark" style={{ marginTop: 14 }} disabled={busy} onClick={() => setConfirmarFin(true)}>
           <Square size={15} fill="#fff" /> Finalizar tarea
         </button>
+        <ConfirmDialog
+          abierto={confirmarFin}
+          titulo="¿Finalizar la tarea?"
+          textoConfirmar="Sí, finalizar"
+          busy={busy}
+          onCancelar={() => setConfirmarFin(false)}
+          onConfirmar={finalizar}
+        >
+          <p>
+            {activa.pedidoCodigo} · {actLabel(activa.actividad)}
+            <br />
+            Tiempo total {fmtClock(totalSec)}
+            {activa.pausaId ? " · la pausa en curso se cierra al finalizar" : ""}
+          </p>
+          <p>Después de finalizar ya no se puede reanudar: sólo queda cargar las piezas.</p>
+        </ConfirmDialog>
       </>
     );
   }
@@ -385,13 +406,13 @@ export default function Registrar({ arts, peds, notify, reloadPeds, reloadTars, 
           <div className="sec-title" style={{ margin: "0 0 8px" }}>
             Piezas OK
           </div>
-          <Counter value={ok} onChange={setOk} steps={[1, 10]} />
+          <CantidadInput id="piezas-ok" value={ok} onChange={setOk} disabled={busy} />
         </div>
         <div style={{ marginTop: 14 }}>
           <div className="sec-title" style={{ margin: "0 0 8px", color: "var(--warn)" }}>
             Scrap
           </div>
-          <Counter value={scrap} onChange={setScrap} steps={[1]} warn />
+          <CantidadInput id="piezas-scrap" value={scrap} onChange={setScrap} disabled={busy} warn />
         </div>
 
         <div className="field" style={{ marginTop: 16 }}>
@@ -602,30 +623,21 @@ function MiniStat({ lab, val }) {
   );
 }
 
-function Counter({ value, onChange, steps = [1], warn }) {
-  const asc = [...steps].sort((a, b) => a - b);
+/* Cantidad sólo por teclado: sin botones de suma/resta. */
+function CantidadInput({ id, value, onChange, disabled, warn }) {
   return (
     <div className={"counter" + (warn ? " warn" : "")}>
-      {asc
-        .slice()
-        .reverse()
-        .map((s) => (
-          <button key={"m" + s} className="cbtn l" onClick={() => onChange(Math.max(0, value - s))}>
-            −{s}
-          </button>
-        ))}
       <input
+        id={id}
         className="cnum"
         inputMode="numeric"
+        pattern="[0-9]*"
+        autoComplete="off"
         value={value}
+        disabled={disabled}
         onChange={(e) => onChange(Number(e.target.value.replace(/\D/g, "")) || 0)}
         onFocus={(e) => e.target.select()}
       />
-      {asc.map((s) => (
-        <button key={"p" + s} className="cbtn r" onClick={() => onChange(value + s)}>
-          +{s}
-        </button>
-      ))}
     </div>
   );
 }
