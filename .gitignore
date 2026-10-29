@@ -13,3 +13,5 @@ supabase/.temp/
 supabase/.branches/
 .local/
 backups/
+
+.env.*.local

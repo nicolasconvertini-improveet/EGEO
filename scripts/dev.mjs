@@ -1,9 +1,13 @@
 import { spawn } from "node:child_process";
+const docker = process.argv.includes("--docker");
+const mode = docker ? "docker" : "development";
 const children = [
-  spawn(process.execPath, ["scripts/local-server.mjs"], { stdio: "inherit" }),
+  spawn(process.execPath, ["scripts/dev-server.mjs", mode], {
+    stdio: "inherit",
+  }),
   spawn(
     process.execPath,
-    ["node_modules/vite/bin/vite.js", "--host", "127.0.0.1"],
+    ["node_modules/vite/bin/vite.js", "--host", "127.0.0.1", "--mode", mode],
     { stdio: "inherit" },
   ),
 ];

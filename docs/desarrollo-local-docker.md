@@ -11,20 +11,18 @@ Desde `C:\Users\nico_\Documents\GitHub\EGEO`, con la rama `QA` activa:
 ```powershell
 npm ci
 npm run db:start
-npm run db:configure
-npm run db:users
-npm run dev:local
+npm run db:configure:docker
+npm run dev:docker
 ```
 
 - Aplicación: http://127.0.0.1:5173
 - Supabase Studio: http://127.0.0.1:54323
-- Las credenciales de admin, supervisor y operario de prueba se guardan en `.local/usuarios-demo.json`, excluido de Git.
-- `db:configure` crea `.env.local` sin modificar `.env`. No sobrescribe una configuración local existente. Para reemplazarla deliberadamente: `node scripts/configure-local.mjs --replace`.
-- `db:users` es una operación inicial: no modifica contraseñas si el archivo de credenciales ya existe.
-- Para ejecuciones siguientes basta `npm run db:start` y `npm run dev:local`.
+- No se cargan datos ni cuentas de ejemplo. Crear cuentas propias en Authentication de Studio y asignar el rol correspondiente en perfiles.
+- `db:configure:docker` crea `.env.docker.local` sin modificar `.env`. No sobrescribe una configuración local existente. Para reemplazarla deliberadamente: `node scripts/configure-local.mjs --replace`.
+- Para ejecuciones siguientes basta `npm run db:start` y `npm run dev:docker`.
 - La primera puesta en marcha descarga imágenes y requiere Internet. No se requiere un proyecto Supabase cloud.
 
-El servidor local de funciones escucha en 127.0.0.1:5174 y Vite redirige `/.netlify/functions/*` a ese servidor. Crear usuarios y consultar/cambiar sus credenciales conserva los controles del servidor existente. Ejecutar solo `npm run dev` permite abrir la interfaz, pero no inicia las funciones administrativas.
+El servidor local de funciones escucha en 127.0.0.1:5174 y Vite redirige `/.netlify/functions/*` a ese servidor. Crear usuarios y consultar/cambiar sus credenciales conserva los controles del servidor existente. `npm run dev` usa Supabase real y también inicia sus funciones administrativas. No usarlo para conectarse a Docker.
 
 ## Detener y actualizar
 
@@ -135,6 +133,10 @@ La prueba local exige Docker/Supabase iniciado y genera datos ficticios con pref
 Comprueba creación de órdenes y moldes, resultados por artículo, reintentos, congelamiento de configuración, avance, edición administrativa, exportación, solicitudes de molienda/mantenimiento, permisos por rol, totales y filtros de indicadores y las funciones locales de usuarios. También recorre el módulo API real del frontend y genera el formulario de edición de molde con renderizado de React para verificar sus campos.
 
 Se probó el inicio desde cero, las migraciones incrementales, el respaldo y una restauración aislada. La revisión visual interactiva quedó pendiente porque Computer Use no pudo verificar la URL de Chrome en Windows; no se presenta el renderizado estático como una validación visual.
+
+## Supabase real
+
+La conexión predeterminada usa `.env`; el archivo Docker solo se carga con el modo explícito docker. Para actualizar la base real, ver [despliegue](despliegue-supabase.md).
 
 ## Alcance de entrega
 

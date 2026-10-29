@@ -226,7 +226,7 @@ export async function crearUsuario({ email, password, nombre, rol }) {
   if (!res.ok) {
     if (res.status === 404)
       throw new Error(
-        "No se encontró el servidor de usuarios. En local usá npm run dev:local.",
+        "No se encontró el servidor de usuarios. Para desarrollo usá npm run dev.",
       );
     throw new Error(payload?.error || "No se pudo crear el usuario");
   }
