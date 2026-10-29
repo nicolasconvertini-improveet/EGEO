@@ -3,6 +3,11 @@
   publish = "dist"
   functions = "netlify/functions"
 
+[build.environment]
+  # La URL del proyecto es pública y también se utiliza en el frontend.
+  # La clave SUPABASE_SERVICE_ROLE_KEY continúa protegida por el escaneo.
+  SECRETS_SCAN_OMIT_KEYS = "SUPABASE_URL"
+
 # SPA: todas las rutas sirven index.html
 [[redirects]]
   from = "/*"

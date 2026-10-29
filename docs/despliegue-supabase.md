@@ -39,6 +39,8 @@ Obtener las claves desde la configuración API del proyecto. La clave pública d
 
 Los archivos con claves se ignoran en Git. `.env.docker.local` solo se carga mediante `npm run dev:docker`; quitar cualquier `.env.local` antiguo que sobrescriba la configuración real. Revisar también las variables del sistema y de Netlify: tienen prioridad sobre los archivos.
 
+En Netlify, `SUPABASE_URL` es la URL pública del proyecto y no debe marcarse como `Contains secret values`. `netlify.toml` excluye únicamente esa variable del escaneo mediante `SECRETS_SCAN_OMIT_KEYS=SUPABASE_URL`, para evitar el falso positivo al encontrarla en los ejemplos o el frontend. `SUPABASE_SERVICE_ROLE_KEY` sigue siendo secreta: mantenerla protegida y fuera de cualquier lista de exclusión. No desactivar el escaneo completo. Ver [configuración oficial del escaneo](https://docs.netlify.com/build/environment-variables/secrets-controller/#configure-secret-scanning).
+
 Ejecutar `npm run config:check -- --require-server`, `npm run build` y luego `npm run dev`. No es necesario ejecutar seeds para ingresar: usar una cuenta que exista en Authentication del proyecto real, con su perfil activo. Las cuentas Docker no existen en el proyecto real. No cambiar contraseñas existentes para migrar.
 
 En **Netlify**, configurar las mismas cuatro variables para el contexto que se va a publicar. Las `VITE_` se usan durante build; `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` deben estar disponibles en Functions. Elegir deliberadamente QA para la publicación/prueba; este procedimiento no modifica ni fusiona main. Volver a construir después de cambiar variables VITE_.
