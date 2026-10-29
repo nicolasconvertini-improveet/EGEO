@@ -1900,8 +1900,8 @@ mark {
 /* Cuatro acciones de Planta distribuidas en el ancho disponible, sin desbordar. */
 .planta-toolbar {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));width:100%;gap:8px;align-items:stretch;margin:12px 0;}
 .planta-toolbar .chip,.planta-toolbar .btn {min-width:0;max-width:100%;width:100%;margin:0;white-space:normal;min-height:44px;height:100%;}
-.trabajos-kpis {margin:12px 0 20px;}
-.trabajos-kpis .lab {white-space:normal;}
+.kpis.trabajos-kpis {grid-template-columns:repeat(3,minmax(0,1fr));margin:12px 0 20px;}
+.trabajos-kpis .lab {white-space:normal;overflow-wrap:anywhere;}
 @media (max-width:479px) {.planta-toolbar .chip,.planta-toolbar .btn {font-size:12px;padding:10px 4px;}}
 /* Mantener el aspecto original del selector de artículos dentro de Nueva orden. */
 .nueva-orden > fieldset {border:0;padding:0;margin:0;min-width:0;}
