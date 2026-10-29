@@ -5,7 +5,6 @@ const nuevoMolde = () => ({
   maquina_id: "",
   material: "",
   material_ciclo: 1,
-  unidad_material: "g",
   segundos_ciclo: 1,
   activo: true,
   articulos: [],
@@ -34,7 +33,7 @@ export default function Planta({ arts, rol }) {
         const { id, articulos, ...d } = form;
         await rpc("guardar_molde", {
           p_id: id || null,
-          p_datos: d,
+          p_datos: { ...d, unidad_material: "g" },
           p_articulos: articulos,
         });
       } else await guardarActivo(tipo, form);
@@ -147,7 +146,7 @@ export default function Planta({ arts, rol }) {
                       />
                     </label>
                     <label>
-                      Material por ciclo
+                      Material por ciclo (gr.)
                       <input
                         type="number"
                         min="0.000001"
@@ -156,16 +155,6 @@ export default function Planta({ arts, rol }) {
                         value={form.material_ciclo}
                         onChange={(e) =>
                           cambiar("material_ciclo", e.target.value)
-                        }
-                      />
-                    </label>
-                    <label>
-                      Unidad de material
-                      <input
-                        required
-                        value={form.unidad_material}
-                        onChange={(e) =>
-                          cambiar("unidad_material", e.target.value)
                         }
                       />
                     </label>

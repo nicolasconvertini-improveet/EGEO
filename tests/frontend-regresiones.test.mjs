@@ -77,7 +77,7 @@ test("Nueva orden: recuperar búsqueda, categorías, resultados incrementales y 
   assert.ok(selected.includes("Cambiar artículo"));
   assert.ok(selected.includes("Tiempos estándar por pieza"));
 });
-test("Tablero: ocho tarjetas de cantidad sin detalle; cada clic abre Trabajos con tipo y estado", () => {
+test("Tablero: seis tarjetas accionables, sin resueltas ni detalle; cada clic abre Trabajos con tipo y estado", () => {
   const rows = [
     {
       id: "1",
@@ -102,7 +102,7 @@ test("Tablero: ocho tarjetas de cantidad sin detalle; cada clic abre Trabajos co
       recorrer(child);
   }
   recorrer(element);
-  assert.equal(buttons.length, 8);
+  assert.equal(buttons.length, 6);
   buttons.forEach((b) => b.props.onClick());
   for (const [index, [tab, filtro]] of rutas.entries()) {
     assert.equal(tab, "mantenimiento");
@@ -112,6 +112,8 @@ test("Tablero: ocho tarjetas de cantidad sin detalle; cada clic abre Trabajos co
   }
   const html = renderToStaticMarkup(element);
   assert.ok(!html.includes("DETALLE QUE NO DEBE MOSTRARSE"));
+  assert.ok(!html.includes("Resuelta"));
+  assert.ok(rutas.every(([, filtro]) => filtro.estado !== "resuelta"));
   assert.equal(new Set(ESTADOS_TRABAJO.map((e) => e.key)).size, 4);
   assert.equal(ESTADOS_TRABAJO.filter((e) => e.key === "pendiente").length, 1);
 });

@@ -60,7 +60,7 @@ Para actualizar una base antigua que ya tiene las migraciones 01–19, aplicar �
 Con administrador, entrar en **Planta**:
 
 1. Crear máquinas y, si corresponde, equipos.
-2. Crear un molde con su código, una máquina, material, cantidad y unidad de material por ciclo, segundos por ciclo y todos los artículos que produce.
+2. Crear un molde con su código, una máquina, material, cantidad de material por ciclo en gramos, segundos por ciclo y todos los artículos que produce.
 3. Indicar unidades por ciclo para cada artículo.
 4. Editar o desactivar desde el mismo formulario.
 

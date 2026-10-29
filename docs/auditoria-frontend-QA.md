@@ -13,10 +13,10 @@ La comparación se realizó leyendo archivos de esa rama; no se hizo checkout, c
 
 ## Correcciones explícitas de esta revisión
 
-- Planta: Moldes, Máquinas, Equipos y Nuevo registro comparten una fila; en ancho insuficiente el desplazamiento queda dentro de esa barra.
+- Planta: Moldes, Máquinas, Equipos y Nuevo registro comparten una fila; se distribuyen en cuatro columnas iguales y caben en el ancho disponible, sin desplazamiento horizontal.
 - Artículos: el selector de categorías siempre está visible. «Sin categoría» permite filtrar registros que no tengan una categoría cargada.
 - Trabajos: se reemplazó la opción ambigua «pendientes» por «Sin resolver», que es un filtro conjunto. Los estados reales aparecen una sola vez: Pendiente de asignación, Asignada, En curso y Resuelta.
-- Tablero: ocho tarjetas, una por cada combinación de tipo (mantenimiento/molienda) y estado. Muestran únicamente cantidades; cada clic navega a Trabajos prefiltrado por esos dos valores.
+- Tablero: seis tarjetas, una por cada combinación de tipo (mantenimiento/molienda) y estado accionable (pendiente de asignación, asignada o en curso). Las resueltas se consultan en Trabajos y no aparecen en el tablero. Muestran únicamente cantidades; cada clic navega a Trabajos prefiltrado por esos dos valores.
 
 ## Otras áreas revisadas
 

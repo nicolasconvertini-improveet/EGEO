@@ -66,7 +66,6 @@ test("Docker local: órdenes por proceso, molde multiartículo, historial y perm
     maquina_id: maquina.id,
     material: "PP",
     material_ciclo: 30,
-    unidad_material: "g",
     segundos_ciclo: 20,
     activo: true,
   };
@@ -74,6 +73,20 @@ test("Docker local: órdenes por proceso, molde multiartículo, historial y perm
     admin.c.rpc("guardar_molde", {
       p_id: null,
       p_datos: moldeDatos,
+      p_articulos: a.map((x, i) => ({
+        articulo_id: x.id,
+        unidades_ciclo: i + 1,
+      })),
+    }),
+  );
+  const unidadMolde = await must(
+    admin.c.from("moldes").select("unidad_material").eq("id", molde).single(),
+  );
+  assert.equal(unidadMolde.unidad_material, "g");
+  await denied(
+    admin.c.rpc("guardar_molde", {
+      p_id: molde,
+      p_datos: { ...moldeDatos, unidad_material: "kg" },
       p_articulos: a.map((x, i) => ({
         articulo_id: x.id,
         unidades_ciclo: i + 1,
