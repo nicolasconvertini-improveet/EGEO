@@ -5,6 +5,11 @@ import {
   solicitudes,
   gestionarSolicitud,
 } from "../lib/plantaApi";
+import {
+  ESTADOS_TRABAJO,
+  estadoTrabajoLabel,
+  filtrarTrabajos,
+} from "../lib/trabajos";
 import { construirLibro } from "../lib/exportarExcel";
 const inicial = () => ({
   tipo: "mantenimiento",
@@ -13,7 +18,7 @@ const inicial = () => ({
   preventivo: false,
   asignado_id: "",
 });
-export default function Mantenimiento({ rol }) {
+export default function Mantenimiento({ rol, prefiltro }) {
   const [rows, setRows] = useState(null),
     [historia, setHistoria] = useState([]),
     [catalogo, setCatalogo] = useState(null),
@@ -21,8 +26,8 @@ export default function Mantenimiento({ rol }) {
     [form, setForm] = useState(inicial),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
-    [estado, setEstado] = useState("pendientes"),
-    [tipo, setTipo] = useState(""),
+    [estado, setEstado] = useState(prefiltro?.estado || "sin_resolver"),
+    [tipo, setTipo] = useState(prefiltro?.tipo || ""),
     [asignado, setAsignado] = useState(""),
     [destino, setDestino] = useState(""),
     [edicion, setEdicion] = useState({}),
@@ -84,16 +89,12 @@ export default function Mantenimiento({ rol }) {
       : s.equipo_id
         ? catalogo?.equipos.find((m) => m.id === s.equipo_id)?.nombre
         : "Molienda";
-  const visibles = (rows || []).filter(
-    (s) =>
-      (estado === "todos" ||
-        (estado === "pendientes"
-          ? s.estado !== "resuelta"
-          : s.estado === estado)) &&
-      (!tipo || s.tipo === tipo) &&
-      (!asignado || s.asignado_id === asignado) &&
-      (!destino || (s.maquina_id || s.equipo_id) === destino),
-  );
+  const visibles = filtrarTrabajos(rows || [], {
+    estado,
+    tipo,
+    asignado,
+    destino,
+  });
   const exportar = () =>
     ejecutar(async () => {
       const XLSX = await import("xlsx");
@@ -261,18 +262,13 @@ export default function Mantenimiento({ rol }) {
                 value={estado}
                 onChange={(e) => setEstado(e.target.value)}
               >
-                {[
-                  "pendientes",
-                  "pendiente",
-                  "asignada",
-                  "en_curso",
-                  "resuelta",
-                  "todos",
-                ].map((x) => (
-                  <option key={x} value={x}>
-                    {x.replace("_", " ")}
+                <option value="sin_resolver">Sin resolver</option>
+                {ESTADOS_TRABAJO.map((e) => (
+                  <option key={e.key} value={e.key}>
+                    {e.label}
                   </option>
                 ))}
+                <option value="todos">Todos</option>
               </select>
             </label>
             <label>
@@ -336,7 +332,7 @@ export default function Mantenimiento({ rol }) {
                       : "Mantenimiento · " + nombre(s)}
                   </h3>
                   <p>
-                    {s.estado.replace("_", " ")} ·{" "}
+                    {estadoTrabajoLabel(s.estado)} ·{" "}
                     {new Date(s.creado).toLocaleString()} ·{" "}
                     {usuarios.find((u) => u.id === s.asignado_id)?.nombre ||
                       (!gestor ? "Asignada a vos" : "Sin asignar")}

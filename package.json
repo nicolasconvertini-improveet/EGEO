@@ -18,7 +18,8 @@
     "db:configure": "node scripts/configure-local.mjs",
     "db:backup": "node scripts/backup-local.mjs backup",
     "db:restore:test": "node scripts/backup-local.mjs restore",
-    "db:users": "node scripts/seed-local-users.mjs"
+    "db:users": "node scripts/seed-local-users.mjs",
+    "test:frontend": "node --test tests/frontend-regresiones.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",

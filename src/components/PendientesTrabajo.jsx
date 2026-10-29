@@ -1,5 +1,39 @@
 import React, { useEffect, useState } from "react";
 import { solicitudes } from "../lib/plantaApi";
+import { tarjetasTrabajos } from "../lib/trabajos";
+export function TarjetasTrabajos({ rows, irA }) {
+  return (
+    <section aria-label="Mantenimientos y moliendas por estado">
+      <div className="sec-title">Mantenimientos y moliendas por estado</div>
+      <div className="kpis trabajos-kpis">
+        {tarjetasTrabajos(rows).map((t) => (
+          <button
+            key={t.tipo + "-" + t.estado}
+            type="button"
+            className="kpi kpi-link"
+            onClick={() =>
+              irA("mantenimiento", { tipo: t.tipo, estado: t.estado })
+            }
+            aria-label={`${t.tipo === "mantenimiento" ? "Mantenimiento" : "Molienda"} · ${t.label}: ${t.cantidad}`}
+          >
+            <div
+              className="tick"
+              style={{
+                background:
+                  t.tipo === "mantenimiento" ? "var(--ink)" : "var(--warn)",
+              }}
+            />
+            <div className="lab">
+              {t.tipo === "mantenimiento" ? "Mantenimiento" : "Molienda"} ·{" "}
+              {t.label}
+            </div>
+            <div className="val mono">{t.cantidad}</div>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
 export default function PendientesTrabajo({ irA }) {
   const [rows, setRows] = useState(null),
     [error, setError] = useState("");
@@ -9,7 +43,7 @@ export default function PendientesTrabajo({ irA }) {
       solicitudes()
         .then((r) => {
           if (live) {
-            setRows(r.filter((s) => s.estado !== "resuelta"));
+            setRows(r);
             setError("");
           }
         })
@@ -21,31 +55,10 @@ export default function PendientesTrabajo({ irA }) {
       clearInterval(timer);
     };
   }, []);
-  return (
-    <article className="card">
-      <h3>Trabajos pendientes</h3>
-      {error ? (
-        <p role="alert">{error}</p>
-      ) : rows ? (
-        <>
-          <p>
-            {rows.filter((s) => s.tipo === "mantenimiento").length}{" "}
-            mantenimientos · {rows.filter((s) => s.tipo === "molienda").length}{" "}
-            tareas de molienda
-          </p>
-          {rows.slice(0, 5).map((s) => (
-            <p key={s.id}>
-              {s.tipo === "molienda" ? "Molienda" : s.detalle} ·{" "}
-              {s.estado.replace("_", " ")}
-            </p>
-          ))}
-        </>
-      ) : (
-        <p>Cargando…</p>
-      )}
-      <button className="btn btn-ghost" onClick={() => irA("mantenimiento")}>
-        Ver pendientes
-      </button>
-    </article>
+  if (error) return <p role="alert">{error}</p>;
+  return rows ? (
+    <TarjetasTrabajos rows={rows} irA={irA} />
+  ) : (
+    <p role="status">Cargando mantenimientos y moliendas…</p>
   );
 }

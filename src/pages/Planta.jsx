@@ -51,7 +51,7 @@ export default function Planta({ arts, rol }) {
   return (
     <section className="gestion">
       <h2>Máquinas, equipos y moldes</h2>
-      <div className="chips">
+      <div className="planta-toolbar" aria-label="Gestión de planta">
         {["moldes", "maquinas", "equipos"].map((t) => (
           <button
             className={"chip" + (tipo === t ? " on" : "")}
@@ -69,26 +69,26 @@ export default function Planta({ arts, rol }) {
                 : "Moldes"}
           </button>
         ))}
+        {!form && (
+          <button
+            className="btn btn-primary"
+            onClick={() =>
+              setForm(
+                tipo === "moldes"
+                  ? nuevoMolde()
+                  : { codigo: "", nombre: "", activo: true },
+              )
+            }
+          >
+            Nuevo registro
+          </button>
+        )}
       </div>
       {error && <p role="alert">{error}</p>}
       {!datos ? (
         <button onClick={cargar}>Reintentar carga</button>
       ) : (
         <>
-          {!form && (
-            <button
-              className="btn btn-primary"
-              onClick={() =>
-                setForm(
-                  tipo === "moldes"
-                    ? nuevoMolde()
-                    : { codigo: "", nombre: "", activo: true },
-                )
-              }
-            >
-              Nuevo registro
-            </button>
-          )}
           {form && (
             <form className="card gestion-form" onSubmit={guardar}>
               <button

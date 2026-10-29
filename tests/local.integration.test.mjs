@@ -566,7 +566,7 @@ test("Docker local: órdenes por proceso, molde multiartículo, historial y perm
   await build({
     stdin: {
       contents:
-        "export * from './src/api.js'; export {supabase} from './src/supabaseClient.js'; export {default as Editor} from './src/pages/TareaEditar.jsx';",
+        "export * from './src/api.js'; export {cargarIndicadores} from './src/lib/indicadoresApi.js'; export {supabase} from './src/supabaseClient.js'; export {default as Editor} from './src/pages/TareaEditar.jsx';",
       resolveDir: process.cwd(),
     },
     bundle: true,
@@ -647,6 +647,19 @@ test("Docker local: órdenes por proceso, molde multiartículo, historial y perm
     !html.includes('id="ed-ok"'),
     "La edición por molde no debe mostrar una cantidad global editable",
   );
+  const panel = await api.cargarIndicadores(
+    { desde: day, hasta: day, articulos: null, proceso: "", operario: "" },
+    new AbortController().signal,
+  );
+  assert.ok(panel.tareas.some((t) => t.id === uiId));
+  assert.equal(panel.dias.length, 1);
+  assert.ok(panel.produccion.length > 0);
+  assert.ok(panel.tiempos.length > 0);
+  const realResumen = panel.dias.reduce((n, d) => n + Number(d.real), 0);
+  const realTabla = panel.tiempos
+    .filter((t) => t.motivo.startsWith("Producción · "))
+    .reduce((n, t) => n + Number(t.segundos), 0);
+  assert.ok(Math.abs(realResumen - realTabla) < 0.001);
   await api.supabase.auth.signOut();
   console.log("Datos de prueba identificados con prefijo " + stamp);
 });

@@ -1895,7 +1895,16 @@ mark {
 }
 @media (max-width: 479px) {
   .fgrid2 { grid-template-columns: minmax(0, 1fr); }
-  .appbar { padding-inline: 12px; }
-  .appbar .row { gap: 6px; }
-  .appbar .chip-role { max-width: 90px; overflow: hidden; text-overflow: ellipsis; }
 }
+
+/* Acciones de Planta en una misma fila, con desplazamiento local en móvil. */
+.planta-toolbar {display:flex;gap:8px;align-items:center;overflow-x:auto;margin:12px 0;scroll-padding:8px;}
+.planta-toolbar .chip,.planta-toolbar .btn {flex:1 0 auto;width:auto;margin:0;white-space:nowrap;min-height:44px;}
+.trabajos-kpis {margin:12px 0 20px;}
+.trabajos-kpis .lab {white-space:normal;}
+@media (max-width:479px) {.planta-toolbar .chip,.planta-toolbar .btn {font-size:12px;padding:10px 8px;}}
+/* Mantener el aspecto original del selector de artículos dentro de Nueva orden. */
+.nueva-orden > fieldset {border:0;padding:0;margin:0;min-width:0;}
+.nueva-orden > fieldset > label {display:block;margin:14px 0 8px;font-size:13px;font-weight:600;color:var(--ink2);}
+.nueva-orden > fieldset > label > input,.nueva-orden > fieldset > label > select,.nueva-orden > fieldset > label > label > input {display:block;width:100%;min-width:0;padding:12px;margin-top:6px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink);font:inherit;}
+.nueva-orden .art-picker {margin-top:16px;}

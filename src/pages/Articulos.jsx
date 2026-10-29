@@ -11,14 +11,14 @@ export default function Articulos({ arts, setDetail }) {
   const [cats, setCats] = useState([]); // categorías seleccionadas (multi)
   const [abierto, setAbierto] = useState(false);
 
-  const categorias = useMemo(() => [...new Set(arts.map((a) => a.categoria).filter(Boolean))].sort(), [arts]);
+  const categorias = useMemo(() => [...new Set(arts.map((a) => a.categoria || "Sin categoría"))].sort(), [arts]);
 
   const toggleCat = (c) => setCats((s) => (s.includes(c) ? s.filter((x) => x !== c) : [...s, c]));
 
   const lista = useMemo(() => {
     const nq = norm(q.trim());
     return arts.filter((a) => {
-      if (cats.length && !cats.includes(a.categoria)) return false;
+      if (cats.length && !cats.includes(a.categoria || "Sin categoría")) return false;
       if (!nq) return true;
       return (
         norm(a.codigo).includes(nq) ||
@@ -41,7 +41,7 @@ export default function Articulos({ arts, setDetail }) {
 
       <SearchBox value={q} onChange={setQ} placeholder="Buscar por código, nombre, categoría…" />
 
-      {categorias.length > 0 && (
+      {(
         <div className="dropdown">
           <button className={"ddbtn" + (cats.length ? " act" : "")} onClick={() => setAbierto((v) => !v)}>
             <span>{etiqueta}</span>
@@ -55,7 +55,7 @@ export default function Articulos({ arts, setDetail }) {
                   <button key={c} className="ddopt" onClick={() => toggleCat(c)}>
                     <span className={"ddcheck" + (on ? " on" : "")}>{on && <Check size={13} strokeWidth={3} color="#fff" />}</span>
                     <span className="ddtxt">{c}</span>
-                    <span className="ddcount">{arts.filter((a) => a.categoria === c).length}</span>
+                    <span className="ddcount">{arts.filter((a) => (a.categoria || "Sin categoría") === c).length}</span>
                   </button>
                 );
               })}

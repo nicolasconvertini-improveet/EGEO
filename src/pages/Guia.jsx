@@ -74,11 +74,11 @@ const SECCIONES = [
       ],
       [
         "Horas",
-        "La tabla muestra horas por motivo y el total. El tiempo de una tarea de molde se cuenta una sola vez. Mantenimiento y molienda se filtran por usuario, sin depender de artículo o proceso.",
+        "La tabla muestra horas por motivo y el total. El tiempo de una tarea de molde se cuenta una sola vez. Mantenimiento y molienda incluyen toda la planta, sin depender de usuario, artículo o proceso.",
       ],
       [
-        "Filtros y descarga",
-        "Elegí período, artículos, proceso y usuario. Podés descargar las dos tablas en Excel.",
+        "Filtros y comparación",
+        "Elegí período, artículos, proceso y usuario. Los filtros se pueden plegar. El resumen y la comparación agrupada conservan sus opciones originales.",
       ],
     ],
   },

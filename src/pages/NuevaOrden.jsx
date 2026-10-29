@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { createPedido } from "../api";
 import { catalogos } from "../lib/plantaApi";
+import SelectorArticuloPedido from "../components/SelectorArticuloPedido";
+import { norm } from "../lib/format";
 import { ACTS } from "../lib/constants";
 export default function NuevaOrden({ arts, notify, reloadPeds, setDetail }) {
   const [form, setForm] = useState({
@@ -39,7 +41,7 @@ export default function NuevaOrden({ arts, notify, reloadPeds, setDetail }) {
   };
   const inyectado = form.proceso === "inyectado";
   return (
-    <form className="gestion" onSubmit={guardar}>
+    <form className="nueva-orden" onSubmit={guardar}>
       {error && <p role="alert">{error}</p>}
       <fieldset disabled={busy || !datos}>
         <label>
@@ -70,16 +72,16 @@ export default function NuevaOrden({ arts, notify, reloadPeds, setDetail }) {
             ))}
           </select>
         </label>
-        <label>
-          Buscar {inyectado ? "molde" : "artículo"}
-          <input
-            type="search"
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-          />
-        </label>
         {inyectado ? (
           <>
+            <label>
+              Buscar molde por código, máquina o artículo
+              <input
+                type="search"
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+              />
+            </label>
             <label>
               Molde
               <select
@@ -89,14 +91,30 @@ export default function NuevaOrden({ arts, notify, reloadPeds, setDetail }) {
               >
                 <option value="">Seleccionar molde</option>
                 {datos?.moldes
-                  .filter(
-                    (m) =>
+                  .filter((m) => {
+                    const maquina = datos.maquinas.find(
+                      (x) => x.id === m.maquina_id,
+                    );
+                    const piezas = m.articulos
+                      .map((r) => arts.find((a) => a.id === r.articulo_id))
+                      .filter(Boolean);
+                    const texto = norm(
+                      [
+                        m.codigo,
+                        maquina?.codigo,
+                        maquina?.nombre,
+                        ...piezas.flatMap((a) => [a.codigo, a.nombre]),
+                      ].join(" "),
+                    );
+                    return (
                       m.activo &&
                       (m.id === form.moldeId ||
-                        m.codigo
-                          .toLowerCase()
-                          .includes(busqueda.toLowerCase())),
-                  )
+                        norm(busqueda)
+                          .split(/\s+/)
+                          .filter(Boolean)
+                          .every((p) => texto.includes(p)))
+                    );
+                  })
                   .map((m) => (
                     <option key={m.id} value={m.id}>
                       {m.codigo} ·{" "}
@@ -128,31 +146,12 @@ export default function NuevaOrden({ arts, notify, reloadPeds, setDetail }) {
             )}
           </>
         ) : (
-          <label>
-            Artículo
-            <select
-              required
-              value={form.articuloId}
-              onChange={(e) => set("articuloId", e.target.value)}
-            >
-              <option value="">Seleccionar artículo</option>
-              {arts
-                .filter(
-                  (a) =>
-                    a.activo &&
-                    a.std[form.proceso] > 0 &&
-                    (a.id === form.articuloId ||
-                      `${a.codigo} ${a.nombre}`
-                        .toLowerCase()
-                        .includes(busqueda.toLowerCase())),
-                )
-                .map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.codigo} · {a.nombre}
-                  </option>
-                ))}
-            </select>
-          </label>
+          <SelectorArticuloPedido
+            arts={arts.filter((a) => a.std[form.proceso] > 0)}
+            artId={form.articuloId}
+            onChange={(id) => set("articuloId", id)}
+            busy={busy}
+          />
         )}
         <label>
           {inyectado ? "Ciclos previstos" : "Cantidad de piezas a fabricar"}

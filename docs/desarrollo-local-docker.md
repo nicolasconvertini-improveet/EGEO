@@ -88,7 +88,7 @@ El estándar de inyectado utiliza ciclos equivalentes OK = mínimo de OK/unidade
 - El operario consulta e inicia/resuelve únicamente sus tareas asignadas. La restricción también se aplica en SQL/RPC y a la exportación del historial.
 - Al resolver se registran los minutos. En mantenimiento se describe el trabajo realizado; en molienda se pueden agregar observaciones opcionales.
 - Las reasignaciones y transiciones quedan auditadas.
-- El tablero muestra pendientes y acceso a Trabajos, según los roles habilitados para el tablero.
+- El tablero muestra cantidades por tipo y estado en tarjetas que abren Trabajos con esos filtros, según los roles habilitados.
 - El reporte de solicitudes permite filtrar estado, tipo, usuario y equipo, y descargar el listado visible.
 
 ### Indicadores
@@ -96,10 +96,10 @@ El estándar de inyectado utiliza ciclos equivalentes OK = mínimo de OK/unidade
 - Producción por artículo: código, descripción, OK y scrap/rechazo.
 - Horas por motivo: producción por proceso, pausas por motivo y mantenimiento/molienda, más total de horas.
 - Se eliminan ambos gráficos diarios y la opción de valores por día.
-- Los filtros de período, artículos, proceso y usuario siguen disponibles, con exportación de ambas tablas.
+- Los filtros de período, artículos, proceso y usuario conservan su presentación original, junto con las tarjetas de resumen y la comparación agrupada de tiempos.
 - Al consultar todos los procesos, las cantidades suman operaciones de fabricación: una pieza puede haber pasado por más de un proceso.
 - Filtrar un artículo de un molde incluye la duración completa de la tarea una sola vez; no se inventa un reparto de horas entre piezas.
-- Mantenimiento y molienda se filtran por ejecutor y fecha de ejecución/resolución; no por artículo ni proceso.
+- Mantenimiento y molienda conservan el alcance original de toda la planta por fecha de ejecución/resolución; no dependen del filtro de usuario, artículo o proceso.
 - Los tiempos de producción y pausas se recortan al período. Las cantidades corresponden al fin de la tarea confirmada. El total se calcula antes del redondeo visual.
 
 ## Respaldos y recuperación de prueba
@@ -118,6 +118,7 @@ La restauración crea una base **nueva y aislada** dentro del contenedor. El nom
 ```powershell
 npm run build
 npm run test:indicadores
+npm run test:frontend
 npm run test:local
 npm run db:baseline:check
 ```
