@@ -45,6 +45,22 @@ En **Netlify**, configurar las mismas cuatro variables para el contexto que se v
 
 En Supabase Authentication, revisar Site URL y las redirect URLs de la aplicación publicada y del desarrollo autorizado.
 
+### Publicar la rama QA en Netlify
+
+El proyecto usa **npm** y `package-lock.json`. No agregar un `pnpm-lock.yaml`: Netlify lo detecta y cambia el instalador a pnpm antes de ejecutar el build. Ver [selección de dependencias en Netlify](https://docs.netlify.com/build/configure-builds/manage-dependencies/).
+
+Después de aplicar el SQL y configurar las variables del contexto correspondiente:
+
+1. Subir los commits de QA desde el repositorio: `git push origin QA`.
+2. En Netlify, revisar **Project configuration → Developer settings → Continuous deployment → Branches and deploy contexts**. Para una URL propia de QA, habilitar Branch deploys y agregar la rama `QA` respetando mayúsculas. Esto permite conservar main como rama de producción.
+3. Mantener Build command `npm run build`, Publish directory `dist` y Functions directory `netlify/functions` (ya definidos en `netlify.toml`). La base del proyecto es la raíz del repositorio.
+4. En **Deploys**, abrir el despliegue de QA y seleccionar **Retry without cache** con el último commit de esa rama. El registro de instalación debe indicar npm. No reintentar un commit anterior que conserve el lockfile de pnpm.
+5. Cuando figure Published/Ready, abrir la URL del deploy. La URL habitual de una rama QA es `qa--NOMBRE-DEL-SITIO.netlify.app`; usar el enlace que muestre Netlify.
+
+Si se quiere que QA pase a servir el dominio principal, cambiar deliberadamente la **Production branch** a `QA` en la misma configuración y generar el despliegue. Esto cambia qué versión publica Netlify, sin fusionar ni modificar main.
+
+Referencias: [branch deploys](https://docs.netlify.com/deploy/deploy-types/branch-deploys/) y [reintentos de despliegue](https://docs.netlify.com/deploy/manage-deploys/manage-deploys-overview/).
+
 ## 4. Verificar antes de habilitar el uso
 
 Consultar en SQL Editor:
