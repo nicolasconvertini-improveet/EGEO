@@ -1908,3 +1908,11 @@ mark {
 .nueva-orden > fieldset > label {display:block;margin:14px 0 8px;font-size:13px;font-weight:600;color:var(--ink2);}
 .nueva-orden > fieldset > label > input,.nueva-orden > fieldset > label > select,.nueva-orden > fieldset > label > label > input {display:block;width:100%;min-width:0;padding:12px;margin-top:6px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink);font:inherit;}
 .nueva-orden .art-picker {margin-top:16px;}
+.avance-inyectado {margin-top:14px;}
+.avance-inyectado-totales {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0;}
+.avance-inyectado-totales > div {border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center;min-width:0;}
+.avance-inyectado-totales dt {font-size:11px;color:var(--ink2);text-transform:uppercase;overflow-wrap:anywhere;}
+.avance-inyectado-totales dd {margin:6px 0 0;font-weight:700;}
+.avance-inyectado-articulo {border-top:1px solid var(--line);padding:10px 0;overflow-wrap:anywhere;}
+.avance-inyectado-articulo p {margin:6px 0;}
+.resultados-molde .hint-err {margin-top:8px;}

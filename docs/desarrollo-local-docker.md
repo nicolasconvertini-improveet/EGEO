@@ -76,7 +76,13 @@ Una máquina con moldes activos no puede desactivarse hasta reasignarlos o desac
 - Al finalizar una tarea de inyectado, cargar OK y rechazo para cada artículo. La confirmación es atómica y los reintentos con el mismo contenido no duplican resultados.
 - La edición administrativa incluye el detalle por artículo y deja auditoría. Las exportaciones de tareas generan una fila por artículo.
 
-El estándar de inyectado utiliza ciclos equivalentes OK = mínimo de OK/unidades por ciclo, multiplicado por segundos por ciclo. Es una regla conservadora ante rechazos desiguales y evita sumar el tiempo completo de ciclo por cada pieza. El avance usa ciclos enteros; la comparación de estándar admite fracciones. Esta decisión y la meta por ciclos deben validarse con el responsable del proceso antes de usar los indicadores para evaluación operativa.
+La productividad de inyectado se calcula por ciclos ejecutados: ciclos × segundos estándar por ciclo ÷ tiempo operativo neto × 100. Los ciclos incluyen piezas OK y scrap. Para cada artículo, OK + scrap debe ser múltiplo de sus unidades por ciclo; todos los artículos deben corresponder al mismo número de ciclos. La validación se aplica en interfaz y backend, también al editar cantidades.
+
+Registrar muestra productividad estimada al cargar piezas y el medidor de productividad al confirmar. El avance aparece antes de iniciar, durante la tarea, al cargar resultados y en el resumen final: ciclos, unidades y gramos solicitados y pendientes, con detalle por artículo.
+
+Solo las piezas OK reducen las unidades pendientes. El material solicitado es ciclos previstos × gramos por ciclo. El material pendiente se estima con el máximo de ciclos enteros necesarios para completar los OK faltantes de cada artículo; los rechazos pueden aumentar el material necesario. El resumen muestra además los gramos procesados en la tarea.
+
+La configuración de la orden permanece congelada. Los registros históricos con resultados incompatibles conservan sus cantidades; si no permiten reconstruir ciclos completos e iguales, no se inventa una productividad. Deben corregirse mediante la edición administrativa con su motivo de auditoría.
 
 ### Mantenimiento y molienda
 
@@ -119,6 +125,7 @@ La restauración crea una base **nueva y aislada** dentro del contenedor. El nom
 npm run build
 npm run test:indicadores
 npm run test:frontend
+npm run test:inyectado
 npm run test:local
 npm run db:baseline:check
 ```

@@ -10,6 +10,7 @@ import {
   adminEditarPausa,
   adminEliminarPausa,
 } from "../api";
+import { analizarCiclos } from "../lib/inyectado";
 import ResultadosMolde from "../components/ResultadosMolde";
 import ConfirmDialog from "../components/ConfirmDialog";
 
@@ -95,7 +96,7 @@ export default function TareaEditar({
       s + Math.max(0, (new Date(p._fin) - new Date(p._inicio)) / 1000 || 0),
     0,
   );
-  const errorForm =
+  const errorFechas =
     !form.inicio || !form.fin
       ? "Completá inicio y fin."
       : totalSeg <= 0
@@ -104,6 +105,11 @@ export default function TareaEditar({
           ? "Completá las cantidades."
           : "";
 
+  const errorForm =
+    errorFechas ||
+    (t.moldeId
+      ? analizarCiclos(t.resultados, resultados).errores.join(" ")
+      : "");
   const correr = async (fn, msg) => {
     setBusy(true);
     try {

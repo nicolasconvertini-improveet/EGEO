@@ -148,7 +148,7 @@ const SECCIONES = [
       ],
       [
         "Registrar producción",
-        "El proceso queda fijado por la orden. Al finalizar inyectado se cargan piezas OK y rechazo por cada artículo del molde. Las cantidades se guardan juntas.",
+        "El proceso queda fijado por la orden. Al finalizar inyectado se cargan piezas OK y rechazo por cada artículo del molde. Su suma debe ser múltiplo de las unidades por ciclo, y todos deben informar los mismos ciclos. La productividad usa ciclos ejecutados y el avance muestra unidades y gramos solicitados y pendientes. Las cantidades se guardan juntas.",
       ],
       [
         "Avance",

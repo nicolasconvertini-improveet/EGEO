@@ -301,6 +301,8 @@ function mapTarea(t) {
     moldeId: t.molde_id,
     proceso: t.proceso,
     resultados: t.resultados || [],
+    ciclos: t.ciclos == null ? null : Number(t.ciclos),
+    segundosCiclo: t.segundos_ciclo == null ? null : Number(t.segundos_ciclo),
     pedidoId: t.pedido_id,
     pedidoCodigo: t.pedido_codigo,
     articuloId: t.articulo_id,

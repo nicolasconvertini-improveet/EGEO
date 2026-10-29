@@ -12,7 +12,7 @@ import {
 mkdirSync(".local", { recursive: true });
 await build({
   stdin: {
-    contents: `export {default as Planta} from './src/pages/Planta.jsx';export {default as Articulos} from './src/pages/Articulos.jsx';export {default as Selector} from './src/components/SelectorArticuloPedido.jsx';export {TarjetasTrabajos} from './src/components/PendientesTrabajo.jsx';`,
+    contents: `export {ResumenRegistro} from './src/pages/Registrar.jsx';export {default as Planta} from './src/pages/Planta.jsx';export {default as Articulos} from './src/pages/Articulos.jsx';export {default as Selector} from './src/components/SelectorArticuloPedido.jsx';export {TarjetasTrabajos} from './src/components/PendientesTrabajo.jsx';`,
     resolveDir: process.cwd(),
   },
   bundle: true,
@@ -116,4 +116,63 @@ test("Tablero: seis tarjetas accionables, sin resueltas ni detalle; cada clic ab
   assert.ok(rutas.every(([, filtro]) => filtro.estado !== "resuelta"));
   assert.equal(new Set(ESTADOS_TRABAJO.map((e) => e.key)).size, 4);
   assert.equal(ESTADOS_TRABAJO.filter((e) => e.key === "pendiente").length, 1);
+});
+
+test("Cierre de inyectado: mostrar productividad y avance en unidades y gramos", () => {
+  const pedido = {
+    cantidad: 10,
+    configuracion: { codigo: "M-01", material_ciclo: 30, segundos_ciclo: 20 },
+    articulos: [
+      {
+        articulo_id: "A",
+        codigo: "A",
+        nombre: "Pieza A",
+        unidades_ciclo: 2,
+        ok: 0,
+        scrap: 0,
+      },
+      {
+        articulo_id: "B",
+        codigo: "B",
+        nombre: "Pieza B",
+        unidades_ciclo: 3,
+        ok: 0,
+        scrap: 0,
+      },
+    ],
+  };
+  const hecha = {
+    molde: "M-01",
+    act: "inyectado",
+    ok: 23,
+    scrap: 2,
+    realSec: 200,
+    productividad: 50,
+    ciclos: 5,
+    segundosCiclo: 20,
+    gramosProcesados: 150,
+    pedido,
+    resultados: [
+      { articulo_id: "A", piezas_ok: 9, piezas_scrap: 1 },
+      { articulo_id: "B", piezas_ok: 14, piezas_scrap: 1 },
+    ],
+  };
+  const html = renderToStaticMarkup(
+    createElement(ui.ResumenRegistro, { hecha, onOtra: () => {} }),
+  );
+  for (const texto of [
+    "50%",
+    "5",
+    "20",
+    "150",
+    "Material solicitado",
+    "300",
+    "Material pendiente estimado",
+    "180",
+    "Unidades solicitadas",
+    "Unidades pendientes",
+    "27",
+  ])
+    assert.ok(html.includes(texto), texto);
+  assert.ok(html.includes("Registrar otra tarea"));
 });

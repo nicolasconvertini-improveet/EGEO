@@ -29,6 +29,8 @@ import {
   norm,
 } from "../lib/format";
 import SearchBox from "../components/SearchBox";
+import AvanceInyectado from "../components/AvanceInyectado";
+import { analizarCiclos } from "../lib/inyectado";
 import ResultadosMolde from "../components/ResultadosMolde";
 import ConfirmDialog from "../components/ConfirmDialog";
 export default function Registrar({
@@ -201,6 +203,15 @@ export default function Registrar({
   const artSel = findArt(arts, pedSel?.articuloId);
   const ordenActiva = findPed(peds, activa?.pedidoId);
   const articulosMolde = ordenActiva?.articulos || [];
+  const cargaInyectado = analizarCiclos(
+    articulosMolde,
+    resultados,
+    ordenActiva?.configuracion?.segundos_ciclo,
+    activa?.realSec,
+  );
+  const errorInyectado = activa?.moldeId
+    ? cargaInyectado.errores.join(" ")
+    : "";
   const totalOk = activa?.moldeId
     ? resultados.reduce((s, r) => s + Number(r.piezas_ok), 0)
     : ok;
@@ -247,6 +258,7 @@ export default function Registrar({
     ejecutar(() => reanudarTarea(activa), "Tarea reanudada");
   const confirmar = () =>
     ejecutar(async () => {
+      if (errorInyectado) throw new Error(errorInyectado);
       await confirmarTarea(activa, {
         ok: totalOk,
         scrap: totalScrap,
@@ -267,6 +279,18 @@ export default function Registrar({
         ok: totalOk,
         scrap: totalScrap,
         realSec: activa.realSec,
+        productividad: cargaInyectado.productividad,
+        ciclos: cargaInyectado.ciclos,
+        segundosCiclo: Number(ordenActiva?.configuracion?.segundos_ciclo),
+        gramosProcesados:
+          cargaInyectado.ciclos *
+          Number(ordenActiva?.configuracion?.material_ciclo || 0),
+        pedido: ordenActiva,
+        resultados: cargaInyectado.filas.map((f) => ({
+          articulo_id: f.articulo_id,
+          piezas_ok: f.ok,
+          piezas_scrap: f.scrap,
+        })),
       });
       setOk(0);
       setScrap(0);
@@ -297,55 +321,8 @@ export default function Registrar({
     );
 
   /* resumen posterior */
-  if (hecha) {
-    const e = efficiency(hecha.art, hecha.act, hecha.ok, hecha.realSec);
-    return (
-      <div style={{ paddingTop: 4 }}>
-        <div className="card">
-          <Gauge value={e} />
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr 1fr",
-              gap: 8,
-              marginTop: 6,
-            }}
-          >
-            <MiniStat lab="Piezas OK" val={nf(hecha.ok)} />
-            <MiniStat lab="Scrap" val={nf(hecha.scrap)} />
-            <MiniStat lab="Tiempo operativo" val={fmtClock(hecha.realSec)} />
-          </div>
-          <div
-            style={{
-              textAlign: "center",
-              fontSize: 12.5,
-              color: "var(--ink2)",
-              marginTop: 12,
-              lineHeight: 1.5,
-            }}
-          >
-            {hecha.art?.nombre} · {actLabel(hecha.act)}
-            <br />
-            {hecha.molde ? (
-              "Molde " + hecha.molde + " · producción registrada por artículo"
-            ) : (
-              <>
-                Estándar {hecha.art?.std[hecha.act]}s/u — real{" "}
-                {Math.round(hecha.realSec / (hecha.ok || 1))}s/u
-              </>
-            )}
-          </div>
-        </div>
-        <button
-          className="btn btn-primary"
-          style={{ marginTop: 14 }}
-          onClick={() => setHecha(null)}
-        >
-          <Plus size={18} strokeWidth={2.5} /> Registrar otra tarea
-        </button>
-      </div>
-    );
-  }
+  if (hecha)
+    return <ResumenRegistro hecha={hecha} onOtra={() => setHecha(null)} />;
 
   /* La tarea sigue reservada mientras trabaja o está pausada. */
   if (activa && !activa.fin) {
@@ -381,10 +358,7 @@ export default function Registrar({
           </div>
         </div>
         {activa.moldeId ? (
-          <p className="card">
-            Molde {ordenActiva?.configuracion?.codigo} · {ordenActiva?.okAcum} /{" "}
-            {ordenActiva?.cantidad} ciclos equivalentes OK
-          </p>
+          <AvanceInyectado pedido={ordenActiva} />
         ) : (
           <AvancePedido
             cantidad={findPed(peds, activa.pedidoId)?.cantidad}
@@ -513,12 +487,14 @@ export default function Registrar({
 
   /* finalizada: falta cargar piezas */
   if (activa && activa.fin) {
-    const eff = efficiency(
-      findArt(arts, activa.articuloId),
-      activa.actividad,
-      ok,
-      activa.realSec,
-    );
+    const eff = activa.moldeId
+      ? cargaInyectado.productividad
+      : efficiency(
+          findArt(arts, activa.articuloId),
+          activa.actividad,
+          ok,
+          activa.realSec,
+        );
     return (
       <>
         <div className="banner avisar">
@@ -553,6 +529,9 @@ export default function Registrar({
           </div>
         </div>
 
+        {activa.moldeId && (
+          <AvanceInyectado pedido={ordenActiva} resultados={resultados} />
+        )}
         {activa.moldeId ? (
           <ResultadosMolde
             articulos={articulosMolde}
@@ -608,7 +587,9 @@ export default function Registrar({
           </small>
         </div>
 
-        {!activa.moldeId && ok > 0 && (
+        {(activa.moldeId
+          ? cargaInyectado.ciclos > 0 && !errorInyectado
+          : ok > 0) && (
           <div
             className="card"
             style={{
@@ -621,7 +602,9 @@ export default function Registrar({
             <div
               style={{ fontSize: 12.5, color: "var(--ink2)", fontWeight: 600 }}
             >
-              Eficiencia estimada
+              {activa.moldeId
+                ? "Productividad por ciclos"
+                : "Eficiencia estimada"}
             </div>
             <div
               className="mono"
@@ -632,11 +615,18 @@ export default function Registrar({
           </div>
         )}
 
+        {errorInyectado && (
+          <p className="hint-err" role="alert">
+            {errorInyectado}
+          </p>
+        )}
         <button
           className="btn btn-primary"
           style={{ marginTop: 16 }}
           disabled={
-            busy || (totalOk === 0 && totalScrap === 0 && !observaciones.trim())
+            busy ||
+            !!errorInyectado ||
+            (totalOk === 0 && totalScrap === 0 && !observaciones.trim())
           }
           onClick={confirmar}
         >
@@ -714,18 +704,7 @@ export default function Registrar({
       </div>
 
       {pedSel?.moldeId ? (
-        <div className="card">
-          <p>
-            Molde {pedSel.configuracion?.codigo} · {pedSel.okAcum} /{" "}
-            {pedSel.cantidad} ciclos equivalentes OK
-          </p>
-          {pedSel.articulos.map((a) => (
-            <p key={a.articulo_id}>
-              {a.codigo} · {a.nombre} · Objetivo:{" "}
-              {pedSel.cantidad * a.unidades_ciclo} piezas OK
-            </p>
-          ))}
-        </div>
+        <AvanceInyectado pedido={pedSel} />
       ) : (
         <AvancePedido
           cantidad={pedSel?.cantidad}
@@ -756,6 +735,73 @@ export default function Registrar({
   );
 }
 
+export function ResumenRegistro({ hecha, onOtra }) {
+  const e = hecha.molde
+    ? hecha.productividad
+    : efficiency(hecha.art, hecha.act, hecha.ok, hecha.realSec);
+  return (
+    <div style={{ paddingTop: 4 }}>
+      <div className="card">
+        <Gauge
+          value={e}
+          label={hecha.molde ? "Productividad por ciclos" : undefined}
+        />
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr 1fr",
+            gap: 8,
+            marginTop: 6,
+          }}
+        >
+          <MiniStat lab="Piezas OK" val={nf(hecha.ok)} />
+          <MiniStat lab="Scrap" val={nf(hecha.scrap)} />
+          <MiniStat lab="Tiempo operativo" val={fmtClock(hecha.realSec)} />
+        </div>
+        <div
+          style={{
+            textAlign: "center",
+            fontSize: 12.5,
+            color: "var(--ink2)",
+            marginTop: 12,
+            lineHeight: 1.5,
+          }}
+        >
+          {hecha.molde ? (
+            "Molde " + hecha.molde + " · Inyectado"
+          ) : (
+            <>
+              {hecha.art?.nombre} · {actLabel(hecha.act)}
+            </>
+          )}
+          <br />
+          {hecha.molde ? (
+            <>
+              {nf(hecha.ciclos)} ciclos · Estándar {nf(hecha.segundosCiclo)}{" "}
+              s/ciclo · Material procesado {nf(hecha.gramosProcesados)} gr.
+            </>
+          ) : (
+            <>
+              Estándar {hecha.art?.std[hecha.act]}s/u — real{" "}
+              {Math.round(hecha.realSec / (hecha.ok || 1))}s/u
+            </>
+          )}
+        </div>
+      </div>
+      {hecha.molde && (
+        <AvanceInyectado pedido={hecha.pedido} resultados={hecha.resultados} />
+      )}
+      <button
+        className="btn btn-primary"
+        style={{ marginTop: 14 }}
+        onClick={onOtra}
+      >
+        <Plus size={18} strokeWidth={2.5} /> Registrar otra tarea
+      </button>
+    </div>
+  );
+}
+
 function polar(cx, cy, r, deg) {
   const rad = (deg * Math.PI) / 180;
   return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
@@ -769,7 +815,7 @@ function arc(cx, cy, r, v0, v1, max) {
   return `M ${p0.x} ${p0.y} A ${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${p1.x} ${p1.y}`;
 }
 
-function Gauge({ value }) {
+function Gauge({ value, label = "Eficiencia vs estándar" }) {
   const MAX = 130,
     cx = 100,
     cy = 100,
@@ -823,7 +869,7 @@ function Gauge({ value }) {
       <div className="gauge-val mono" style={{ color: col }}>
         {value == null ? "—" : Math.round(value) + "%"}
       </div>
-      <div className="gauge-lab">Eficiencia vs estándar</div>
+      <div className="gauge-lab">{label}</div>
     </div>
   );
 }

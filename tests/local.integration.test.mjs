@@ -13,6 +13,7 @@ const must = async (query) => {
 const denied = async (query) => {
   const { error } = await query;
   assert.ok(error, "La operación debería rechazarse");
+  return error;
 };
 const stamp = "test-" + Date.now();
 const pass = crypto.randomUUID() + "aA1!";
@@ -154,7 +155,7 @@ test("Docker local: órdenes por proceso, molde multiartículo, historial y perm
   const resultados = a.map((x, i) => ({
     articulo_id: x.id,
     piezas_ok: (i + 1) * 10,
-    piezas_scrap: i,
+    piezas_scrap: 0,
   }));
   const params = {
     p_tarea: tid,
@@ -168,12 +169,27 @@ test("Docker local: órdenes por proceso, molde multiartículo, historial y perm
       p_resultados: [resultados[0]],
     }),
   );
+  const errorMultiplo = await denied(
+    op.c.rpc("confirmar_tarea_molde", {
+      ...params,
+      p_resultados: [resultados[0], { ...resultados[1], piezas_scrap: 1 }],
+    }),
+  );
+  assert.match(errorMultiplo.message, /múltiplo/);
+  const errorCiclos = await denied(
+    op.c.rpc("confirmar_tarea_molde", {
+      ...params,
+      p_resultados: [resultados[0], { ...resultados[1], piezas_ok: 22 }],
+    }),
+  );
+  assert.match(errorCiclos.message, /misma cantidad de ciclos/);
   await must(op.c.rpc("confirmar_tarea_molde", params));
   await must(op.c.rpc("confirmar_tarea_molde", params));
   t = await must(op.c.from("v_tareas").select("*").eq("id", tid).single());
   assert.equal(t.piezas_ok, 30);
   assert.equal(t.resultados.length, 2);
   assert.equal(t.std_seg, 200);
+  assert.equal(t.ciclos, 10);
   const terminado = await must(
     op.c.from("v_pedidos").select("*").eq("id", pedido.id).single(),
   );
@@ -394,8 +410,24 @@ test("Docker local: órdenes por proceso, molde multiartículo, historial y perm
   const current = await must(
     admin.c.from("v_tareas").select("*").eq("id", tid).single(),
   );
-  const changed = resultados.map((r, i) => ({ ...r, piezas_ok: i ? 19 : 9 }));
+  const changed = resultados.map((r, i) => ({
+    ...r,
+    piezas_ok: i ? 19 : 9,
+    piezas_scrap: 1,
+  }));
   const now = Date.now();
+  const errorEdicion = await denied(
+    admin.c.rpc("admin_editar_tarea_molde", {
+      p_tarea: tid,
+      p_revision: current.revision,
+      p_inicio: new Date(now - 3600000).toISOString(),
+      p_fin: new Date(now - 10000).toISOString(),
+      p_resultados: [changed[0], { ...changed[1], piezas_scrap: 0 }],
+      p_observaciones: "Prueba inválida",
+      p_motivo: "Prueba de validación",
+    }),
+  );
+  assert.match(errorEdicion.message, /múltiplo/);
   await must(
     admin.c.rpc("admin_editar_tarea_molde", {
       p_tarea: tid,
@@ -411,7 +443,7 @@ test("Docker local: órdenes por proceso, molde multiartículo, historial y perm
     admin.c.from("v_tareas").select("*").eq("id", tid).single(),
   );
   assert.equal(corrected.piezas_ok, 28);
-  assert.equal(corrected.std_seg, 180);
+  assert.equal(corrected.std_seg, 200);
   await denied(
     op.c.rpc("admin_editar_tarea_molde", {
       p_tarea: tid,
@@ -617,10 +649,10 @@ test("Docker local: órdenes por proceso, molde multiartículo, historial y perm
   await api.finalizarTarea(uiTarea);
   uiTarea = await api.fetchTareaActiva();
   const uiResultados = [
-    { articulo_id: a[0].id, piezas_ok: 6, piezas_scrap: 1 },
+    { articulo_id: a[0].id, piezas_ok: 5, piezas_scrap: 1 },
   ];
   await api.confirmarTarea(uiTarea, {
-    ok: 6,
+    ok: 5,
     scrap: 1,
     resultados: uiResultados,
     observaciones: "",
@@ -633,10 +665,12 @@ test("Docker local: órdenes por proceso, molde multiartículo, historial y perm
   );
   const uiConfirmada = (await api.fetchTareas()).find((t) => t.id === uiId);
   assert.equal(uiConfirmada.resultados.length, 1);
+  assert.equal(uiConfirmada.ciclos, 2);
+  assert.equal(uiConfirmada.stdSec, 198);
   await api.adminEditarTarea(uiConfirmada, {
     inicio: new Date(Date.now() - 5000).toISOString(),
     fin: new Date(Date.now() - 1000).toISOString(),
-    ok: 6,
+    ok: 5,
     scrap: 1,
     resultados: uiResultados,
     observaciones: "Validación UI",
