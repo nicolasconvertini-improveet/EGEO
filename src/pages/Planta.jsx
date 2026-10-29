@@ -90,7 +90,15 @@ export default function Planta({ arts, rol }) {
             </button>
           )}
           {form && (
-            <form className="card" onSubmit={guardar}>
+            <form className="card gestion-form" onSubmit={guardar}>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                disabled={busy}
+                onClick={() => setForm(null)}
+              >
+                Volver al listado
+              </button>
               <fieldset disabled={busy}>
                 <legend>{form.id ? "Editar" : "Nuevo"}</legend>
                 <label>
@@ -278,20 +286,25 @@ export default function Planta({ arts, rol }) {
               </fieldset>
             </form>
           )}
-          {!form &&
-            datos[tipo].map((row) => (
-              <button
-                className="rowitem"
-                key={row.id}
-                onClick={() => setForm({ ...row })}
-              >
-                <span>
-                  {row.codigo} · {row.nombre || row.material} ·{" "}
-                  {row.activo ? "Activo" : "Inactivo"}
-                  {row.articulos ? ` · ${row.articulos.length} artículos` : ""}
-                </span>
-              </button>
-            ))}
+          {!form && (
+            <div className="gestion-lista">
+              {datos[tipo].map((row) => (
+                <button
+                  className="rowitem"
+                  key={row.id}
+                  onClick={() => setForm({ ...row })}
+                >
+                  <span>
+                    {row.codigo} · {row.nombre || row.material} ·{" "}
+                    {row.activo ? "Activo" : "Inactivo"}
+                    {row.articulos
+                      ? ` · ${row.articulos.length} artículos`
+                      : ""}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
         </>
       )}
     </section>

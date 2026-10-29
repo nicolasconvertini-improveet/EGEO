@@ -66,7 +66,7 @@ export default function Mantenimiento({ rol }) {
       const [clase, id] = form.destino.split(":");
       await gestionarSolicitud("crear", solicitudId, {
         tipo: form.tipo,
-        detalle: form.tipo === "molienda" ? "" : form.detalle,
+        detalle: form.detalle,
         preventivo: form.tipo === "mantenimiento" && form.preventivo,
         asignado_id: form.asignado_id || null,
         maquina_id: form.tipo === "mantenimiento" && clase === "m" ? id : null,
@@ -109,6 +109,7 @@ export default function Mantenimiento({ rol }) {
             "",
           solicitado: s.creado,
           detalle: s.detalle,
+          observaciones_resolucion: s.resolucion,
         }))
         .map((r) =>
           Object.fromEntries(Object.entries(r).map(([k, v]) => [k, String(v)])),
@@ -122,6 +123,7 @@ export default function Mantenimiento({ rol }) {
           asignado: "",
           solicitado: "",
           detalle: "",
+          observaciones_resolucion: "",
         },
       ).map((nombre) => ({ nombre, tipo: "text" }));
       const libro = construirLibro(
@@ -150,7 +152,7 @@ export default function Mantenimiento({ rol }) {
           {gestor && (
             <details className="card">
               <summary>Solicitar tarea</summary>
-              <form onSubmit={crear}>
+              <form className="gestion-form" onSubmit={crear}>
                 <fieldset disabled={busy}>
                   <label>
                     Tipo
@@ -217,6 +219,20 @@ export default function Mantenimiento({ rol }) {
                       </label>
                     </>
                   )}
+                  {form.tipo === "molienda" && (
+                    <label>
+                      Observaciones de molienda (opcional)
+                      <textarea
+                        rows={3}
+                        maxLength={5000}
+                        value={form.detalle}
+                        onChange={(e) =>
+                          setForm((f) => ({ ...f, detalle: e.target.value }))
+                        }
+                        placeholder="Indicaciones para realizar la molienda"
+                      />
+                    </label>
+                  )}
                   <label>
                     Asignar a
                     <select
@@ -238,7 +254,7 @@ export default function Mantenimiento({ rol }) {
               </form>
             </details>
           )}
-          <div className="card">
+          <div className="card gestion-filtros">
             <label>
               Estado
               <select
@@ -309,111 +325,123 @@ export default function Mantenimiento({ rol }) {
             {visibles.length} solicitudes ·{" "}
             {rows.filter((s) => s.estado !== "resuelta").length} pendientes
           </p>
-          {visibles.map((s) => {
-            const d = edicion[s.id] || {};
-            return (
-              <article className="card" key={s.id}>
-                <h3>
-                  {s.tipo === "molienda"
-                    ? "Molienda"
-                    : "Mantenimiento · " + nombre(s)}
-                </h3>
-                <p>
-                  {s.estado.replace("_", " ")} ·{" "}
-                  {new Date(s.creado).toLocaleString()} ·{" "}
-                  {usuarios.find((u) => u.id === s.asignado_id)?.nombre ||
-                    (!gestor ? "Asignada a vos" : "Sin asignar")}
-                </p>
-                <p>{s.detalle}</p>
-                {s.estado === "resuelta" ? (
+          <div className="gestion-lista">
+            {visibles.map((s) => {
+              const d = edicion[s.id] || {};
+              return (
+                <article className="card" key={s.id}>
+                  <h3>
+                    {s.tipo === "molienda"
+                      ? "Molienda"
+                      : "Mantenimiento · " + nombre(s)}
+                  </h3>
                   <p>
-                    {s.resolucion} · {s.minutos} minutos
+                    {s.estado.replace("_", " ")} ·{" "}
+                    {new Date(s.creado).toLocaleString()} ·{" "}
+                    {usuarios.find((u) => u.id === s.asignado_id)?.nombre ||
+                      (!gestor ? "Asignada a vos" : "Sin asignar")}
                   </p>
-                ) : (
-                  <fieldset disabled={busy}>
-                    {gestor && (
-                      <>
-                        <label>
-                          Asignación
-                          <select
-                            value={d.asignado_id || s.asignado_id || ""}
-                            onChange={(e) =>
-                              editar(s.id, "asignado_id", e.target.value)
+                  {s.detalle && (
+                    <p className="gestion-observaciones">{s.detalle}</p>
+                  )}
+                  {s.estado === "resuelta" ? (
+                    <p className="gestion-observaciones">
+                      {s.resolucion} · {s.minutos} minutos
+                    </p>
+                  ) : (
+                    <fieldset disabled={busy}>
+                      {gestor && (
+                        <>
+                          <label>
+                            Asignación
+                            <select
+                              value={d.asignado_id || s.asignado_id || ""}
+                              onChange={(e) =>
+                                editar(s.id, "asignado_id", e.target.value)
+                              }
+                            >
+                              <option value="">Seleccionar usuario</option>
+                              {usuarios.map((u) => (
+                                <option key={u.id} value={u.id}>
+                                  {u.nombre}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <button
+                            className="btn btn-ghost"
+                            disabled={!(d.asignado_id || s.asignado_id)}
+                            onClick={() =>
+                              ejecutar(() =>
+                                gestionarSolicitud(
+                                  "asignar",
+                                  s.id,
+                                  {
+                                    asignado_id: d.asignado_id || s.asignado_id,
+                                  },
+                                  s.revision,
+                                ),
+                              )
                             }
                           >
-                            <option value="">Seleccionar usuario</option>
-                            {usuarios.map((u) => (
-                              <option key={u.id} value={u.id}>
-                                {u.nombre}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
+                            Asignar / reasignar
+                          </button>
+                        </>
+                      )}
+                      {s.estado === "asignada" && (
                         <button
-                          className="btn btn-ghost"
-                          disabled={!(d.asignado_id || s.asignado_id)}
+                          className="btn btn-primary"
                           onClick={() =>
                             ejecutar(() =>
                               gestionarSolicitud(
-                                "asignar",
+                                "iniciar",
                                 s.id,
-                                { asignado_id: d.asignado_id || s.asignado_id },
+                                {},
                                 s.revision,
                               ),
                             )
                           }
                         >
-                          Asignar / reasignar
+                          Iniciar
                         </button>
-                      </>
-                    )}
-                    {s.estado === "asignada" && (
-                      <button
-                        className="btn btn-primary"
-                        onClick={() =>
-                          ejecutar(() =>
-                            gestionarSolicitud("iniciar", s.id, {}, s.revision),
-                          )
-                        }
-                      >
-                        Iniciar
-                      </button>
-                    )}
-                    {s.asignado_id && (
-                      <form
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          ejecutar(() =>
-                            gestionarSolicitud(
-                              "resolver",
-                              s.id,
-                              {
-                                minutos: Number(d.minutos),
-                                resolucion: d.resolucion || "",
-                              },
-                              s.revision,
-                            ),
-                          );
-                        }}
-                      >
-                        <label>
-                          Minutos de trabajo
-                          <input
-                            type="number"
-                            required
-                            min="1"
-                            step="1"
-                            value={d.minutos || ""}
-                            onChange={(e) =>
-                              editar(s.id, "minutos", e.target.value)
-                            }
-                          />
-                        </label>
-                        {s.tipo === "mantenimiento" && (
+                      )}
+                      {s.asignado_id && (
+                        <form
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            ejecutar(() =>
+                              gestionarSolicitud(
+                                "resolver",
+                                s.id,
+                                {
+                                  minutos: Number(d.minutos),
+                                  resolucion: d.resolucion || "",
+                                },
+                                s.revision,
+                              ),
+                            );
+                          }}
+                        >
                           <label>
-                            Trabajo realizado
-                            <textarea
+                            Minutos de trabajo
+                            <input
+                              type="number"
                               required
+                              min="1"
+                              step="1"
+                              value={d.minutos || ""}
+                              onChange={(e) =>
+                                editar(s.id, "minutos", e.target.value)
+                              }
+                            />
+                          </label>
+                          <label>
+                            {s.tipo === "molienda"
+                              ? "Observaciones de molienda (opcional)"
+                              : "Trabajo realizado"}
+                            <textarea
+                              required={s.tipo === "mantenimiento"}
+                              rows={3}
                               maxLength={5000}
                               value={d.resolucion || ""}
                               onChange={(e) =>
@@ -421,17 +449,17 @@ export default function Mantenimiento({ rol }) {
                               }
                             />
                           </label>
-                        )}
-                        <button className="btn btn-primary">
-                          Resolver tarea
-                        </button>
-                      </form>
-                    )}
-                  </fieldset>
-                )}
-              </article>
-            );
-          })}
+                          <button className="btn btn-primary">
+                            Resolver tarea
+                          </button>
+                        </form>
+                      )}
+                    </fieldset>
+                  )}
+                </article>
+              );
+            })}
+          </div>
           <details className="card">
             <summary>Intervenciones anteriores</summary>
             <p>

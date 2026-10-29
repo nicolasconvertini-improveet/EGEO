@@ -1,4 +1,11 @@
-import React, { useState, useEffect, useCallback, lazy, Suspense } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  lazy,
+  Suspense,
+} from "react";
 import { Circle, Check } from "lucide-react";
 import { supabase } from "./supabaseClient";
 import {
@@ -38,6 +45,13 @@ export default function App() {
   const [tab, setTab] = useState("registrar");
   const [detail, setDetail] = useState(null);
   const [toast, setToast] = useState(null);
+  const navegacion = useRef(null);
+  useEffect(() => {
+    navegacion.current?.querySelector('[aria-current="page"]')?.scrollIntoView({
+      block: "nearest",
+      inline: "nearest",
+    });
+  }, [tab, detail?.type, perfil?.rol]);
   // Filtros con los que se abre una pantalla al navegar desde el tablero.
   const [prefiltro, setPrefiltro] = useState(null);
 
@@ -339,11 +353,12 @@ export default function App() {
       )}
 
       {tabs.length > 1 && (
-        <nav className="nav">
+        <nav className="nav" ref={navegacion} aria-label="Navegación principal">
           {tabs.map((t) => (
             <button
               key={t}
               className={tab === t && !detail ? "on" : ""}
+              aria-current={tab === t && !detail ? "page" : undefined}
               onClick={() => {
                 setPrefiltro(null);
                 setTab(t);

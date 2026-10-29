@@ -24,7 +24,7 @@ const SECCIONES = [
     bloques: [
       [
         "Solicitar",
-        "En Trabajos, un administrador o supervisor solicita mantenimiento sobre una máquina/equipo, o una tarea de molienda. Molienda no exige detalle técnico.",
+        "En Trabajos, un administrador o supervisor solicita mantenimiento sobre una máquina/equipo, o una tarea de molienda. Molienda permite observaciones opcionales sin exigir detalle técnico.",
       ],
       [
         "Asignar",
@@ -32,7 +32,7 @@ const SECCIONES = [
       ],
       [
         "Ejecutar y resolver",
-        "Iniciá una tarea asignada y, al terminar, cargá los minutos. Para mantenimiento describí el trabajo realizado; para molienda no es obligatorio agregar texto.",
+        "Iniciá una tarea asignada y, al terminar, cargá los minutos. Para mantenimiento describí el trabajo realizado; para molienda hay un campo de observaciones opcional.",
       ],
       [
         "Pendientes",

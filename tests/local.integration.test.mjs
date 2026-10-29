@@ -234,10 +234,15 @@ test("Docker local: órdenes por proceso, molde multiartículo, historial y perm
     admin.c.rpc("gestionar_solicitud", {
       p_accion: "crear",
       p_id: sid,
-      p_datos: { tipo: "molienda", asignado_id: op.id },
+      p_datos: {
+        tipo: "molienda",
+        asignado_id: op.id,
+        detalle: "Separar material por color\nNo mezclar PP y PE",
+      },
     }),
   );
   assert.equal(s.estado, "asignada");
+  assert.equal(s.detalle, "Separar material por color\nNo mezclar PP y PE");
   const otherOp = await usuario("operario"); // email único para un segundo operario
   const secret = await must(
     admin.c.rpc("gestionar_solicitud", {
@@ -274,10 +279,47 @@ test("Docker local: órdenes por proceso, molde multiartículo, historial y perm
       p_accion: "resolver",
       p_id: sid,
       p_revision: started.revision,
-      p_datos: { minutos: 30 },
+      p_datos: {
+        minutos: 30,
+        resolucion: "Material molido y separado\nQuedó un remanente",
+      },
     }),
   );
   assert.equal(resolved.estado, "resuelta");
+  assert.equal(
+    resolved.resolucion,
+    "Material molido y separado\nQuedó un remanente",
+  );
+  const historialMolienda = await must(op.c.rpc("exportar_mantenimientos"));
+  assert.equal(
+    historialMolienda.filas.find((r) => r.id === sid).detalle,
+    resolved.resolucion,
+  );
+  const opcionalId = crypto.randomUUID();
+  await must(
+    admin.c.rpc("gestionar_solicitud", {
+      p_accion: "crear",
+      p_id: opcionalId,
+      p_datos: { tipo: "molienda", asignado_id: op.id },
+    }),
+  );
+  await denied(
+    op.c.rpc("gestionar_solicitud", {
+      p_accion: "resolver",
+      p_id: opcionalId,
+      p_revision: 0,
+      p_datos: { minutos: 1, resolucion: "x".repeat(5001) },
+    }),
+  );
+  const sinObservaciones = await must(
+    op.c.rpc("gestionar_solicitud", {
+      p_accion: "resolver",
+      p_id: opcionalId,
+      p_revision: 0,
+      p_datos: { minutos: 1 },
+    }),
+  );
+  assert.equal(sinObservaciones.resolucion, "");
   assert.equal(
     (
       await must(

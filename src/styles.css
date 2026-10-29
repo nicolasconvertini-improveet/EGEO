@@ -1861,3 +1861,41 @@ mark {
 .gestion table {width:100%;border-collapse:collapse;}
 .gestion th,.gestion td {padding:10px;border-bottom:1px solid var(--line);text-align:left;}
 .gestion legend {font-size:14px;font-weight:600;padding-top:12px;}
+
+/* Los módulos nuevos comparten los puntos de adaptación de la aplicación. */
+.body, .contenido, .gestion, .gestion-form, .gestion-lista > * { min-width: 0; }
+.gestion { overflow-wrap: anywhere; }
+.gestion input:not([type=checkbox]), .gestion select, .gestion textarea {
+  min-width: 0;
+  max-width: 100%;
+  min-height: 44px;
+  background: var(--surface);
+  font-size: 16px;
+}
+.gestion textarea { resize: vertical; line-height: 1.5; }
+.gestion-form { width: 100%; max-width: 680px; margin-inline: auto; }
+.gestion-lista { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: start; }
+.gestion-lista > .card, .gestion-lista > .rowitem { margin: 0; }
+.gestion-lista > .rowitem { height: 100%; white-space: normal; overflow-wrap: anywhere; }
+.gestion-filtros { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 16px; align-items: end; }
+.gestion-observaciones { white-space: pre-wrap; overflow-wrap: anywhere; }
+.resultados-molde .gestion-lista { margin-top: 12px; }
+.app .nav { min-height: 64px; scroll-padding: 8px; overscroll-behavior: contain; }
+.app .nav button { min-height: 44px; }
+.app .nav button:focus-visible, .gestion .btn:focus-visible, .gestion summary:focus-visible {
+  outline: 2px solid var(--ink); outline-offset: -2px;
+}
+@media (min-width: 768px) {
+  .gestion-lista { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .gestion-filtros { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1024px) {
+  .app .nav { min-height: 0; overflow-y: auto; overflow-x: hidden; }
+  .gestion input:not([type=checkbox]), .gestion select, .gestion textarea { font-size: 14px; }
+}
+@media (max-width: 479px) {
+  .fgrid2 { grid-template-columns: minmax(0, 1fr); }
+  .appbar { padding-inline: 12px; }
+  .appbar .row { gap: 6px; }
+  .appbar .chip-role { max-width: 90px; overflow: hidden; text-overflow: ellipsis; }
+}

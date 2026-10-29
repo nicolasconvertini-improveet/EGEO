@@ -84,9 +84,9 @@ El estándar de inyectado utiliza ciclos equivalentes OK = mínimo de OK/unidade
 
 - Administrador y supervisor pueden solicitar y asignar/reasignar.
 - Mantenimiento identifica una máquina o equipo y describe la solicitud.
-- Molienda solo necesita identificarse como tal, sin descripción técnica ni equipo obligatorio.
+- Molienda no requiere equipo ni detalle obligatorio. Incluye observaciones opcionales al solicitar y al resolver; se conservan en el historial y en el reporte.
 - El operario consulta e inicia/resuelve únicamente sus tareas asignadas. La restricción también se aplica en SQL/RPC y a la exportación del historial.
-- Al resolver se registran los minutos. En mantenimiento se describe el trabajo realizado; en molienda no se exige texto adicional.
+- Al resolver se registran los minutos. En mantenimiento se describe el trabajo realizado; en molienda se pueden agregar observaciones opcionales.
 - Las reasignaciones y transiciones quedan auditadas.
 - El tablero muestra pendientes y acceso a Trabajos, según los roles habilitados para el tablero.
 - El reporte de solicitudes permite filtrar estado, tipo, usuario y equipo, y descargar el listado visible.
