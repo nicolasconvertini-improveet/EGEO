@@ -3,11 +3,27 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "packageManager": "npm@11.19.1",
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/dev.mjs",
     "build": "vite build",
     "preview": "vite preview",
-    "test:indicadores": "node --test tests/indicadores.test.mjs"
+    "test:indicadores": "node --test tests/indicadores.test.mjs",
+    "db:start": "supabase start -x storage-api,imgproxy,realtime,edge-runtime,logflare,vector,supavisor",
+    "db:stop": "supabase stop",
+    "db:status": "supabase status",
+    "db:migrate": "supabase migration up --local",
+    "db:baseline:check": "node scripts/prepare-baseline.mjs --check",
+    "test:local": "node --test tests/local*.test.mjs",
+    "db:backup": "node scripts/backup-local.mjs backup",
+    "db:restore:test": "node scripts/backup-local.mjs restore",
+    "test:frontend": "node --test tests/frontend-regresiones.test.mjs",
+    "test:inyectado": "node --test tests/inyectado.test.mjs",
+    "dev:docker": "node scripts/dev.mjs --docker",
+    "db:configure:docker": "node scripts/configure-local.mjs",
+    "config:check": "node scripts/check-env.mjs",
+    "release:sql": "node scripts/prepare-release.mjs",
+    "release:check": "node scripts/prepare-release.mjs --check"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
@@ -18,6 +34,8 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",
+    "prettier": "3.9.10",
+    "supabase": "2.122.0",
     "vite": "^5.4.0"
   }
 }

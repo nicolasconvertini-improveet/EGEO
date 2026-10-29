@@ -1,19 +1,32 @@
-const TABLAS = new Set(["tarea_pausas", "tareas", "articulos", "pedidos", "perfiles", "mantenimientos", "pausas"]);
+const TABLAS = new Set([
+  "tarea_pausas",
+  "tareas",
+  "articulos",
+  "pedidos",
+  "perfiles",
+  "mantenimientos",
+  "pausas",
+  "solicitudes_trabajo",
+]);
 // Reportes con columnas elegidas (migración 16). El resto exporta la tabla completa.
 const REPORTES = new Set(["mantenimientos", "pausas", "tareas"]);
 const MAX_FILAS_DATOS = 1048575; // La primera fila se reserva para encabezados.
 
 function valorExcel(valor, columna) {
   if (valor === null) return null;
-  if (typeof valor !== "string") throw new Error("Formato de datos inesperado.");
+  if (typeof valor !== "string")
+    throw new Error("Formato de datos inesperado.");
   if (valor.length > 32767) {
-    throw new Error(`La columna ${columna.nombre} contiene un texto que supera el límite de Excel. No se descargó un archivo incompleto.`);
+    throw new Error(
+      `La columna ${columna.nombre} contiene un texto que supera el límite de Excel. No se descargó un archivo incompleto.`,
+    );
   }
   if (columna.tipo === "bool") return valor === "true";
   if (["int2", "int4", "int8"].includes(columna.tipo)) {
     const numero = Number(valor);
     // Excel sólo garantiza 15 dígitos significativos.
-    if (Number.isSafeInteger(numero) && valor.replace(/^-/, "").length <= 15) return numero;
+    if (Number.isSafeInteger(numero) && valor.replace(/^-/, "").length <= 15)
+      return numero;
   }
   // Texto explícito: códigos con ceros, UUID, fechas con zona y decimales
   // conservan su representación. Nunca se crean fórmulas desde los datos.
@@ -29,9 +42,15 @@ export function construirLibro(datos, XLSX, filasPorHoja = MAX_FILAS_DATOS) {
     !datos.columnas.length ||
     String(datos.filas.length) !== datos.total
   ) {
-    throw new Error("La exportación no está completa. No se descargó ningún archivo.");
+    throw new Error(
+      "La exportación no está completa. No se descargó ningún archivo.",
+    );
   }
-  if (!Number.isInteger(filasPorHoja) || filasPorHoja < 1 || filasPorHoja > MAX_FILAS_DATOS) {
+  if (
+    !Number.isInteger(filasPorHoja) ||
+    filasPorHoja < 1 ||
+    filasPorHoja > MAX_FILAS_DATOS
+  ) {
     throw new Error("Tamaño de hoja inválido.");
   }
   const libro = XLSX.utils.book_new();
@@ -42,23 +61,40 @@ export function construirLibro(datos, XLSX, filasPorHoja = MAX_FILAS_DATOS) {
     const filas = datos.filas.slice(inicio, inicio + filasPorHoja).map((fila) =>
       datos.columnas.map((columna) => {
         if (!Object.prototype.hasOwnProperty.call(fila, columna.nombre)) {
-          throw new Error(`Falta la columna ${columna.nombre}. Se canceló la exportación.`);
+          throw new Error(
+            `Falta la columna ${columna.nombre}. Se canceló la exportación.`,
+          );
         }
         return valorExcel(fila[columna.nombre], columna);
       }),
     );
     const hoja = XLSX.utils.aoa_to_sheet([cabeceras, ...filas]);
-    hoja["!cols"] = cabeceras.map((nombre) => ({ wch: Math.min(40, Math.max(18, nombre.length + 2)) }));
-    XLSX.utils.book_append_sheet(libro, hoja, hojas === 1 ? datos.tabla : `${datos.tabla}_${numero + 1}`);
+    hoja["!cols"] = cabeceras.map((nombre) => ({
+      wch: Math.min(40, Math.max(18, nombre.length + 2)),
+    }));
+    XLSX.utils.book_append_sheet(
+      libro,
+      hoja,
+      hojas === 1 ? datos.tabla : `${datos.tabla}_${numero + 1}`,
+    );
   }
   const info = XLSX.utils.aoa_to_sheet([
     ["Tabla", datos.tabla],
     ["Fecha de exportación UTC", datos.exportado_en],
     ["Cantidad de registros", datos.filas.length],
-    ["Alcance", datos.alcance || "Todas las filas y columnas de la tabla; sin filtros"],
+    [
+      "Alcance",
+      datos.alcance || "Todas las filas y columnas de la tabla; sin filtros",
+    ],
     ["Valores nulos", "Celdas vacías"],
-    ["Fechas", datos.fechas || "Texto ISO con zona horaria; sin conversión local"],
-    ["Decimales e importes numeric", "Texto para conservar toda la precisión original"],
+    [
+      "Fechas",
+      datos.fechas || "Texto ISO con zona horaria; sin conversión local",
+    ],
+    [
+      "Decimales e importes numeric",
+      "Texto para conservar toda la precisión original",
+    ],
     ["Hojas de datos", hojas],
     [],
     ["Columna", "Tipo PostgreSQL"],
@@ -69,10 +105,16 @@ export function construirLibro(datos, XLSX, filasPorHoja = MAX_FILAS_DATOS) {
   return libro;
 }
 
-export async function descargarTablaExcel(tabla, { signal, onEstado = () => {} } = {}) {
+export async function descargarTablaExcel(
+  tabla,
+  { signal, onEstado = () => {} } = {},
+) {
   if (!TABLAS.has(tabla)) throw new Error("Tabla no habilitada.");
   // Carga diferida: las otras pantallas no descargan la biblioteca de Excel.
-  const [{ supabase }, XLSX] = await Promise.all([import("../supabaseClient"), import("xlsx")]);
+  const [{ supabase }, XLSX] = await Promise.all([
+    import("../supabaseClient"),
+    import("xlsx"),
+  ]);
   signal?.throwIfAborted();
   onEstado("Leyendo la tabla completa…");
   let consulta = REPORTES.has(tabla)
@@ -81,12 +123,17 @@ export async function descargarTablaExcel(tabla, { signal, onEstado = () => {} }
   if (signal) consulta = consulta.abortSignal(signal);
   const { data, error } = await consulta;
   signal?.throwIfAborted();
-  if (error) throw new Error(error.message || "No se pudo leer la tabla completa.");
+  if (error)
+    throw new Error(error.message || "No se pudo leer la tabla completa.");
   onEstado("Preparando el archivo Excel…");
   await new Promise((resolve) => setTimeout(resolve, 0));
   signal?.throwIfAborted();
   const libro = construirLibro(data, XLSX);
-  const bytes = XLSX.write(libro, { bookType: "xlsx", type: "array", compression: true });
+  const bytes = XLSX.write(libro, {
+    bookType: "xlsx",
+    type: "array",
+    compression: true,
+  });
   signal?.throwIfAborted();
   const fecha = new Date(data.exportado_en).toISOString().replace(/[:.]/g, "-");
   const nombre = `EGEO_${tabla}_${fecha}.xlsx`;

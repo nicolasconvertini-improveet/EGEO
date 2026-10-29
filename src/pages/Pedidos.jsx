@@ -1,8 +1,20 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { ClipboardList, Boxes, Plus, Check, Pencil } from "lucide-react";
-import { createPedido, fetchEtapasPedido, editarCantidadPedido } from "../api";
+import { fetchEtapasPedido, editarCantidadPedido } from "../api";
 import { ACTS, actLabel, rango } from "../lib/constants";
-import { nf, fmtDT, fmtHora, fmtClock, efficiency, effColor, estadoLabel, estadoBadge, findArt, findPed, norm } from "../lib/format";
+import {
+  nf,
+  fmtDT,
+  fmtHora,
+  fmtClock,
+  efficiency,
+  effColor,
+  estadoLabel,
+  estadoBadge,
+  findArt,
+  findPed,
+  norm,
+} from "../lib/format";
 import SearchBox from "../components/SearchBox";
 import Highlight from "../components/Highlight";
 import EstadoPedido from "../components/EstadoPedido";
@@ -28,12 +40,20 @@ export default function Pedidos({ rol, peds, setDetail, prefiltro }) {
   return (
     <>
       {canCreate && (
-        <button className="btn btn-dark" style={{ marginBottom: 12 }} onClick={() => setDetail({ type: "pedNew" })}>
+        <button
+          className="btn btn-dark"
+          style={{ marginBottom: 12 }}
+          onClick={() => setDetail({ type: "pedNew" })}
+        >
           <Plus size={18} strokeWidth={2.5} /> Nueva orden
         </button>
       )}
 
-      <SearchBox value={q} onChange={setQ} placeholder="Buscar por código o artículo…" />
+      <SearchBox
+        value={q}
+        onChange={setQ}
+        placeholder="Buscar por código o artículo…"
+      />
       {estado && (
         <div className="filtro-activo">
           Mostrando sólo: <b>{estadoLabel(estado)}</b>
@@ -64,16 +84,21 @@ export default function Pedidos({ rol, peds, setDetail, prefiltro }) {
                     <Highlight text={p.codigo} query={q} />
                   </div>
                   <div className="s">
-                    <Highlight text={p.articuloNombre} query={q} /> · {nf(p.cantidad)} u.
+                    <Highlight text={p.articuloNombre} query={q} /> ·{" "}
+                    {nf(p.cantidad)} {p.moldeId ? "ciclos" : "u."} ·{" "}
+                    {p.proceso ? actLabel(p.proceso) : "Histórica multietapa"}
                   </div>
                 </div>
-                <span className={"badge " + estadoBadge(p.estado)}>{estadoLabel(p.estado)}</span>
+                <span className={"badge " + estadoBadge(p.estado)}>
+                  {estadoLabel(p.estado)}
+                </span>
               </div>
               <div className="prog">
                 <i
                   style={{
                     width: pct + "%",
-                    background: p.estado === "finalizado" ? "var(--good)" : "var(--ink)",
+                    background:
+                      p.estado === "finalizado" ? "var(--good)" : "var(--ink)",
                   }}
                 />
               </div>
@@ -88,7 +113,8 @@ export default function Pedidos({ rol, peds, setDetail, prefiltro }) {
                 className="mono"
               >
                 <span>
-                  {nf(p.okAcum)} / {nf(p.cantidad)} completas
+                  {nf(p.okAcum)} / {nf(p.cantidad)}{" "}
+                  {p.moldeId ? "ciclos equivalentes OK" : "completas"}
                 </span>
                 <span>{pct}%</span>
               </div>
@@ -101,14 +127,24 @@ export default function Pedidos({ rol, peds, setDetail, prefiltro }) {
           <div className="ic">
             <ClipboardList size={22} />
           </div>
-          {peds.length === 0 ? "No hay órdenes" : "Ninguna orden coincide con la búsqueda"}
+          {peds.length === 0
+            ? "No hay órdenes"
+            : "Ninguna orden coincide con la búsqueda"}
         </div>
       )}
     </>
   );
 }
 
-export function PedidoDetalle({ arts, peds, tars, detail, notify, rol, reloadPeds }) {
+export function PedidoDetalle({
+  arts,
+  peds,
+  tars,
+  detail,
+  notify,
+  rol,
+  reloadPeds,
+}) {
   const [etapas, setEtapas] = useState(null);
   const pedidoId = detail?.id;
 
@@ -136,25 +172,34 @@ export function PedidoDetalle({ arts, peds, tars, detail, notify, rol, reloadPed
   const a = findArt(arts, p.articuloId);
   const pct = Math.min(100, Math.round((p.okAcum / p.cantidad) * 100));
   const rel = tars.filter((t) => t.pedidoId === p.id);
-  const etapaDe = (k) => etapas?.find((e) => e.actividad === k) || { ok: 0, scrap: 0, tareas: 0 };
+  const etapaDe = (k) =>
+    etapas?.find((e) => e.actividad === k) || { ok: 0, scrap: 0, tareas: 0 };
 
   return (
     <>
       <div className="card">
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <div>
-            <div className="mono" style={{ fontSize: 12, color: "var(--ink2)" }}>
+            <div
+              className="mono"
+              style={{ fontSize: 12, color: "var(--ink2)" }}
+            >
               {p.codigo}
             </div>
-            <div style={{ fontSize: 18, fontWeight: 700, marginTop: 2 }}>{p.articuloNombre}</div>
+            <div style={{ fontSize: 18, fontWeight: 700, marginTop: 2 }}>
+              {p.articuloNombre}
+            </div>
           </div>
-          <span className={"badge " + estadoBadge(p.estado)}>{estadoLabel(p.estado)}</span>
+          <span className={"badge " + estadoBadge(p.estado)}>
+            {estadoLabel(p.estado)}
+          </span>
         </div>
         <div className="prog" style={{ marginTop: 14 }}>
           <i
             style={{
               width: pct + "%",
-              background: p.estado === "finalizado" ? "var(--good)" : "var(--ink)",
+              background:
+                p.estado === "finalizado" ? "var(--good)" : "var(--ink)",
             }}
           />
         </div>
@@ -169,7 +214,8 @@ export function PedidoDetalle({ arts, peds, tars, detail, notify, rol, reloadPed
           }}
         >
           <span>
-            {nf(p.okAcum)} / {nf(p.cantidad)} completas
+            {nf(p.okAcum)} / {nf(p.cantidad)}{" "}
+            {p.moldeId ? "ciclos equivalentes OK" : "completas"}
           </span>
           <span>Scrap {nf(p.scrapAcum)}</span>
         </div>
@@ -183,7 +229,8 @@ export function PedidoDetalle({ arts, peds, tars, detail, notify, rol, reloadPed
               paddingTop: 9,
             }}
           >
-            {p.etapasCompletas} de {p.etapasReq} etapa
+            {p.etapasCompletas} de {p.etapasReq}{" "}
+            {p.moldeId ? "artículo" : "proceso"}
             {p.etapasReq === 1 ? "" : "s"} completa
             {p.etapasCompletas === 1 ? "" : "s"}
             {p.etapasCompletas < p.etapasReq &&
@@ -191,12 +238,32 @@ export function PedidoDetalle({ arts, peds, tars, detail, notify, rol, reloadPed
                 ? " · cerrada con etapas incompletas"
                 : p.estado === "cancelado"
                   ? " · orden cancelada"
-                  : " · quedan etapas para completar la producción")}
+                  : " · quedan objetivos para completar la producción")}
           </div>
         )}
       </div>
 
-      {rango(rol) >= 2 && <EditarCantidad pedido={p} articulo={a} etapas={etapas} notify={notify} reloadPeds={reloadPeds} />}
+      {p.moldeId && (
+        <div className="card">
+          <h3>Artículos del molde {p.configuracion?.codigo}</h3>
+          {p.articulos.map((x) => (
+            <p key={x.articulo_id}>
+              {x.codigo} · {x.nombre} · {x.unidades_ciclo} u/ciclo · Objetivo{" "}
+              {p.cantidad * x.unidades_ciclo} OK · {x.ok} OK / {x.scrap} rechazo
+              registrados
+            </p>
+          ))}
+        </div>
+      )}
+      {rango(rol) >= 2 && (
+        <EditarCantidad
+          pedido={p}
+          articulo={a}
+          etapas={etapas}
+          notify={notify}
+          reloadPeds={reloadPeds}
+        />
+      )}
 
       {/* La key incluye la cantidad: si el cambio recalculó el estado, el bloque se vuelve a leer. */}
       {rango(rol) >= 2 && (
@@ -210,7 +277,7 @@ export function PedidoDetalle({ arts, peds, tars, detail, notify, rol, reloadPed
       )}
 
       <div className="sec-title" style={{ marginTop: 18 }}>
-        Totales por etapa
+        Totales del proceso
       </div>
       {etapas === null ? (
         <div className="card" style={{ textAlign: "center", padding: 24 }}>
@@ -219,19 +286,31 @@ export function PedidoDetalle({ arts, peds, tars, detail, notify, rol, reloadPed
       ) : (
         <div className="card" style={{ padding: 12 }}>
           <div className="etapas">
-            {ACTS.map((ac) => {
+            {ACTS.filter(
+              (ac) => !p.moldeId && (!p.proceso || ac.key === p.proceso),
+            ).map((ac) => {
               const e = etapaDe(ac.key);
-              const requerida = (a?.std?.[ac.key] || 0) > 0;
+              const requerida = p.proceso
+                ? ac.key === p.proceso
+                : (a?.std?.[ac.key] || 0) > 0;
               const lista = requerida && e.ok >= p.cantidad;
               const vacia = e.ok === 0 && e.scrap === 0;
               return (
-                <div className={"etapa" + (vacia ? " cero" : "") + (lista ? " lista" : "")} key={ac.key}>
+                <div
+                  className={
+                    "etapa" + (vacia ? " cero" : "") + (lista ? " lista" : "")
+                  }
+                  key={ac.key}
+                >
                   <div className="en">
                     {ac.label}
                     {!requerida && <span className="eno"> no aplica</span>}
                     {lista && <span className="eok-tick"> ✓</span>}
                   </div>
-                  <div className="eok mono" style={{ color: e.ok > 0 ? "var(--good)" : "var(--ink2)" }}>
+                  <div
+                    className="eok mono"
+                    style={{ color: e.ok > 0 ? "var(--good)" : "var(--ink2)" }}
+                  >
                     {nf(e.ok)}
                   </div>
                   <div className="esc mono">
@@ -257,21 +336,29 @@ export function PedidoDetalle({ arts, peds, tars, detail, notify, rol, reloadPed
         </div>
       )}
       {rel.map((t) => {
-        const e = efficiency(a, t.actividad, t.ok, t.realSec);
+        const e =
+          t.realSec > 0 && t.stdSec > 0 ? (100 * t.stdSec) / t.realSec : null;
         return (
           <div className="rowitem" key={t.id} style={{ cursor: "default" }}>
-            <div className="lead" style={{ background: effColor(e), color: "#fff" }}>
+            <div
+              className="lead"
+              style={{ background: effColor(e), color: "#fff" }}
+            >
               {e == null ? "—" : Math.round(e)}
             </div>
             <div className="mid">
               <div className="t">{actLabel(t.actividad)}</div>
               <div className="s mono">
-                {fmtDT(t.inicio)} → {fmtHora(t.fin)} · {nf(t.ok)} OK · {t.operario}
+                {fmtDT(t.inicio)} → {fmtHora(t.fin)} · {nf(t.ok)} OK ·{" "}
+                {t.operario}
               </div>
               <div className="s">
-                Total {fmtClock(t.totalSec)} · Pausas {fmtClock(t.pausaSec)} · Neto {fmtClock(t.realSec)}
+                Total {fmtClock(t.totalSec)} · Pausas {fmtClock(t.pausaSec)} ·
+                Neto {fmtClock(t.realSec)}
               </div>
-              {t.observaciones && <div className="s observacion">{t.observaciones}</div>}
+              {t.observaciones && (
+                <div className="s observacion">{t.observaciones}</div>
+              )}
             </div>
           </div>
         );
@@ -287,12 +374,29 @@ function EditarCantidad({ pedido, articulo, etapas, notify, reloadPeds }) {
 
   // Mínimo orientativo: mayor cantidad OK entre los procesos que aplican.
   // La base de datos vuelve a validarlo al guardar.
-  const aplican = ACTS.filter((ac) => (articulo?.std?.[ac.key] || 0) > 0).map((ac) => ac.key);
+  const aplican = ACTS.filter((ac) =>
+    pedido.proceso
+      ? ac.key === pedido.proceso
+      : (articulo?.std?.[ac.key] || 0) > 0,
+  ).map((ac) => ac.key);
   const okDe = (k) => Number(etapas?.find((e) => e.actividad === k)?.ok) || 0;
-  const minimo = aplican.length ? Math.max(0, ...aplican.map(okDe)) : (etapas || []).reduce((s, e) => s + (Number(e.ok) || 0), 0);
+  const minimo = pedido.moldeId
+    ? Math.max(
+        0,
+        ...pedido.articulos.map((a) =>
+          Math.ceil(Number(a.ok || 0) / a.unidades_ciclo),
+        ),
+      )
+    : aplican.length
+      ? Math.max(0, ...aplican.map(okDe))
+      : (etapas || []).reduce((s, e) => s + (Number(e.ok) || 0), 0);
   const n = Number(valor);
   const error =
-    !valor || n <= 0 ? "Ingresá una cantidad mayor que cero." : n < minimo ? `No puede ser menor a ${nf(minimo)} (ya fabricadas).` : "";
+    !valor || n <= 0
+      ? "Ingresá una cantidad mayor que cero."
+      : n < minimo
+        ? `No puede ser menor a ${nf(minimo)} (ya fabricadas).`
+        : "";
 
   const guardar = async () => {
     if (error || busy || n === pedido.cantidad) return;
@@ -327,7 +431,9 @@ function EditarCantidad({ pedido, articulo, etapas, notify, reloadPeds }) {
   return (
     <div className="card" style={{ marginTop: 12 }}>
       <div className="field" style={{ marginTop: 0 }}>
-        <label htmlFor="editar-cantidad">Cantidad a fabricar</label>
+        <label htmlFor="editar-cantidad">
+          {pedido.moldeId ? "Ciclos previstos" : "Cantidad a fabricar"}
+        </label>
         <input
           id="editar-cantidad"
           inputMode="numeric"
@@ -336,12 +442,18 @@ function EditarCantidad({ pedido, articulo, etapas, notify, reloadPeds }) {
           onChange={(e) => setValor(e.target.value.replace(/\D/g, ""))}
         />
         <small>
-          Actual: {nf(pedido.cantidad)} u. · Mínimo permitido: {etapas == null ? "…" : `${nf(Math.max(1, minimo))} u.`}
+          Actual: {nf(pedido.cantidad)} u. · Mínimo permitido:{" "}
+          {etapas == null ? "…" : `${nf(Math.max(1, minimo))} u.`}
         </small>
         {error && <div className="hint-err">{error}</div>}
       </div>
       <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-        <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => setAbierto(false)}>
+        <button
+          type="button"
+          className="btn btn-ghost"
+          disabled={busy}
+          onClick={() => setAbierto(false)}
+        >
           Cancelar
         </button>
         <button
@@ -354,179 +466,5 @@ function EditarCantidad({ pedido, articulo, etapas, notify, reloadPeds }) {
         </button>
       </div>
     </div>
-  );
-}
-
-export function PedidoForm({ arts, setDetail, notify, reloadPeds }) {
-  const [codigo, setCodigo] = useState("");
-  const [artId, setArtId] = useState("");
-  const [cant, setCant] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [busqueda, setBusqueda] = useState("");
-  const [categoria, setCategoria] = useState("");
-  const [limite, setLimite] = useState(20);
-
-  const activos = useMemo(() => arts.filter((a) => a.activo), [arts]);
-  const categorias = useMemo(
-    () => [...new Set(activos.map((a) => a.categoria).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es")),
-    [activos],
-  );
-  const seleccionado = activos.find((a) => a.id === artId);
-  const resultados = useMemo(() => {
-    const consulta = norm(busqueda.trim());
-    const palabras = consulta.split(/\s+/).filter(Boolean);
-    return activos
-      .filter((a) => {
-        if (categoria && a.categoria !== categoria) return false;
-        const texto = norm(`${a.codigo} ${a.nombre}`);
-        return palabras.every((palabra) => texto.includes(palabra));
-      })
-      .sort((a, b) => {
-        const exactoA = consulta && norm(a.codigo) === consulta ? 1 : 0;
-        const exactoB = consulta && norm(b.codigo) === consulta ? 1 : 0;
-        return exactoB - exactoA || a.nombre.localeCompare(b.nombre, "es") || a.codigo.localeCompare(b.codigo, "es", { numeric: true });
-      });
-  }, [activos, busqueda, categoria]);
-  const valid = codigo.trim() && seleccionado && Number(cant) > 0;
-
-  const save = async () => {
-    if (!valid || busy) return;
-    setBusy(true);
-    try {
-      await createPedido({ codigo, articuloId: seleccionado.id, cantidad: cant });
-      await reloadPeds();
-      notify("Orden creada");
-      setDetail(null);
-    } catch (e) {
-      notify(e?.code === "23505" ? "Ese código de orden ya existe" : "No se pudo crear la orden", true);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <>
-      <div className="field">
-        <label htmlFor="orden-codigo">
-          Código de orden <span className="req">*</span>
-        </label>
-        <input id="orden-codigo" value={codigo} disabled={busy} onChange={(e) => setCodigo(e.target.value)} placeholder="Ej: 20260617" />
-      </div>
-
-      <fieldset className="art-picker" disabled={busy}>
-        <legend>
-          Artículo <span className="req">*</span>
-        </legend>
-        {activos.length === 0 ? (
-          <div className="hint-err">No hay artículos activos. Activá o creá uno primero.</div>
-        ) : seleccionado ? (
-          <div className="art-picker-selected">
-            <span className="art-picker-code">{seleccionado.codigo}</span>
-            <span className="art-picker-name">{seleccionado.nombre}</span>
-            <span className="art-picker-category">{seleccionado.categoria || "Sin categoría"}</span>
-            <section aria-label="Tiempos estándar del artículo" style={{ marginTop: 10 }}>
-              <div style={{ fontSize: 13, fontWeight: 600 }}>Tiempos estándar por pieza</div>
-              <div className="stds">
-                {ACTS.map((proceso) => {
-                  const segundos = Number(seleccionado.std?.[proceso.key]);
-                  const aplica = Number.isFinite(segundos) && segundos > 0;
-                  return (
-                    <div className="std" key={proceso.key}>
-                      <div className="l">{proceso.label}</div>
-                      <div className="v">
-                        {aplica ? (
-                          <>
-                            {nf(segundos)} <small>s/pieza</small>
-                          </>
-                        ) : (
-                          "no aplica"
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-            <button type="button" className="btn btn-ghost" onClick={() => setArtId("")}>
-              Cambiar artículo
-            </button>
-          </div>
-        ) : (
-          <>
-            <div className="field">
-              <label htmlFor="art-busqueda">Buscar por código o descripción</label>
-              <input
-                id="art-busqueda"
-                type="search"
-                autoFocus
-                autoComplete="off"
-                placeholder="Ej: 1204, VD50 o válvula rosca"
-                value={busqueda}
-                onChange={(e) => {
-                  setBusqueda(e.target.value);
-                  setLimite(20);
-                }}
-              />
-            </div>
-            <div className="field">
-              <label htmlFor="art-categoria">Categoría (opcional)</label>
-              <select
-                id="art-categoria"
-                value={categoria}
-                onChange={(e) => {
-                  setCategoria(e.target.value);
-                  setLimite(20);
-                }}
-              >
-                <option value="">Todas las categorías</option>
-                {categorias.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <p className="art-picker-status" role="status">
-              {resultados.length === 0
-                ? "No hay coincidencias. Probá otra búsqueda o categoría."
-                : `Mostrando ${Math.min(limite, resultados.length)} de ${resultados.length} artículos. Seleccioná uno para continuar.`}
-            </p>
-            <ul className="art-picker-results" aria-label="Artículos encontrados">
-              {resultados.slice(0, limite).map((a) => (
-                <li key={a.id}>
-                  <button type="button" className="art-picker-option" onClick={() => setArtId(a.id)}>
-                    <span className="art-picker-code">{a.codigo}</span>
-                    <span className="art-picker-name">{a.nombre}</span>
-                    <span className="art-picker-category">{a.categoria || "Sin categoría"}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-            {resultados.length > limite && (
-              <button type="button" className="btn btn-ghost" onClick={() => setLimite((n) => n + 20)}>
-                Ver más resultados
-              </button>
-            )}
-          </>
-        )}
-      </fieldset>
-
-      <div className="field">
-        <label htmlFor="orden-cantidad">
-          Cantidad a fabricar <span className="req">*</span>
-        </label>
-        <input
-          id="orden-cantidad"
-          value={cant}
-          disabled={busy}
-          inputMode="numeric"
-          placeholder="10000"
-          onChange={(e) => setCant(e.target.value.replace(/\D/g, ""))}
-        />
-      </div>
-      <button type="button" className="btn btn-primary" style={{ marginTop: 22 }} disabled={!valid || busy} onClick={save}>
-        <Check size={18} strokeWidth={2.5} /> {busy ? "Creando orden…" : "Crear orden"}
-      </button>
-    </>
   );
 }

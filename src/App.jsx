@@ -1,7 +1,20 @@
-import React, { useState, useEffect, useCallback, lazy, Suspense } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  lazy,
+  Suspense,
+} from "react";
 import { Circle, Check } from "lucide-react";
 import { supabase } from "./supabaseClient";
-import { fetchPerfil, fetchArticulos, fetchPedidos, fetchTareas, contarTareasEnCurso } from "./api";
+import {
+  fetchPerfil,
+  fetchArticulos,
+  fetchPedidos,
+  fetchTareas,
+  contarTareasEnCurso,
+} from "./api";
 import { ROLES } from "./lib/constants";
 
 import Shell from "./components/Shell";
@@ -10,12 +23,14 @@ import AppBar, { tabLabel, tabIcon } from "./components/AppBar";
 import Login from "./pages/Login";
 import Tablero from "./pages/Tablero";
 import Articulos, { ArticuloDetalle, ArticuloForm } from "./pages/Articulos";
-import Pedidos, { PedidoDetalle, PedidoForm } from "./pages/Pedidos";
+import Pedidos, { PedidoDetalle } from "./pages/Pedidos";
 import Tareas from "./pages/Tareas";
 import Registrar from "./pages/Registrar";
 import Usuarios, { UsuarioForm } from "./pages/Usuarios";
 import Guia from "./pages/Guia";
 import Exportar from "./pages/Exportar";
+import Planta from "./pages/Planta";
+import NuevaOrden from "./pages/NuevaOrden";
 import Mantenimiento from "./pages/Mantenimiento";
 import TareaEditar from "./pages/TareaEditar";
 import "./mantenimiento.css";
@@ -30,6 +45,13 @@ export default function App() {
   const [tab, setTab] = useState("registrar");
   const [detail, setDetail] = useState(null);
   const [toast, setToast] = useState(null);
+  const navegacion = useRef(null);
+  useEffect(() => {
+    navegacion.current?.querySelector('[aria-current="page"]')?.scrollIntoView({
+      block: "nearest",
+      inline: "nearest",
+    });
+  }, [tab, detail?.type, perfil?.rol]);
   // Filtros con los que se abre una pantalla al navegar desde el tablero.
   const [prefiltro, setPrefiltro] = useState(null);
 
@@ -44,7 +66,13 @@ export default function App() {
   const usuarioId = session?.user?.id;
   // El operario sólo trae sus propias tareas; supervisor y admin, todas.
   const soloPropias = perfil?.rol === "operario" ? usuarioId : null;
-  const clavePantalla = JSON.stringify([usuarioId, tab, detail?.type, detail?.id, detail?.edit]);
+  const clavePantalla = JSON.stringify([
+    usuarioId,
+    tab,
+    detail?.type,
+    detail?.id,
+    detail?.edit,
+  ]);
 
   const notify = useCallback((msg, err = false) => setToast({ msg, err }), []);
   useEffect(() => {
@@ -86,7 +114,13 @@ export default function App() {
         setTab(ROLES[p.rol]?.tabs[0] || "registrar");
         setDetail(null);
       })
-      .catch(() => vigente && setErrorPerfil("No se pudo validar tu sesión. Volvé a ingresar o reintentá la conexión."));
+      .catch(
+        () =>
+          vigente &&
+          setErrorPerfil(
+            "No se pudo validar tu sesión. Volvé a ingresar o reintentá la conexión.",
+          ),
+      );
     return () => {
       vigente = false;
     };
@@ -133,25 +167,33 @@ export default function App() {
     Promise.all([
       soloIndicadores ? null : fetchArticulos(),
       soloIndicadores ? null : fetchPedidos(),
-      soloIndicadores ? null : fetchTareas({ desdeDias: 60, limit: 500, operarioId: soloPropias }),
+      soloIndicadores
+        ? null
+        : fetchTareas({ desdeDias: 60, limit: 500, operarioId: soloPropias }),
       soloIndicadores ? null : contarTareasEnCurso(),
       fetchPerfil(usuarioId),
     ])
-      .then(([nuevosArts, nuevosPeds, nuevasTars, nuevoEnCurso, perfilActual]) => {
-        if (!vigente) return;
-        setPerfil(perfilActual);
-        if (nuevosArts !== null) setArts(nuevosArts);
-        if (nuevosPeds !== null) setPeds(nuevosPeds);
-        if (nuevasTars !== null) setTars(nuevasTars);
-        if (nuevoEnCurso !== null) setEnCurso(nuevoEnCurso);
-        setDatosCargados(clavePantalla);
-      })
+      .then(
+        ([nuevosArts, nuevosPeds, nuevasTars, nuevoEnCurso, perfilActual]) => {
+          if (!vigente) return;
+          setPerfil(perfilActual);
+          if (nuevosArts !== null) setArts(nuevosArts);
+          if (nuevosPeds !== null) setPeds(nuevosPeds);
+          if (nuevasTars !== null) setTars(nuevasTars);
+          if (nuevoEnCurso !== null) setEnCurso(nuevoEnCurso);
+          setDatosCargados(clavePantalla);
+        },
+      )
       .catch(() => {
         if (vigente) {
           setArts([]);
           setPeds([]);
           setTars([]);
-          setErrorDatos({ clave: clavePantalla, mensaje: "No se pudieron validar la sesión y los datos. Reintentá o volvé a ingresar." });
+          setErrorDatos({
+            clave: clavePantalla,
+            mensaje:
+              "No se pudieron validar la sesión y los datos. Reintentá o volvé a ingresar.",
+          });
         }
       })
       .finally(() => {
@@ -161,7 +203,14 @@ export default function App() {
     return () => {
       vigente = false;
     };
-  }, [usuarioId, perfil?.id, perfil?.activo, soloPropias, clavePantalla, reintento]);
+  }, [
+    usuarioId,
+    perfil?.id,
+    perfil?.activo,
+    soloPropias,
+    clavePantalla,
+    reintento,
+  ]);
 
   if (booting)
     return (
@@ -182,10 +231,16 @@ export default function App() {
       <Shell>
         <div className="center" style={{ padding: 30 }}>
           <p role="alert">{errorPerfil}</p>
-          <button className="btn btn-ghost" onClick={() => window.location.reload()}>
+          <button
+            className="btn btn-ghost"
+            onClick={() => window.location.reload()}
+          >
             Reintentar
           </button>
-          <button className="btn btn-ghost" onClick={() => supabase.auth.signOut()}>
+          <button
+            className="btn btn-ghost"
+            onClick={() => supabase.auth.signOut()}
+          >
             Volver a ingresar
           </button>
         </div>
@@ -196,7 +251,11 @@ export default function App() {
       <Shell>
         <div className="center" style={{ padding: 30, textAlign: "center" }}>
           <div>Tu cuenta está inactiva. Contactá a un administrador.</div>
-          <button className="btn btn-ghost" style={{ maxWidth: 200 }} onClick={() => supabase.auth.signOut()}>
+          <button
+            className="btn btn-ghost"
+            style={{ maxWidth: 200 }}
+            onClick={() => supabase.auth.signOut()}
+          >
             Salir
           </button>
         </div>
@@ -214,7 +273,9 @@ export default function App() {
   const rol = perfil.rol;
   const tabs = ROLES[rol].tabs;
   // Formularios y pantallas de una columna: ancho de lectura cómodo en tablet/PC.
-  const angosta = (!detail && tab === "registrar") || ["artNew", "pedNew", "usrNew", "guia", "exportar"].includes(detail?.type);
+  const angosta =
+    (!detail && tab === "registrar") ||
+    ["artNew", "pedNew", "usrNew", "guia", "exportar"].includes(detail?.type);
   // Navegar a otra pestaña con filtros precargados (ej.: desde el tablero).
   const irA = (t, filtro = null) => {
     setPrefiltro(filtro);
@@ -254,10 +315,16 @@ export default function App() {
         {errorDatos?.clave === clavePantalla ? (
           <div className="card" role="alert">
             <p>{errorDatos.mensaje}</p>
-            <button className="btn btn-primary" onClick={() => setReintento((n) => n + 1)}>
+            <button
+              className="btn btn-primary"
+              onClick={() => setReintento((n) => n + 1)}
+            >
               Reintentar
             </button>
-            <button className="btn btn-ghost" onClick={() => supabase.auth.signOut()}>
+            <button
+              className="btn btn-ghost"
+              onClick={() => supabase.auth.signOut()}
+            >
               Volver a ingresar
             </button>
           </div>
@@ -274,17 +341,24 @@ export default function App() {
 
       {toast && (
         <div className={"toast" + (toast.err ? " err" : "")}>
-          <span className="tk">{toast.err ? <Circle size={13} color="#fff" /> : <Check size={13} color="#fff" strokeWidth={3} />}</span>
+          <span className="tk">
+            {toast.err ? (
+              <Circle size={13} color="#fff" />
+            ) : (
+              <Check size={13} color="#fff" strokeWidth={3} />
+            )}
+          </span>
           {toast.msg}
         </div>
       )}
 
       {tabs.length > 1 && (
-        <nav className="nav">
+        <nav className="nav" ref={navegacion} aria-label="Navegación principal">
           {tabs.map((t) => (
             <button
               key={t}
               className={tab === t && !detail ? "on" : ""}
+              aria-current={tab === t && !detail ? "page" : undefined}
               onClick={() => {
                 setPrefiltro(null);
                 setTab(t);
@@ -316,7 +390,10 @@ function Screen(props) {
     guia: ["admin", "supervisor", "operario"],
     tareaEdit: ["admin"],
   };
-  if ((detail && !permisoDetalle[detail.type]?.includes(props.rol)) || (!detail && !permitidas.includes(tab)))
+  if (
+    (detail && !permisoDetalle[detail.type]?.includes(props.rol)) ||
+    (!detail && !permitidas.includes(tab))
+  )
     return (
       <div className="card" role="alert">
         Tu rol no tiene acceso a esta pantalla. Elegí una opción habilitada.
@@ -325,7 +402,7 @@ function Screen(props) {
   if (detail?.type === "art") return <ArticuloDetalle {...props} />;
   if (detail?.type === "artNew") return <ArticuloForm {...props} />;
   if (detail?.type === "ped") return <PedidoDetalle {...props} />;
-  if (detail?.type === "pedNew") return <PedidoForm {...props} />;
+  if (detail?.type === "pedNew") return <NuevaOrden {...props} />;
   if (detail?.type === "usrNew") return <UsuarioForm {...props} />;
   if (detail?.type === "tareaEdit") return <TareaEditar {...props} />;
   if (detail?.type === "guia") return <Guia rol={props.rol} />;
@@ -342,6 +419,7 @@ function Screen(props) {
   if (tab === "tareas") return <Tareas {...props} />;
   if (tab === "registrar") return <Registrar {...props} />;
   if (tab === "usuarios") return <Usuarios {...props} />;
+  if (tab === "planta") return <Planta {...props} />;
   if (tab === "mantenimiento") return <Mantenimiento {...props} />;
   return null;
 }

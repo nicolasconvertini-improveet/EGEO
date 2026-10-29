@@ -4,7 +4,8 @@ import { supabase } from "./supabaseClient";
 export async function fetchPerfil(userId) {
   const { data, error } = await supabase.rpc("validar_sesion");
   if (error) throw error;
-  if (data?.id !== userId) throw new Error("La sesión cambió. Volvé a ingresar.");
+  if (data?.id !== userId)
+    throw new Error("La sesión cambió. Volvé a ingresar.");
   return data; // { id, nombre, rol, activo }
 }
 
@@ -30,7 +31,10 @@ function mapArticulo(r) {
 }
 
 export async function fetchArticulos() {
-  const { data, error } = await supabase.from("articulos").select("*").order("nombre", { ascending: true });
+  const { data, error } = await supabase
+    .from("articulos")
+    .select("*")
+    .order("nombre", { ascending: true });
   if (error) throw error;
   return data.map(mapArticulo);
 }
@@ -50,24 +54,36 @@ export async function saveArticulo(a, id) {
     std_armado: Number(a.std.armado) || 0,
     std_embolsado: Number(a.std.embolsado) || 0,
   };
-  const q = id ? supabase.from("articulos").update(row).eq("id", id) : supabase.from("articulos").insert(row);
+  const q = id
+    ? supabase.from("articulos").update(row).eq("id", id)
+    : supabase.from("articulos").insert(row);
   const { error } = await q;
   if (error) throw error;
 }
 
 export async function setArticuloActivo(id, activo) {
-  const { error } = await supabase.from("articulos").update({ activo }).eq("id", id);
+  const { error } = await supabase
+    .from("articulos")
+    .update({ activo })
+    .eq("id", id);
   if (error) throw error;
 }
 
 /* ---------- Pedidos ---------- */
 export async function fetchPedidos() {
-  const { data, error } = await supabase.from("v_pedidos").select("*").order("creado", { ascending: false });
+  const { data, error } = await supabase
+    .from("v_pedidos")
+    .select("*")
+    .order("creado", { ascending: false });
   if (error) throw error;
   return data.map((p) => ({
     id: p.id,
     codigo: p.codigo,
     articuloId: p.articulo_id,
+    proceso: p.proceso,
+    moldeId: p.molde_id,
+    configuracion: p.configuracion,
+    articulos: p.articulos || [],
     articuloNombre: p.articulo_nombre,
     articuloCodigo: p.articulo_codigo,
     cantidad: p.cantidad,
@@ -82,7 +98,11 @@ export async function fetchPedidos() {
 }
 
 export async function consultarEstadoPedido(id) {
-  const { data, error } = await supabase.from("pedidos").select("id, estado, estado_revision").eq("id", id).single();
+  const { data, error } = await supabase
+    .from("pedidos")
+    .select("id, estado, estado_revision")
+    .eq("id", id)
+    .single();
   if (error) throw error;
   return data;
 }
@@ -112,7 +132,13 @@ export async function fetchHistorialEstado(id, limite = 20) {
   return { data: registros, count };
 }
 
-export async function cambiarEstadoPedido({ id, pedidoId, revision, accion, motivo }) {
+export async function cambiarEstadoPedido({
+  id,
+  pedidoId,
+  revision,
+  accion,
+  motivo,
+}) {
   const { data, error } = await supabase.rpc("cambiar_estado_pedido", {
     p_solicitud: id,
     p_pedido: pedidoId,
@@ -124,10 +150,18 @@ export async function cambiarEstadoPedido({ id, pedidoId, revision, accion, moti
   return data;
 }
 
-export async function createPedido({ codigo, articuloId, cantidad }) {
+export async function createPedido({
+  codigo,
+  articuloId,
+  moldeId,
+  proceso,
+  cantidad,
+}) {
   const { error } = await supabase.from("pedidos").insert({
     codigo: codigo.trim(),
-    articulo_id: articuloId,
+    articulo_id: proceso === "inyectado" ? null : articuloId,
+    proceso,
+    molde_id: proceso === "inyectado" ? moldeId : null,
     cantidad: Number(cantidad),
   });
   if (error) throw error;
@@ -141,7 +175,8 @@ export async function editarCantidadPedido(pedidoId, cantidad) {
     p_cantidad: Number(cantidad),
   });
   if (error) {
-    if (error.code === "PGRST202") throw new Error("Falta aplicar la migración 15 en Supabase.");
+    if (error.code === "PGRST202")
+      throw new Error("Falta aplicar la migración 15 en Supabase.");
     throw new Error(error.message || "No se pudo cambiar la cantidad");
   }
   return data; // { id, cantidad, estado, minimo }
@@ -149,13 +184,19 @@ export async function editarCantidadPedido(pedidoId, cantidad) {
 
 /* ---------- Usuarios (sólo administradores) ---------- */
 export async function fetchUsuarios() {
-  const { data, error } = await supabase.from("perfiles").select("*").order("nombre", { ascending: true });
+  const { data, error } = await supabase
+    .from("perfiles")
+    .select("*")
+    .order("nombre", { ascending: true });
   if (error) throw error;
   return data;
 }
 
 export async function updateUsuario(id, cambios) {
-  const { error } = await supabase.from("perfiles").update(cambios).eq("id", id);
+  const { error } = await supabase
+    .from("perfiles")
+    .update(cambios)
+    .eq("id", id);
   if (error) throw error;
 }
 
@@ -183,7 +224,10 @@ export async function crearUsuario({ email, password, nombre, rol }) {
   }
 
   if (!res.ok) {
-    if (res.status === 404) throw new Error("El alta de usuarios sólo funciona en el sitio publicado.");
+    if (res.status === 404)
+      throw new Error(
+        "No se encontró el servidor de usuarios. Para desarrollo usá npm run dev.",
+      );
     throw new Error(payload?.error || "No se pudo crear el usuario");
   }
   return payload;
@@ -217,7 +261,9 @@ export async function consultarEmailUsuario(usuarioId) {
   }
 
   if (!res.ok || payload?.ok !== true || !payload?.email) {
-    throw new Error(payload?.error || "No se pudo consultar el correo del usuario.");
+    throw new Error(
+      payload?.error || "No se pudo consultar el correo del usuario.",
+    );
   }
 
   return payload.email;
@@ -229,7 +275,10 @@ export async function cambiarPasswordUsuario(usuarioId, password) {
   if (!token) throw new Error("Sesión vencida. Volvé a ingresar.");
   const res = await fetch("/.netlify/functions/cambiar-password", {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify({ usuarioId, password }),
   });
   let payload;
@@ -240,7 +289,8 @@ export async function cambiarPasswordUsuario(usuarioId, password) {
   }
   if (!res.ok || payload?.ok !== true)
     throw new Error(
-      payload?.error || "No se pudo cambiar la contraseña. Verificá que el sitio tenga publicada la función de cambio de contraseña.",
+      payload?.error ||
+        "No se pudo cambiar la contraseña. Verificá que el sitio tenga publicada la función de cambio de contraseña.",
     );
 }
 
@@ -248,6 +298,11 @@ export async function cambiarPasswordUsuario(usuarioId, password) {
 function mapTarea(t) {
   return {
     id: t.id,
+    moldeId: t.molde_id,
+    proceso: t.proceso,
+    resultados: t.resultados || [],
+    ciclos: t.ciclos == null ? null : Number(t.ciclos),
+    segundosCiclo: t.segundos_ciclo == null ? null : Number(t.segundos_ciclo),
     pedidoId: t.pedido_id,
     pedidoCodigo: t.pedido_codigo,
     articuloId: t.articulo_id,
@@ -276,8 +331,18 @@ function mapTarea(t) {
 
 /* desde/hasta: ISO, rango [desde, hasta) sobre la hora de fin.
    operarioId: si viene, sólo las tareas de ese usuario (rol operario). */
-export async function fetchTareas({ desdeDias = null, desde = null, hasta = null, operarioId = null, limit = 500 } = {}) {
-  let q = supabase.from("v_tareas").select("*").eq("confirmada", true).order("fin", { ascending: false });
+export async function fetchTareas({
+  desdeDias = null,
+  desde = null,
+  hasta = null,
+  operarioId = null,
+  limit = 500,
+} = {}) {
+  let q = supabase
+    .from("v_tareas")
+    .select("*")
+    .eq("confirmada", true)
+    .order("fin", { ascending: false });
   if (desdeDias != null) {
     const d = new Date();
     d.setDate(d.getDate() - desdeDias);
@@ -294,14 +359,20 @@ export async function fetchTareas({ desdeDias = null, desde = null, hasta = null
 
 /* Totales por etapa de un pedido (las 4 actividades, en cero si no hubo) */
 export async function fetchEtapasPedido(pedidoId) {
-  const { data, error } = await supabase.from("v_pedido_etapas").select("*").eq("pedido_id", pedidoId);
+  const { data, error } = await supabase
+    .from("v_pedido_etapas")
+    .select("*")
+    .eq("pedido_id", pedidoId);
   if (error) throw error;
   return data;
 }
 
 /* Cantidad de tareas actualmente abiertas (sin finalizar) */
 export async function contarTareasEnCurso() {
-  const { count, error } = await supabase.from("tareas").select("id", { count: "exact", head: true }).is("fin", null);
+  const { count, error } = await supabase
+    .from("tareas")
+    .select("id", { count: "exact", head: true })
+    .is("fin", null);
   if (error) throw error;
   return count || 0;
 }
@@ -325,13 +396,19 @@ export async function fetchTareaActiva() {
 }
 
 async function gestionarTarea(p_accion, params = {}) {
-  const { data, error } = await supabase.rpc("gestionar_tarea", { p_accion, ...params });
+  const { data, error } = await supabase.rpc("gestionar_tarea", {
+    p_accion,
+    ...params,
+  });
   if (error) throw error;
   return data;
 }
 
 export function iniciarTarea({ pedidoId, actividad }) {
-  return gestionarTarea("iniciar", { p_pedido: pedidoId, p_actividad: actividad });
+  return gestionarTarea("iniciar", {
+    p_pedido: pedidoId,
+    p_actividad: actividad,
+  });
 }
 
 export function pausarTarea(tarea, motivo) {
@@ -343,14 +420,33 @@ export function pausarTarea(tarea, motivo) {
 }
 
 export function reanudarTarea(tarea) {
-  return gestionarTarea("reanudar", { p_tarea: tarea.id, p_revision: tarea.revision });
+  return gestionarTarea("reanudar", {
+    p_tarea: tarea.id,
+    p_revision: tarea.revision,
+  });
 }
 
 export function finalizarTarea(tarea) {
-  return gestionarTarea("finalizar", { p_tarea: tarea.id, p_revision: tarea.revision });
+  return gestionarTarea("finalizar", {
+    p_tarea: tarea.id,
+    p_revision: tarea.revision,
+  });
 }
 
-export function confirmarTarea(tarea, { ok, scrap, observaciones }) {
+export async function confirmarTarea(
+  tarea,
+  { ok, scrap, observaciones, resultados },
+) {
+  if (tarea.moldeId) {
+    const { data, error } = await supabase.rpc("confirmar_tarea_molde", {
+      p_tarea: tarea.id,
+      p_revision: tarea.revision,
+      p_resultados: resultados,
+      p_observaciones: observaciones,
+    });
+    if (error) throw error;
+    return data;
+  }
   return gestionarTarea("confirmar", {
     p_tarea: tarea.id,
     p_revision: tarea.revision,
@@ -373,7 +469,11 @@ export async function fetchMotivosParada() {
 
 /* ---------- Tareas en curso (abiertas o pendientes de confirmar) ---------- */
 export async function fetchTareasAbiertas({ operarioId = null } = {}) {
-  let q = supabase.from("v_tareas").select("*").eq("confirmada", false).order("inicio", { ascending: false });
+  let q = supabase
+    .from("v_tareas")
+    .select("*")
+    .eq("confirmada", false)
+    .order("inicio", { ascending: false });
   if (operarioId) q = q.eq("operario_id", operarioId);
   const { data, error } = await q;
   if (error) throw error;
@@ -397,7 +497,12 @@ export async function fetchPausas({ desde, hasta }) {
     inicio: p.inicio,
     fin: p.fin,
     operarioId: p.tareas?.operario_id,
-    seg: Math.max(0, ((p.fin ? new Date(p.fin).getTime() : ahora) - new Date(p.inicio).getTime()) / 1000),
+    seg: Math.max(
+      0,
+      ((p.fin ? new Date(p.fin).getTime() : ahora) -
+        new Date(p.inicio).getTime()) /
+        1000,
+    ),
   }));
 }
 
@@ -412,7 +517,11 @@ export async function fetchPausasTarea(tareaId) {
 }
 
 export async function fetchMotivosTodos() {
-  const { data, error } = await supabase.from("motivos_parada").select("id,nombre,activo").order("orden").order("nombre");
+  const { data, error } = await supabase
+    .from("motivos_parada")
+    .select("id,nombre,activo")
+    .order("orden")
+    .order("nombre");
   if (error) throw error;
   return data || [];
 }
@@ -421,28 +530,53 @@ export async function fetchMotivosTodos() {
 async function rpcAdmin(nombre, params) {
   const { data, error } = await supabase.rpc(nombre, params);
   if (error) {
-    if (error.code === "PGRST202") throw new Error("Falta aplicar la migración 18 en Supabase.");
+    if (error.code === "PGRST202")
+      throw new Error("Falta aplicar la migración 18 en Supabase.");
     throw new Error(error.message || "No se pudo guardar");
   }
   return data;
 }
 
-export const adminEditarTarea = (t, { inicio, fin, ok, scrap, observaciones, motivo }) =>
-  rpcAdmin("admin_editar_tarea", {
+export const adminEditarTarea = (
+  t,
+  { inicio, fin, ok, scrap, observaciones, motivo, resultados },
+) =>
+  t.moldeId
+    ? rpcAdmin("admin_editar_tarea_molde", {
+        p_tarea: t.id,
+        p_revision: t.revision,
+        p_inicio: inicio,
+        p_fin: fin,
+        p_resultados: resultados,
+        p_observaciones: observaciones,
+        p_motivo: motivo,
+      })
+    : rpcAdmin("admin_editar_tarea", {
+        p_tarea: t.id,
+        p_revision: t.revision,
+        p_inicio: inicio,
+        p_fin: fin,
+        p_ok: Number(ok),
+        p_scrap: Number(scrap),
+        p_observaciones: observaciones,
+        p_motivo: motivo,
+      });
+
+export const adminEliminarTarea = (t, motivo) =>
+  rpcAdmin("admin_eliminar_tarea", {
     p_tarea: t.id,
     p_revision: t.revision,
-    p_inicio: inicio,
-    p_fin: fin,
-    p_ok: Number(ok),
-    p_scrap: Number(scrap),
-    p_observaciones: observaciones,
     p_motivo: motivo,
   });
 
-export const adminEliminarTarea = (t, motivo) =>
-  rpcAdmin("admin_eliminar_tarea", { p_tarea: t.id, p_revision: t.revision, p_motivo: motivo });
-
 export const adminEditarPausa = (pausaId, { inicio, fin, motivoId, motivo }) =>
-  rpcAdmin("admin_editar_pausa", { p_pausa: pausaId, p_inicio: inicio, p_fin: fin, p_motivo_id: motivoId, p_motivo: motivo });
+  rpcAdmin("admin_editar_pausa", {
+    p_pausa: pausaId,
+    p_inicio: inicio,
+    p_fin: fin,
+    p_motivo_id: motivoId,
+    p_motivo: motivo,
+  });
 
-export const adminEliminarPausa = (pausaId, motivo) => rpcAdmin("admin_eliminar_pausa", { p_pausa: pausaId, p_motivo: motivo });
+export const adminEliminarPausa = (pausaId, motivo) =>
+  rpcAdmin("admin_eliminar_pausa", { p_pausa: pausaId, p_motivo: motivo });

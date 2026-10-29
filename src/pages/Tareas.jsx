@@ -1,7 +1,14 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { Boxes, Pencil, Trash2 } from "lucide-react";
 import { ACTS, actLabel } from "../lib/constants";
-import { nf, fmtDT, isoDate, efficiency, effColor, findArt } from "../lib/format";
+import {
+  nf,
+  fmtDT,
+  isoDate,
+  efficiency,
+  effColor,
+  findArt,
+} from "../lib/format";
 import { fetchTareasAbiertas, adminEliminarTarea } from "../api";
 import ConfirmDialog from "../components/ConfirmDialog";
 
@@ -14,9 +21,22 @@ const FILTROS_VACIOS = {
   estado: "", // "" = registradas · "en_curso" = abiertas o sin confirmar
 };
 
-export default function Tareas({ arts, tars, setDetail, rol, perfil, prefiltro, notify, reloadTars, reloadPeds }) {
+export default function Tareas({
+  arts,
+  tars,
+  setDetail,
+  rol,
+  perfil,
+  prefiltro,
+  notify,
+  reloadTars,
+  reloadPeds,
+}) {
   // Si se llega desde el tablero, los filtros vienen precargados y visibles.
-  const [f, setF] = useState(() => ({ ...FILTROS_VACIOS, ...(prefiltro || {}) }));
+  const [f, setF] = useState(() => ({
+    ...FILTROS_VACIOS,
+    ...(prefiltro || {}),
+  }));
   const [abierto, setAbierto] = useState(() => !!prefiltro);
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
   const esOperario = rol === "operario";
@@ -29,7 +49,10 @@ export default function Tareas({ arts, tars, setDetail, rol, perfil, prefiltro, 
     let vigente = true;
     fetchTareasAbiertas({ operarioId: esOperario ? perfil?.id : null })
       .then((l) => vigente && setAbiertas(l))
-      .catch(() => vigente && notify("No se pudieron cargar las tareas en curso", true));
+      .catch(
+        () =>
+          vigente && notify("No se pudieron cargar las tareas en curso", true),
+      );
     return () => {
       vigente = false;
     };
@@ -54,8 +77,14 @@ export default function Tareas({ arts, tars, setDetail, rol, perfil, prefiltro, 
     }
   };
 
-  const operarios = useMemo(() => [...new Set(fuente.map((t) => t.operario))].sort(), [fuente]);
-  const pedidos = useMemo(() => [...new Set(fuente.map((t) => t.pedidoCodigo))].sort(), [fuente]);
+  const operarios = useMemo(
+    () => [...new Set(fuente.map((t) => t.operario))].sort(),
+    [fuente],
+  );
+  const pedidos = useMemo(
+    () => [...new Set(fuente.map((t) => t.pedidoCodigo))].sort(),
+    [fuente],
+  );
 
   const lista = useMemo(
     () =>
@@ -78,7 +107,9 @@ export default function Tareas({ arts, tars, setDetail, rol, perfil, prefiltro, 
     <>
       <div className="filters">
         <div className="ftop">
-          <span className="ftitle">Filtros{activos > 0 ? ` (${activos})` : ""}</span>
+          <span className="ftitle">
+            Filtros{activos > 0 ? ` (${activos})` : ""}
+          </span>
           <div style={{ display: "flex", gap: 12 }}>
             {activos > 0 && (
               <button className="linkmini" onClick={() => setF(FILTROS_VACIOS)}>
@@ -95,17 +126,28 @@ export default function Tareas({ arts, tars, setDetail, rol, perfil, prefiltro, 
             <div className="fgrid">
               <div>
                 <label>Desde</label>
-                <input type="date" value={f.desde} onChange={(e) => set("desde", e.target.value)} />
+                <input
+                  type="date"
+                  value={f.desde}
+                  onChange={(e) => set("desde", e.target.value)}
+                />
               </div>
               <div>
                 <label>Hasta</label>
-                <input type="date" value={f.hasta} onChange={(e) => set("hasta", e.target.value)} />
+                <input
+                  type="date"
+                  value={f.hasta}
+                  onChange={(e) => set("hasta", e.target.value)}
+                />
               </div>
             </div>
             <div className="fgrid" style={{ marginTop: 9 }}>
               <div>
                 <label>Proceso</label>
-                <select value={f.actividad} onChange={(e) => set("actividad", e.target.value)}>
+                <select
+                  value={f.actividad}
+                  onChange={(e) => set("actividad", e.target.value)}
+                >
                   <option value="">Todos</option>
                   {ACTS.map((a) => (
                     <option key={a.key} value={a.key}>
@@ -117,7 +159,10 @@ export default function Tareas({ arts, tars, setDetail, rol, perfil, prefiltro, 
               {!esOperario && (
                 <div>
                   <label>Usuario</label>
-                  <select value={f.operario} onChange={(e) => set("operario", e.target.value)}>
+                  <select
+                    value={f.operario}
+                    onChange={(e) => set("operario", e.target.value)}
+                  >
                     <option value="">Todos</option>
                     {operarios.map((o) => (
                       <option key={o} value={o}>
@@ -130,14 +175,20 @@ export default function Tareas({ arts, tars, setDetail, rol, perfil, prefiltro, 
             </div>
             <div style={{ marginTop: 9 }}>
               <label>Estado</label>
-              <select value={f.estado} onChange={(e) => set("estado", e.target.value)}>
+              <select
+                value={f.estado}
+                onChange={(e) => set("estado", e.target.value)}
+              >
                 <option value="">Registradas</option>
                 <option value="en_curso">En curso / sin confirmar</option>
               </select>
             </div>
             <div style={{ marginTop: 9 }}>
               <label>Orden</label>
-              <select value={f.pedido} onChange={(e) => set("pedido", e.target.value)}>
+              <select
+                value={f.pedido}
+                onChange={(e) => set("pedido", e.target.value)}
+              >
                 <option value="">Todos</option>
                 {pedidos.map((p) => (
                   <option key={p} value={p}>
@@ -151,21 +202,31 @@ export default function Tareas({ arts, tars, setDetail, rol, perfil, prefiltro, 
       </div>
 
       <div className="search-count">
-        {lista.length} tarea{lista.length === 1 ? "" : "s"} · {nf(tot)} piezas OK
+        {lista.length} tarea{lista.length === 1 ? "" : "s"} · {nf(tot)} piezas
+        OK
       </div>
 
       <div className="lista">
         {lista.map((t) => {
           const a = findArt(arts, t.articuloId);
-          const e = efficiency(a, t.actividad, t.ok, t.realSec);
+          const e =
+            t.realSec > 0 && t.stdSec > 0 ? (100 * t.stdSec) / t.realSec : null;
           return (
-            <div className="rowitem" key={t.id} onClick={() => setDetail({ type: "ped", id: t.pedidoId })}>
-              <div className="lead" style={{ background: effColor(e), color: "#fff" }}>
+            <div
+              className="rowitem"
+              key={t.id}
+              onClick={() => setDetail({ type: "ped", id: t.pedidoId })}
+            >
+              <div
+                className="lead"
+                style={{ background: effColor(e), color: "#fff" }}
+              >
                 {e == null ? "—" : Math.round(e)}
               </div>
               <div className="mid">
                 <div className="t t-wrap">
-                  {t.pedidoCodigo} · {actLabel(t.actividad)} · {t.articuloNombre}
+                  {t.pedidoCodigo} · {actLabel(t.actividad)} ·{" "}
+                  {t.articuloNombre}
                 </div>
                 <div className="s mono">
                   Inicio {fmtDT(t.inicio)} · Fin {fmtDT(t.fin)}
@@ -173,10 +234,25 @@ export default function Tareas({ arts, tars, setDetail, rol, perfil, prefiltro, 
                 <div className="s mono">
                   OK {nf(t.ok)} · Falladas {nf(t.scrap)} · {t.operario}
                 </div>
-                {t.observaciones && <div className="s observacion">{t.observaciones}</div>}
+                {t.resultados?.length > 0 && (
+                  <div className="s">
+                    {t.resultados
+                      .map(
+                        (r) =>
+                          `${r.codigo}: ${r.piezas_ok} OK / ${r.piezas_scrap} rechazo`,
+                      )
+                      .join(" · ")}
+                  </div>
+                )}
+                {t.observaciones && (
+                  <div className="s observacion">{t.observaciones}</div>
+                )}
               </div>
               {esAdmin && t.confirmada && (
-                <div className="row-acciones" onClick={(ev) => ev.stopPropagation()}>
+                <div
+                  className="row-acciones"
+                  onClick={(ev) => ev.stopPropagation()}
+                >
                   <button
                     className="iconbtn"
                     title="Editar tarea"
@@ -207,7 +283,9 @@ export default function Tareas({ arts, tars, setDetail, rol, perfil, prefiltro, 
           <div className="ic">
             <Boxes size={22} />
           </div>
-          {fuente.length === 0 ? "Todavía no hay tareas registradas" : "Ninguna tarea coincide con los filtros"}
+          {fuente.length === 0
+            ? "Todavía no hay tareas registradas"
+            : "Ninguna tarea coincide con los filtros"}
         </div>
       )}
 
@@ -224,14 +302,24 @@ export default function Tareas({ arts, tars, setDetail, rol, perfil, prefiltro, 
         {aEliminar && (
           <>
             <p>
-              {aEliminar.pedidoCodigo} · {actLabel(aEliminar.actividad)} · {aEliminar.operario}
+              {aEliminar.pedidoCodigo} · {actLabel(aEliminar.actividad)} ·{" "}
+              {aEliminar.operario}
               <br />
-              {fmtDT(aEliminar.inicio)} → {fmtDT(aEliminar.fin)} · {nf(aEliminar.ok)} OK
+              {fmtDT(aEliminar.inicio)} → {fmtDT(aEliminar.fin)} ·{" "}
+              {nf(aEliminar.ok)} OK
             </p>
-            <p>Se borran también sus pausas y se recalcula el avance de la orden. No se puede deshacer.</p>
+            <p>
+              Se borran también sus pausas y se recalcula el avance de la orden.
+              No se puede deshacer.
+            </p>
             <div className="field">
               <label htmlFor="motivo-baja">Motivo (obligatorio)</label>
-              <input id="motivo-baja" value={motivoBaja} onChange={(e) => setMotivoBaja(e.target.value)} maxLength={500} />
+              <input
+                id="motivo-baja"
+                value={motivoBaja}
+                onChange={(e) => setMotivoBaja(e.target.value)}
+                maxLength={500}
+              />
             </div>
           </>
         )}

@@ -1,5 +1,15 @@
 import React, { useState } from "react";
-import { ChevronDown, PlayCircle, ClipboardList, Package, Boxes, LayoutDashboard, Users, HelpCircle, Wrench } from "lucide-react";
+import {
+  ChevronDown,
+  PlayCircle,
+  ClipboardList,
+  Package,
+  Boxes,
+  LayoutDashboard,
+  Users,
+  HelpCircle,
+  Wrench,
+} from "lucide-react";
 
 /* Nivel mínimo de rol que puede ver cada sección (rango: operario 1, supervisor 2, admin 3) */
 const rango = (r) => ({ admin: 3, supervisor: 2, operario: 1 })[r] || 0;
@@ -9,37 +19,66 @@ const SECCIONES = [
     id: "mantenimiento",
     min: 1,
     icon: Wrench,
-    titulo: "Registrar mantenimiento",
-    resumen: "Registrá acciones preventivas o correctivas y descargá su historial.",
+    titulo: "Mantenimiento y molienda",
+    resumen: "Consultá, asigná y resolvé solicitudes de trabajo.",
     bloques: [
-      ["1 · Ingresar", "Abrí la pestaña “Mantenimiento”. Esta función está disponible para administradores y supervisores."],
       [
-        "2 · Identificar al ejecutor",
-        "“Registrado por” se completa automáticamente con tu usuario. En “Ejecutor”, elegí al usuario activo que realizó el mantenimiento. Podés seleccionarte a vos mismo o a otra persona.",
+        "Solicitar",
+        "En Trabajos, un administrador o supervisor solicita mantenimiento sobre una máquina/equipo, o una tarea de molienda. Molienda permite observaciones opcionales sin exigir detalle técnico.",
       ],
       [
-        "3 · Fecha y detalle",
-        "La fecha de ejecución comienza con el día de hoy; podés cambiarla con el calendario. Describí el trabajo realizado en “Detalle de la tarea”, hasta 5.000 caracteres.",
+        "Asignar",
+        "Administrador y supervisor asignan o reasignan tareas a usuarios activos. El operario ve únicamente las que tiene asignadas.",
       ],
       [
-        "4 · Tipo y duración",
-        "Marcá “Preventivo” si corresponde a un mantenimiento preventivo. Si dejás la casilla sin marcar, se registra como correctivo. Cargá la duración en minutos enteros mayores que cero: por ejemplo, 90 para una hora y media.",
+        "Ejecutar y resolver",
+        "Iniciá una tarea asignada y, al terminar, cargá los minutos. Para mantenimiento describí el trabajo realizado; para molienda hay un campo de observaciones opcional.",
       ],
       [
-        "5 · Guardar",
-        "Tocá “Guardar mantenimiento” y esperá la confirmación. El registro aparece en el historial y el formulario queda listo para una nueva carga. Esta pantalla no permite editar ni borrar registros guardados.",
+        "Pendientes",
+        "Filtrá por estado, tipo, usuario o equipo. El tablero muestra un resumen de los pendientes. El reporte descarga el listado visible según tus permisos.",
       ],
       [
-        "Si se interrumpe el guardado",
-        "Usá “Reintentar guardado” para reenviar el mismo registro sin duplicarlo. Si necesitás corregir los datos, salí y volvé a entrar; revisá primero el historial para comprobar si ya se guardó.",
+        "Historial",
+        "Las solicitudes resueltas y las intervenciones antiguas se conservan para consulta. Las asignaciones y transiciones quedan auditadas.",
+      ],
+    ],
+  },
+  {
+    id: "planta",
+    min: 3,
+    icon: Package,
+    titulo: "Máquinas y moldes",
+    resumen: "Administrá los recursos y artículos por ciclo.",
+    bloques: [
+      [
+        "Planta",
+        "Creá, editá y desactivá máquinas, equipos y moldes. Cada molde tiene una máquina, material, consumo con unidad, segundos por ciclo y uno o varios artículos con sus unidades por ciclo.",
       ],
       [
-        "Consultar el historial",
-        "El historial se carga al ingresar y muestra 20 registros por página. Para ver cargas realizadas por otros usuarios, salí de la pantalla y volvé a entrar. No se actualiza continuamente.",
+        "Desactivación",
+        "Los inactivos se conservan para consultar la historia. Para desactivar una máquina, primero desactivá o reasigná sus moldes activos.",
+      ],
+    ],
+  },
+  {
+    id: "indicadores",
+    min: 3,
+    icon: LayoutDashboard,
+    titulo: "Indicadores",
+    resumen: "Tablas de producción y horas por motivo.",
+    bloques: [
+      [
+        "Producción",
+        "Consultá código de pieza, descripción, OK y scrap del período. Si incluís varios procesos, las cantidades suman operaciones.",
       ],
       [
-        "Independiente de producción",
-        "Los mantenimientos se guardan por separado. No inician, pausan ni finalizan tareas de producción, y no modifican sus tiempos ni su eficiencia.",
+        "Horas",
+        "La tabla muestra horas por motivo y el total. El tiempo de una tarea de molde se cuenta una sola vez. Mantenimiento y molienda incluyen toda la planta, sin depender de usuario, artículo o proceso.",
+      ],
+      [
+        "Filtros y comparación",
+        "Elegí período, artículos, proceso y usuario. Los filtros se pueden plegar. El resumen y la comparación agrupada conservan sus opciones originales.",
       ],
     ],
   },
@@ -48,15 +87,16 @@ const SECCIONES = [
     min: 3,
     icon: ClipboardList,
     titulo: "Exportar datos a Excel",
-    resumen: "Descargá tablas completas desde el botón de descarga de la cabecera.",
+    resumen:
+      "Descargá tablas completas desde el botón de descarga de la cabecera.",
     bloques: [
       [
         "Descargas",
-        "Cada botón genera un Excel independiente de tarea_pausas, tareas, articulos o pedidos. Incluye todas las filas y columnas, sin filtros.",
+        "Cada botón genera un Excel de mantenimientos, pausas, tareas o artículos. Las tareas de molde tienen una fila por artículo. Trabajos e Indicadores ofrecen sus propias descargas filtradas.",
       ],
       [
         "Contenido",
-        "Se incluyen tareas sin confirmar, pausas abiertas, artículos inactivos y órdenes finalizadas. La hoja Exportacion indica la cantidad de registros y la fecha de lectura.",
+        "El reporte de tareas incluye las confirmadas; el maestro de artículos incluye inactivos. La hoja Exportacion indica cantidad de registros y fecha de lectura.",
       ],
       [
         "Formato",
@@ -70,7 +110,8 @@ const SECCIONES = [
     icon: PlayCircle,
 
     titulo: "Registrar una tarea",
-    resumen: "Iniciá, pausá o finalizá y registrá las cantidades y observaciones.",
+    resumen:
+      "Iniciá, pausá o finalizá y registrá las cantidades y observaciones.",
     bloques: [
       [
         "1 · Iniciar",
@@ -95,46 +136,32 @@ const SECCIONES = [
     min: 1,
     icon: ClipboardList,
     titulo: "Órdenes",
-    resumen: "Buscá y seleccioná el artículo, creá la orden y seguí su avance.",
+    resumen: "Cada orden nueva corresponde a un proceso.",
     bloques: [
-      ["1 · Nueva orden", "Abrí “Nueva orden” y completá el código de la orden (obligatorio y único)."],
       [
-        "2 · Buscar el artículo",
-        "Escribí el código o palabras de la descripción, por ejemplo “1204”, “VD50” o “válvula rosca”. La búsqueda ignora mayúsculas y tildes, y permite palabras en distinto orden. Si escribís un código exacto, su coincidencia aparece primero. Solo se muestran artículos activos.",
+        "Crear",
+        "Completá un código único y elegí un proceso. Para inyectado seleccioná un molde: se incluyen todos sus artículos. Para los demás procesos seleccioná un artículo activo con estándar habilitado.",
       ],
       [
-        "3 · Filtrar y ver resultados",
-        "Podés elegir una categoría para acotar la búsqueda o dejar “Todas las categorías”. Cada resultado muestra código, descripción y categoría. Se muestran hasta 20 resultados inicialmente; usá “Ver más resultados” para agregar otros 20. Si no hay coincidencias, cambiá la búsqueda o la categoría.",
+        "Cantidades",
+        "En inyectado cargá ciclos previstos: el objetivo de cada artículo es ciclos × unidades por ciclo. Para otros procesos cargá la cantidad de piezas.",
       ],
       [
-        "4 · Seleccionar y revisar",
-        "Tocá el artículo correcto y revisá la ficha con su código, descripción y categoría. No se selecciona ningún artículo automáticamente. Para elegir otro, usá “Cambiar artículo”: vuelve el buscador con la búsqueda y la categoría que estabas usando.",
+        "Registrar producción",
+        "El proceso queda fijado por la orden. Al finalizar inyectado se cargan piezas OK y rechazo por cada artículo del molde. Su suma debe ser múltiplo de las unidades por ciclo, y todos deben informar los mismos ciclos. La productividad usa ciclos ejecutados y el avance muestra unidades y gramos solicitados y pendientes. Las cantidades se guardan juntas.",
       ],
       [
-        "5 · Crear",
-        "Completá la cantidad a fabricar, mayor que cero, y tocá “Crear orden”. El botón se habilita cuando completaste el código, seleccionaste un artículo activo e ingresaste la cantidad. Esperá la confirmación; los controles se bloquean mientras se guarda.",
+        "Avance",
+        "Una orden de inyectado se completa cuando todos sus artículos alcanzan sus objetivos OK. El avance muestra ciclos equivalentes según el artículo con menor avance relativo. El resto de órdenes considera únicamente su proceso.",
       ],
       [
-        "Estados",
-        "Pendiente, En curso, Cancelada, Finalizada y Finalizada con pendientes. El cierre automático por producción completa queda Finalizada. Al cerrar manualmente, si faltan piezas en alguna etapa requerida queda Finalizada con pendientes; si se completó todo, queda Finalizada.",
+        "Configuración histórica",
+        "La orden guarda la configuración usada. Cambiar el molde no altera sus artículos ni estándares. Las órdenes antiguas conservan su cálculo multietapa original.",
       ],
       [
-        "Cambiar estado",
-        "Desde el detalle de la orden, supervisores y administradores pueden pasar de Pendiente a En curso o Cancelada, y de En curso a Finalizada. Elegí la acción, escribí el motivo obligatorio y tocá “Confirmar cambio de estado”. Para cancelar o finalizar manualmente, primero deben registrarse todas las tareas abiertas, pausadas o pendientes de confirmar. El cierre manual no modifica las piezas producidas.",
+        "Estados y correcciones",
+        "El administrador puede cambiar estados y reabrir órdenes cerradas con pendientes. Supervisor y administrador pueden editar la cantidad objetivo sin reducirla por debajo de lo ya producido. Los cambios quedan auditados.",
       ],
-      [
-        "Reabrir una orden",
-        "Una orden Cancelada o Finalizada con pendientes permite “Reabrir automáticamente”, con motivo obligatorio. El sistema decide Pendiente si nunca tuvo tareas, o En curso si tuvo actividad, incluso con cero piezas. Las Finalizadas con producción completa no se reabren. Para iniciar nuevas tareas, primero hay que reabrir las órdenes cerradas o canceladas.",
-      ],
-      [
-        "Historial de estados",
-        "Se registra cada cambio efectivo de estado, tanto manual como automático. Los cambios del proceso, como iniciar actividad o completar la producción, tienen motivo “automatico”, una explicación adicional y el usuario que originó la operación cuando está disponible. Los manuales conservan el motivo escrito; no se puede usar “automatico” como motivo manual. La actualización de cierres antiguos incompletos aparece como “Reclasificación del sistema”. Usá “Ver más cambios” para consultar registros anteriores. El historial no se puede editar ni borrar desde la aplicación. No se reconstruyen cambios automáticos anteriores a la activación de este registro.",
-      ],
-      [
-        "Avance por etapa",
-        "Una pieza se considera completa cuando pasó por todas las etapas que el artículo requiere. El avance es el de la etapa más atrasada.",
-      ],
-      ["Detalle", "Muestra los totales por etapa (inyectado, rebabado, armado, embolsado) y el historial de tareas de la orden."],
     ],
   },
   {
@@ -144,8 +171,14 @@ const SECCIONES = [
     titulo: "Historial de tareas",
     resumen: "Consultá y filtrá todo lo registrado.",
     bloques: [
-      ["Filtros", "Por fecha (desde/hasta), proceso, usuario y orden. Se combinan entre sí y hay un total de piezas al pie."],
-      ["Lectura", "Cada línea muestra la eficiencia (el número de color), el horario, las piezas OK y el responsable."],
+      [
+        "Filtros",
+        "Por fecha (desde/hasta), proceso, usuario y orden. Se combinan entre sí y hay un total de piezas al pie.",
+      ],
+      [
+        "Lectura",
+        "Cada línea muestra la eficiencia (el número de color), el horario, las piezas OK y el responsable.",
+      ],
     ],
   },
 
@@ -156,10 +189,22 @@ const SECCIONES = [
     titulo: "Tablero de control",
     resumen: "Indicadores de desempeño de la operación.",
     bloques: [
-      ["Situación actual", "Órdenes y tareas en curso. Se actualiza solo cada minuto mientras el tablero está abierto."],
-      ["En vivo", "El resto muestra la jornada de hoy: unidades, productividad, tiempo estimado y scrap de las tareas ya registradas."],
-      ["Real vs objetivo", "Compara la productividad con el objetivo de 100 % (cumplir el tiempo estándar)."],
-      ["Operarios y evolución", "Producción por persona y tendencia de los últimos 7 días."],
+      [
+        "Situación actual",
+        "Órdenes y tareas en curso. Se actualiza solo cada minuto mientras el tablero está abierto.",
+      ],
+      [
+        "En vivo",
+        "El resto muestra la jornada de hoy: unidades, productividad, tiempo estimado y scrap de las tareas ya registradas.",
+      ],
+      [
+        "Real vs objetivo",
+        "Compara la productividad con el objetivo de 100 % (cumplir el tiempo estándar).",
+      ],
+      [
+        "Operarios y evolución",
+        "Producción por persona y tendencia de los últimos 7 días.",
+      ],
     ],
   },
   {
@@ -169,7 +214,10 @@ const SECCIONES = [
     titulo: "Artículos",
     resumen: "El maestro de productos y sus tiempos estándar.",
     bloques: [
-      ["Datos", "Código (único) y nombre son obligatorios; molde, máquina, bocas y material son opcionales."],
+      [
+        "Datos",
+        "Código (único) y nombre son obligatorios; molde, máquina, bocas y material son opcionales.",
+      ],
       [
         "Tiempos estándar",
         "Segundos por unidad de cada proceso. Si un artículo no pasa por una etapa, se deja en cero y esa etapa no cuenta para completarlo.",
@@ -188,13 +236,22 @@ const SECCIONES = [
     titulo: "Usuarios",
     resumen: "Alta de cuentas y asignación de roles.",
     bloques: [
-      ["Crear", "Nombre, e-mail, contraseña inicial (mín. 6) y rol. La cuenta queda habilitada al instante."],
-      ["Roles", "Operario (registra tareas), Supervisor (además órdenes y tablero) y Administrador (todo). Se cambian con un toque."],
+      [
+        "Crear",
+        "Nombre, e-mail, contraseña inicial (mín. 6) y rol. La cuenta queda habilitada al instante.",
+      ],
+      [
+        "Roles",
+        "Operario (registra tareas), Supervisor (además órdenes y tablero) y Administrador (todo). Se cambian con un toque.",
+      ],
       [
         "Cambiar contraseña",
         "Como administrador, podés cambiar la contraseña de otros usuarios, incluidos otros administradores. En su tarjeta tocá “Cambiar contraseña”, ingresá la nueva contraseña (entre 6 y 128 caracteres), repetila y tocá “Guardar contraseña”. Esperá la confirmación y compartila con esa persona por un medio seguro. Si aparece un requisito adicional de seguridad, elegí una contraseña más fuerte. Esta opción no aparece en tu propia tarjeta y no activa las cuentas desactivadas.",
       ],
-      ["Activar / desactivar", "Podés dar de baja a alguien sin borrar su historial. No podés cambiar tu propio rol ni desactivarte."],
+      [
+        "Activar / desactivar",
+        "Podés dar de baja a alguien sin borrar su historial. No podés cambiar tu propio rol ni desactivarte.",
+      ],
     ],
   },
 ];
@@ -208,7 +265,10 @@ const FAQ = [
     "¿Pueden trabajar varios operarios a la vez?",
     "Sí, cada uno con su propia cuenta y una tarea pendiente como máximo. Pueden trabajar sobre la misma orden o actividad; cada uno registra únicamente sus propias piezas.",
   ],
-  ["Cerré la app con una tarea abierta, ¿se perdió?", "No. La tarea se guarda al iniciarse; al volver a entrar aparece para finalizarla."],
+  [
+    "Cerré la app con una tarea abierta, ¿se perdió?",
+    "No. La tarea se guarda al iniciarse; al volver a entrar aparece para finalizarla.",
+  ],
   [
     "¿Puedo tener dos tareas abiertas?",
     "No. Hay que finalizar y registrar las cantidades de la actual antes de empezar otra. Una pausa mantiene reservada la tarea.",
@@ -250,7 +310,9 @@ export default function Guia({ rol }) {
     <>
       <div className="dash-note" style={{ marginTop: 0 }}>
         <HelpCircle size={16} />
-        <span>Guía de uso — se muestran las funciones habilitadas para tu rol.</span>
+        <span>
+          Guía de uso — se muestran las funciones habilitadas para tu rol.
+        </span>
       </div>
 
       {visibles.map((s) => (
@@ -264,7 +326,11 @@ export default function Guia({ rol }) {
         </Item>
       ))}
 
-      <Item icon={HelpCircle} titulo="Preguntas frecuentes" resumen="Dudas comunes y su respuesta.">
+      <Item
+        icon={HelpCircle}
+        titulo="Preguntas frecuentes"
+        resumen="Dudas comunes y su respuesta."
+      >
         {FAQ.map(([q, a], i) => (
           <div className="gblock" key={i}>
             <div className="gbt">{q}</div>

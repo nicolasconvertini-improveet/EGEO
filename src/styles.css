@@ -1844,3 +1844,75 @@ mark {
 .pausa-edit + .pausa-edit {
   margin-top: 10px;
 }
+/* Formularios de gestión de planta y solicitudes. */
+.gestion label {display:block;margin:14px 0 8px;font-size:13px;font-weight:600;color:var(--ink2);}
+.gestion input:not([type=checkbox]), .gestion select, .gestion textarea {
+ display:block;width:100%;box-sizing:border-box;margin-top:6px;padding:12px;
+ border:1px solid var(--line);border-radius:9px;background:var(--paper,#fff);color:var(--ink);font:inherit;
+}
+.gestion input:focus-visible,.gestion select:focus-visible,.gestion textarea:focus-visible {outline:2px solid var(--ink);outline-offset:2px;}
+.gestion input[type=checkbox] {width:auto;margin-right:8px;}
+.gestion fieldset {border:0;padding:0;margin:0;min-width:0;}
+.gestion fieldset:disabled {opacity:.65;}
+.gestion .card {margin-top:12px;}
+.gestion .btn {margin-top:10px;}
+.gestion .rowitem {width:100%;text-align:left;color:var(--ink);font:inherit;}
+.gestion .ind-tabla {max-width:100%;overflow-x:auto;}
+.gestion table {width:100%;border-collapse:collapse;}
+.gestion th,.gestion td {padding:10px;border-bottom:1px solid var(--line);text-align:left;}
+.gestion legend {font-size:14px;font-weight:600;padding-top:12px;}
+
+/* Los módulos nuevos comparten los puntos de adaptación de la aplicación. */
+.body, .contenido, .gestion, .gestion-form, .gestion-lista > * { min-width: 0; }
+.gestion { overflow-wrap: anywhere; }
+.gestion input:not([type=checkbox]), .gestion select, .gestion textarea {
+  min-width: 0;
+  max-width: 100%;
+  min-height: 44px;
+  background: var(--surface);
+  font-size: 16px;
+}
+.gestion textarea { resize: vertical; line-height: 1.5; }
+.gestion-form { width: 100%; max-width: 680px; margin-inline: auto; }
+.gestion-lista { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: start; }
+.gestion-lista > .card, .gestion-lista > .rowitem { margin: 0; }
+.gestion-lista > .rowitem { height: 100%; white-space: normal; overflow-wrap: anywhere; }
+.gestion-filtros { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 16px; align-items: end; }
+.gestion-observaciones { white-space: pre-wrap; overflow-wrap: anywhere; }
+.resultados-molde .gestion-lista { margin-top: 12px; }
+.app .nav { min-height: 64px; scroll-padding: 8px; overscroll-behavior: contain; }
+.app .nav button { min-height: 44px; }
+.app .nav button:focus-visible, .gestion .btn:focus-visible, .gestion summary:focus-visible {
+  outline: 2px solid var(--ink); outline-offset: -2px;
+}
+@media (min-width: 768px) {
+  .gestion-lista { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .gestion-filtros { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1024px) {
+  .app .nav { min-height: 0; overflow-y: auto; overflow-x: hidden; }
+  .gestion input:not([type=checkbox]), .gestion select, .gestion textarea { font-size: 14px; }
+}
+@media (max-width: 479px) {
+  .fgrid2 { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Cuatro acciones de Planta distribuidas en el ancho disponible, sin desbordar. */
+.planta-toolbar {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));width:100%;gap:8px;align-items:stretch;margin:12px 0;}
+.planta-toolbar .chip,.planta-toolbar .btn {min-width:0;max-width:100%;width:100%;margin:0;white-space:normal;min-height:44px;height:100%;}
+.kpis.trabajos-kpis {grid-template-columns:repeat(3,minmax(0,1fr));margin:12px 0 20px;}
+.trabajos-kpis .lab {white-space:normal;overflow-wrap:anywhere;}
+@media (max-width:479px) {.planta-toolbar .chip,.planta-toolbar .btn {font-size:12px;padding:10px 4px;}}
+/* Mantener el aspecto original del selector de artículos dentro de Nueva orden. */
+.nueva-orden > fieldset {border:0;padding:0;margin:0;min-width:0;}
+.nueva-orden > fieldset > label {display:block;margin:14px 0 8px;font-size:13px;font-weight:600;color:var(--ink2);}
+.nueva-orden > fieldset > label > input,.nueva-orden > fieldset > label > select,.nueva-orden > fieldset > label > label > input {display:block;width:100%;min-width:0;padding:12px;margin-top:6px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink);font:inherit;}
+.nueva-orden .art-picker {margin-top:16px;}
+.avance-inyectado {margin-top:14px;}
+.avance-inyectado-totales {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0;}
+.avance-inyectado-totales > div {border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center;min-width:0;}
+.avance-inyectado-totales dt {font-size:11px;color:var(--ink2);text-transform:uppercase;overflow-wrap:anywhere;}
+.avance-inyectado-totales dd {margin:6px 0 0;font-weight:700;}
+.avance-inyectado-articulo {border-top:1px solid var(--line);padding:10px 0;overflow-wrap:anywhere;}
+.avance-inyectado-articulo p {margin:6px 0;}
+.resultados-molde .hint-err {margin-top:8px;}

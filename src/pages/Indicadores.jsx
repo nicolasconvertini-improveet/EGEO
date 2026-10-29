@@ -1,21 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { cargarIndicadores } from "../lib/indicadoresApi";
 import { fmt, horas, pct, hoy, rango, validarPeriodo, TAMANO_PAGINA_INDICADORES } from "../lib/indicadoresFormato";
-import ColumnasApiladas from "../components/ColumnasApiladas";
+import TablasIndicadores from "../components/TablasIndicadores";
 import { ACTS } from "../lib/constants";
-import { resumen, agrupar, numero, produccionDiaria } from "../lib/indicadores";
+import { resumen, agrupar, numero } from "../lib/indicadores";
 import "../indicadores.css";
 import SelectorArticulosIndicadores from "../components/SelectorArticulosIndicadores";
 const VACIO = [];
-const SERIES_PRODUCCION = [
-  { key: "buenas", label: "Buenas", color: "var(--good)" },
-  { key: "scrap", label: "Scrap", color: "var(--bad)" },
-];
-const SERIES_TIEMPOS = [
-  { key: "produccion", label: "Producción", color: "var(--good)" },
-  { key: "pausas", label: "Pausas", color: "var(--warn)" },
-  { key: "mantenimiento", label: "Mantenimiento", color: "#4369a8" },
-];
 export default function Indicadores({ rol }) {
   const [form, setForm] = useState(() => ({ ...rango("semana"), articulos: null, proceso: "", operario: "" }));
   const [consulta, setConsulta] = useState(form),
@@ -71,17 +62,6 @@ export default function Indicadores({ rol }) {
     [ds],
   );
   const suma = (k) => totales[k] || 0;
-  const produccion = useMemo(() => produccionDiaria(ds, ts), [ds, ts]);
-  const tiempos = useMemo(
-    () =>
-      ds.map((d) => ({
-        dia: d.dia,
-        produccion: numero(d.real) / 3600,
-        pausas: numero(d.pausa_seg) / 3600,
-        mantenimiento: numero(d.mantenimiento_seg) / 3600,
-      })),
-    [ds],
-  );
   const paginas = Math.max(1, Math.ceil(grupos.length / TAMANO_PAGINA_INDICADORES));
   const aplicar = (e) => {
     e.preventDefault();
@@ -202,21 +182,7 @@ export default function Indicadores({ rol }) {
               No hay tareas confirmadas terminadas en este período para esos filtros. Las pausas y mantenimientos pueden tener registros.
             </p>
           )}
-          <ColumnasApiladas
-            titulo="Producción por día"
-            filas={produccion}
-            unidad="piezas"
-            series={SERIES_PRODUCCION}
-            nota="Buenas y scrap del último proceso aplicable. Cantidades asignadas al día de fin de cada tarea confirmada."
-          />
-          <ColumnasApiladas
-            titulo="Tiempos por día"
-            filas={tiempos}
-            unidad="horas"
-            decimales={2}
-            series={SERIES_TIEMPOS}
-            nota="Suma de tiempos registrados; pueden superponerse y no equivalen a la jornada trabajada. Mantenimiento incluye toda la planta."
-          />
+          <TablasIndicadores datos={datos}/>
           <details className="ind-resumen">
             <summary>Ver resumen de indicadores</summary>
             <div className="ind-tarjetas">
@@ -238,7 +204,7 @@ export default function Indicadores({ rol }) {
               <Tarjeta
                 titulo="Cumplimiento del estándar"
                 valor={pct(r.cumplimiento)}
-                ayuda="Tiempo estándar actual para piezas buenas / tiempo efectivo comparable. 100 %: tiempo previsto; 80 %: se utilizó más tiempo. Solo tareas terminadas en el período."
+                ayuda="Tiempo estándar de las piezas buenas / tiempo efectivo comparable. 100 %: tiempo previsto; 80 %: se utilizó más tiempo. Solo tareas terminadas en el período."
               />
               <Tarjeta
                 titulo="Scrap por operaciones"
@@ -258,12 +224,12 @@ export default function Indicadores({ rol }) {
                 hicieron antes de medianoche. Las horas sí se distribuyen entre los días que abarca la tarea.
               </p>
               <p>
-                Los estándares son los actuales del artículo: no son un presupuesto histórico congelado. Cambiarlos modifica la comparación.
+                Las órdenes nuevas conservan su configuración y estándar. Las históricas mantienen el estándar actual del artículo.
                 Sin estándar o sin duración válida, la tarea queda fuera del cumplimiento.
               </p>
               <p>
                 Las horas son horas-persona registradas y pueden superar 24 por día al trabajar varias personas. Producción incluye solo
-                tareas confirmadas; pausas también incluye tareas abiertas. La columna apilada suma registros de actividad que pueden
+                tareas confirmadas; pausas también incluye tareas abiertas. Los tiempos suman registros de actividad que pueden
                 superponerse; no representa horas únicas de asistencia.
               </p>
               <p>

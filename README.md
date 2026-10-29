@@ -1,80 +1,35 @@
-# Productividad de planta — Supabase + Netlify
+# EGEO — Productividad de planta
 
-Aplicación web (mobile-first) para registrar tareas de producción de piezas inyectadas y consultar el desempeño diario de la operación.
+Aplicación React + Supabase + Netlify para producción, órdenes por proceso, moldes, máquinas/equipos, mantenimiento, molienda e indicadores. Roles: operario, supervisor y administrador.
 
-- **Roles acumulativos:** `operario` (registra tareas) → `supervisor` (además crea pedidos y ve tareas) → `admin` (además administra el maestro de artículos).
-- **Tablero** de control en vivo con los datos de hoy (se actualiza cada minuto).
-- Backend gratuito en **Supabase** (Postgres + Auth + RLS), frontend gratuito en **Netlify**.
+## Supabase real (configuración predeterminada)
 
----
+Antes de usar esta versión, aplicar las migraciones según [la guía de despliegue](docs/despliegue-supabase.md). La rama main permanece intacta.
 
-## 1. Crear el proyecto en Supabase
+1. Instalar dependencias con `npm ci`.
+2. Si no existe `.env`, copiar `.env.example` a `.env`. Completar las claves del proyecto real. Nunca sobrescribir un archivo existente sin revisar sus valores.
+3. Ejecutar `npm run config:check` y `npm run dev`.
 
-1. Entrá a https://supabase.com y creá un proyecto nuevo (plan Free).
-2. Cuando esté listo, abrí **SQL Editor → New query**, pegá el contenido de `supabase/schema.sql` y ejecutá (**Run**).
-3. (Opcional) Repetí con `supabase/seed.sql` para cargar artículos de ejemplo.
-4. En **Project Settings → API** copiá:
-   - **Project URL** → `VITE_SUPABASE_URL`
-   - **anon public key** → `VITE_SUPABASE_ANON_KEY`
+La aplicación abre en http://127.0.0.1:5173. El mismo comando inicia las funciones administrativas en el puerto 5174. La clave de servicio se configura solo en el servidor: nunca en una variable VITE_. Las cuentas y contraseñas son las de Supabase real; no se crean usuarios ni datos de ejemplo al arrancar.
 
-### Crear el primer administrador
+## Base Docker opcional
 
-1. Ingresá a la app y usá **Crear una** cuenta (o **Authentication → Users → Add user** en Supabase).
-2. Convertí ese usuario en admin desde **SQL Editor**:
-   ```sql
-   update public.perfiles set rol = 'admin'
-   where id = (select id from auth.users where email = 'TU_EMAIL');
-   ```
-3. Los roles `supervisor` / `operario` se asignan igual, cambiando el valor de `rol`.
+Ver [desarrollo local](docs/desarrollo-local-docker.md). Se usa exclusivamente con `npm run dev:docker` y `.env.docker.local`; no reemplaza la conexión habitual. Las pruebas de integración solo permiten esta base local.
 
-> Para uso interno sin confirmación por mail: **Authentication → Providers → Email** y desactivá _Confirm email_. Así las cuentas nuevas ingresan directo.
+## Migraciones y publicación
 
----
+`supabase/migrations` conserva el historial versionado. El baseline es para bases vacías. Para actualizar la base real existente usar el paquete incremental de `supabase/releases`, siguiendo [las instrucciones](docs/despliegue-supabase.md).
 
-## 2. Correr en local
+Netlify usa `netlify.toml`: build `npm run build`, publicación `dist` y funciones en `netlify/functions`. Configurar las variables del proyecto real antes de publicar; aplicar primero el SQL.
 
-```bash
-npm install
-cp .env.example .env      # completá con tu URL y anon key
-npm run dev
-```
+## Reglas de producción
 
-Abre en `http://localhost:5173`.
+Las órdenes nuevas corresponden a un solo proceso. Inyectado usa un molde y todos sus artículos; los otros procesos usan un artículo. La orden conserva una copia de su configuración.
 
----
+Inyectado calcula productividad con ciclos ejecutados × segundos estándar por ciclo ÷ segundos operativos netos × 100. OK + scrap debe representar ciclos enteros e iguales para todos los artículos. Solo OK reduce el pendiente; material por ciclo siempre se expresa en gramos. Las órdenes históricas mantienen su interpretación anterior.
 
-## 3. Publicar en Netlify
+Mantenimiento y molienda comparten solicitud, asignación, inicio y resolución; molienda permite observaciones. El operario ve sus asignaciones. Los permisos también se controlan en Supabase mediante RLS y funciones.
 
-1. Subí este proyecto a un repositorio (GitHub/GitLab).
-2. En https://netlify.com → **Add new site → Import an existing project** y elegí el repo.
-3. Netlify detecta `netlify.toml` (build `npm run build`, publish `dist`).
-4. En **Site settings → Environment variables** agregá:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
-5. **Deploy**. Cada push actualiza el sitio.
+## Verificación
 
-> El plan gratuito de Netlify permite uso comercial. La `anon key` de Supabase es pública por diseño: la seguridad real la imponen las políticas RLS del `schema.sql`.
-
----
-
-## Estructura
-
-```
-supabase/schema.sql   Tablas, vistas, roles y políticas RLS
-supabase/seed.sql     Artículos de ejemplo (opcional)
-src/api.js            Acceso a datos
-src/App.jsx           Interfaz y lógica
-src/styles.css        Estilos
-```
-
-## Modelo de datos
-
-- **articulos** — maestro con tiempo estándar por unidad de cada actividad (inyectado, rebabado, armado, embolsado) y estado activo/inactivo.
-- **pedidos** — código de orden (manual y obligatorio) + artículo + cantidad. El estado se recalcula solo según el avance.
-- **tareas** — actividad, inicio, fin, piezas OK y scrap. La duración y la productividad se derivan de estos datos.
-
-## Cómo se calcula la productividad
-
-`productividad = (piezas_ok × tiempo_estándar) ÷ tiempo_real × 100`
-
-El **tiempo estimado** de producción es `piezas_ok × tiempo_estándar`. El objetivo es cumplir el estándar (100%). El tablero agrega estos valores por operario y por día.
+`npm run build`, `npm run test:indicadores`, `npm run test:frontend` y `npm run test:inyectado` no modifican la base real. `npm run test:local` requiere Docker y genera fixtures identificados con prefijo test-.
