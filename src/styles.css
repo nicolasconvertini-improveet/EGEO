@@ -1844,3 +1844,20 @@ mark {
 .pausa-edit + .pausa-edit {
   margin-top: 10px;
 }
+/* Formularios de gestión de planta y solicitudes. */
+.gestion label {display:block;margin:14px 0 8px;font-size:13px;font-weight:600;color:var(--ink2);}
+.gestion input:not([type=checkbox]), .gestion select, .gestion textarea {
+ display:block;width:100%;box-sizing:border-box;margin-top:6px;padding:12px;
+ border:1px solid var(--line);border-radius:9px;background:var(--paper,#fff);color:var(--ink);font:inherit;
+}
+.gestion input:focus-visible,.gestion select:focus-visible,.gestion textarea:focus-visible {outline:2px solid var(--ink);outline-offset:2px;}
+.gestion input[type=checkbox] {width:auto;margin-right:8px;}
+.gestion fieldset {border:0;padding:0;margin:0;min-width:0;}
+.gestion fieldset:disabled {opacity:.65;}
+.gestion .card {margin-top:12px;}
+.gestion .btn {margin-top:10px;}
+.gestion .rowitem {width:100%;text-align:left;color:var(--ink);font:inherit;}
+.gestion .ind-tabla {max-width:100%;overflow-x:auto;}
+.gestion table {width:100%;border-collapse:collapse;}
+.gestion th,.gestion td {padding:10px;border-bottom:1px solid var(--line);text-align:left;}
+.gestion legend {font-size:14px;font-weight:600;padding-top:12px;}

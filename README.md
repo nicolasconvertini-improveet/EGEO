@@ -78,3 +78,9 @@ src/styles.css        Estilos
 `productividad = (piezas_ok × tiempo_estándar) ÷ tiempo_real × 100`
 
 El **tiempo estimado** de producción es `piezas_ok × tiempo_estándar`. El objetivo es cumplir el estándar (100%). El tablero agrega estos valores por operario y por día.
+
+## QA con base local en Docker
+
+La rama QA incluye Supabase local y las funciones administrativas de usuarios. Ver [guía de desarrollo local](docs/desarrollo-local-docker.md) para instalación, credenciales de prueba, migraciones, reglas de producción y respaldos.
+
+Arranque habitual: `npm run db:start` y `npm run dev:local`. La primera instalación requiere además `npm ci`, `npm run db:configure` y `npm run db:users`.

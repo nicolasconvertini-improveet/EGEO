@@ -262,15 +262,15 @@ export function ArticuloForm({ arts, detail, setDetail, notify, reloadArts }) {
       </div>
       <div style={{ display: "flex", gap: 10 }}>
         <div className="field" style={{ flex: 1 }}>
-          <label>Molde</label>
+          <label>Molde (histórico)</label>
           <input value={f.molde || ""} onChange={(e) => set("molde", e.target.value)} />
         </div>
         <div className="field" style={{ flex: 1 }}>
-          <label>Máquina</label>
+          <label>Máquina (histórica)</label>
           <input value={f.maquina || ""} onChange={(e) => set("maquina", e.target.value)} />
         </div>
         <div className="field" style={{ flex: 1 }}>
-          <label>Bocas</label>
+          <label>Bocas (histórico)</label>
           <input value={f.bocas || ""} inputMode="numeric" onChange={(e) => set("bocas", e.target.value)} />
         </div>
       </div>

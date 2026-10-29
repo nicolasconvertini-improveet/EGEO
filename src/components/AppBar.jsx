@@ -17,7 +17,16 @@ import { ROLES } from "../lib/constants";
 
 import { findArt, findPed } from "../lib/format";
 
-export default function AppBar({ rol, tab, detail, arts, peds, onBack, onGuia, onExportar }) {
+export default function AppBar({
+  rol,
+  tab,
+  detail,
+  arts,
+  peds,
+  onBack,
+  onGuia,
+  onExportar,
+}) {
   let title = tabLabel(tab),
     sub = null,
     back = false;
@@ -84,14 +93,23 @@ export default function AppBar({ rol, tab, detail, arts, peds, onBack, onGuia, o
         >
           <span className="chip-role">{ROLES[rol].full}</span>
           {rol === "admin" && (
-            <button className="iconbtn" title="Exportar datos" aria-label="Exportar datos" onClick={onExportar}>
+            <button
+              className="iconbtn"
+              title="Exportar datos"
+              aria-label="Exportar datos"
+              onClick={onExportar}
+            >
               <Download size={17} />
             </button>
           )}
           <button className="iconbtn" title="Guía de uso" onClick={onGuia}>
             <HelpCircle size={17} />
           </button>
-          <button className="iconbtn" title="Salir" onClick={() => supabase.auth.signOut()}>
+          <button
+            className="iconbtn"
+            title="Salir"
+            onClick={() => supabase.auth.signOut()}
+          >
             <LogOut size={17} />
           </button>
         </div>
@@ -108,6 +126,7 @@ export function tabIcon(t) {
   if (t === "pedidos") return <ClipboardList size={s} />;
   if (t === "tareas") return <Boxes size={s} />;
   if (t === "usuarios") return <Users size={s} />;
+  if (t === "planta") return <Package size={s} />;
   if (t === "mantenimiento") return <Wrench size={s} />;
   return <Timer size={s} />;
 }
@@ -120,5 +139,6 @@ export const tabLabel = (t) =>
     tareas: "Tareas",
     registrar: "Registrar",
     usuarios: "Usuarios",
-    mantenimiento: "Mantenimiento",
+    mantenimiento: "Trabajos",
+    planta: "Planta",
   })[t];

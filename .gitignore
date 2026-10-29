@@ -7,3 +7,9 @@ dist
 # Herramientas y capturas de validación local
 .validacion/
 test-results/
+
+# Servicios y credenciales locales
+supabase/.temp/
+supabase/.branches/
+.local/
+backups/

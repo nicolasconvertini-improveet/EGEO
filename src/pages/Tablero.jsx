@@ -1,12 +1,42 @@
+import PendientesTrabajo from "../components/PendientesTrabajo";
 import React, { useEffect, useMemo, useState } from "react";
-import { LayoutDashboard, TrendingUp, History, ChevronDown, ChevronRight } from "lucide-react";
+import {
+  LayoutDashboard,
+  TrendingUp,
+  History,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
 import { OBJETIVO, actLabel } from "../lib/constants";
 import { fetchTareas, fetchPausas } from "../api";
-import { nf, dayShort, fmtHora, fmtDT, effColor, isoDate, limitesDia, fmtMin, findArt, findPed, ESCALA_EFF } from "../lib/format";
+import {
+  nf,
+  dayShort,
+  fmtHora,
+  fmtDT,
+  effColor,
+  isoDate,
+  limitesDia,
+  fmtMin,
+  findArt,
+  findPed,
+  ESCALA_EFF,
+} from "../lib/format";
 
 const REFRESCO_MS = 60000; // cada 1 minuto
 
-export default function Tablero({ tars, peds, arts, enCurso, setDetail, rol, irA, reloadTars, reloadPeds, reloadEnCurso }) {
+export default function Tablero({
+  tars,
+  peds,
+  arts,
+  enCurso,
+  setDetail,
+  rol,
+  irA,
+  reloadTars,
+  reloadPeds,
+  reloadEnCurso,
+}) {
   const [actualizado, setActualizado] = useState(() => new Date());
   // null = en vivo (hoy, con refresco). "AAAA-MM-DD" = día histórico.
   const [fecha, setFecha] = useState(null);
@@ -25,7 +55,9 @@ export default function Tablero({ tars, peds, arts, enCurso, setDetail, rol, irA
     if (!vivo) return;
     const id = setInterval(() => {
       if (document.hidden) return;
-      Promise.all([reloadTars(), reloadPeds(), reloadEnCurso()]).then(() => setActualizado(new Date()));
+      Promise.all([reloadTars(), reloadPeds(), reloadEnCurso()]).then(() =>
+        setActualizado(new Date()),
+      );
     }, REFRESCO_MS);
     return () => clearInterval(id);
   }, [vivo, reloadTars, reloadPeds, reloadEnCurso]);
@@ -68,7 +100,9 @@ export default function Tablero({ tars, peds, arts, enCurso, setDetail, rol, irA
     return Object.entries(porOp)
       .map(([nombre, l]) => {
         const grupos = {};
-        l.forEach((t) => (grupos[t.pedidoId + "|" + t.actividad] ||= []).push(t));
+        l.forEach((t) =>
+          (grupos[t.pedidoId + "|" + t.actividad] ||= []).push(t),
+        );
         const detalle = Object.values(grupos)
           .map((g) => ({
             pedidoId: g[0].pedidoId,
@@ -76,7 +110,10 @@ export default function Tablero({ tars, peds, arts, enCurso, setDetail, rol, irA
             articuloId: g[0].articuloId,
             articuloNombre: g[0].articuloNombre,
             actividad: g[0].actividad,
-            inicio: g.reduce((m, t) => (t.inicio < m ? t.inicio : m), g[0].inicio),
+            inicio: g.reduce(
+              (m, t) => (t.inicio < m ? t.inicio : m),
+              g[0].inicio,
+            ),
             fin: g.reduce((m, t) => (t.fin > m ? t.fin : m), g[0].fin),
             ...agg(g),
           }))
@@ -85,7 +122,10 @@ export default function Tablero({ tars, peds, arts, enCurso, setDetail, rol, irA
       })
       .sort((x, y) => (y.prod ?? -1) - (x.prod ?? -1));
   }, [tDia]);
-  const maxProdOp = Math.max(OBJETIVO, Math.min(200, ...operarios.map((o) => o.prod || 0)));
+  const maxProdOp = Math.max(
+    OBJETIVO,
+    Math.min(200, ...operarios.map((o) => o.prod || 0)),
+  );
 
   // Tiempo por tipo de parada.
   const paradas = useMemo(() => {
@@ -110,22 +150,35 @@ export default function Tablero({ tars, peds, arts, enCurso, setDetail, rol, irA
   // Escalas separadas: un día atípico de la semana no debe achicar la comparación del día.
   const maxComp = Math.max(OBJETIVO, a.prod || 0);
   // Tope de 200 %: un valor atípico llega arriba de todo pero no aplasta al resto.
-  const maxEvo = Math.max(OBJETIVO, Math.min(200, Math.max(0, ...evo.map((e) => e.prod || 0))));
+  const maxEvo = Math.max(
+    OBJETIVO,
+    Math.min(200, Math.max(0, ...evo.map((e) => e.prod || 0))),
+  );
   const scrapPct = a.ok + a.scrap > 0 ? (a.scrap / (a.ok + a.scrap)) * 100 : 0;
   const filtroDia = { desde: fechaRef, hasta: fechaRef };
 
   return (
     <>
       {rol === "admin" && (
-        <button className="btn btn-primary" style={{ marginBottom: 18 }} onClick={() => setDetail({ type: "indicadores" })}>
+        <button
+          className="btn btn-primary"
+          style={{ marginBottom: 18 }}
+          onClick={() => setDetail({ type: "indicadores" })}
+        >
           Ver indicadores
         </button>
       )}
+      <PendientesTrabajo irA={irA} />
       <div className="sec-title" style={{ marginTop: 0 }}>
         Situación actual
       </div>
       <div className="kpis">
-        <Kpi lab="Órdenes en curso" val={nf(pedidosEnCurso)} col="var(--ink)" onClick={() => irA("pedidos", { estado: "en_curso" })} />
+        <Kpi
+          lab="Órdenes en curso"
+          val={nf(pedidosEnCurso)}
+          col="var(--ink)"
+          onClick={() => irA("pedidos", { estado: "en_curso" })}
+        />
         <Kpi
           lab="Tareas en curso"
           val={nf(enCurso)}
@@ -139,7 +192,8 @@ export default function Tablero({ tars, peds, arts, enCurso, setDetail, rol, irA
         <span>
           {vivo ? (
             <>
-              En vivo — <b>hoy {dayShort(hoy)}</b> · actualizado {fmtHora(actualizado)}
+              En vivo — <b>hoy {dayShort(hoy)}</b> · actualizado{" "}
+              {fmtHora(actualizado)}
             </>
           ) : (
             <>
@@ -152,7 +206,13 @@ export default function Tablero({ tars, peds, arts, enCurso, setDetail, rol, irA
           aria-label="Fecha del tablero"
           value={fechaRef}
           max={hoyISO}
-          onChange={(e) => setFecha(!e.target.value || e.target.value === hoyISO ? null : e.target.value)}
+          onChange={(e) =>
+            setFecha(
+              !e.target.value || e.target.value === hoyISO
+                ? null
+                : e.target.value,
+            )
+          }
         />
         {!vivo && (
           <button className="linkmini" onClick={() => setFecha(null)}>
@@ -172,22 +232,37 @@ export default function Tablero({ tars, peds, arts, enCurso, setDetail, rol, irA
           <div className="ic">
             <LayoutDashboard size={22} />
           </div>
-          {vivo ? "Todavía no hay tareas registradas hoy" : `No hay tareas registradas el ${dayShort(dias[6])}`}
+          {vivo
+            ? "Todavía no hay tareas registradas hoy"
+            : `No hay tareas registradas el ${dayShort(dias[6])}`}
         </div>
       )}
 
       {!cargandoFecha && tDia.length > 0 && (
         <>
           <div className="kpis">
-            <Kpi lab="Unidades procesadas" val={nf(a.ok)} col="var(--good)" onClick={() => irA("tareas", filtroDia)} />
+            <Kpi
+              lab="Unidades procesadas"
+              val={nf(a.ok)}
+              col="var(--good)"
+              onClick={() => irA("tareas", filtroDia)}
+            />
             <Kpi
               lab="Productividad"
               val={a.prod == null ? "—" : Math.round(a.prod) + "%"}
               col={effColor(a.prod)}
               onClick={() => irA("tareas", filtroDia)}
             />
-            <Kpi lab="Tiempo estimado" val={(a.std / 3600).toFixed(1) + " h"} col="var(--ink)" />
-            <Kpi lab="Scrap" val={scrapPct.toFixed(1) + "%"} col="var(--warn)" />
+            <Kpi
+              lab="Tiempo estimado"
+              val={(a.std / 3600).toFixed(1) + " h"}
+              col="var(--ink)"
+            />
+            <Kpi
+              lab="Scrap"
+              val={scrapPct.toFixed(1) + "%"}
+              col="var(--warn)"
+            />
           </div>
 
           <div className="sec-title" style={{ marginTop: 18 }}>
@@ -195,8 +270,18 @@ export default function Tablero({ tars, peds, arts, enCurso, setDetail, rol, irA
           </div>
           <div className="card">
             <div className="compare">
-              <CBar label="Real" pct={a.prod || 0} max={maxComp} color={effColor(a.prod)} />
-              <CBar label="Objetivo" pct={OBJETIVO} max={maxComp} color="var(--ink2)" />
+              <CBar
+                label="Real"
+                pct={a.prod || 0}
+                max={maxComp}
+                color={effColor(a.prod)}
+              />
+              <CBar
+                label="Objetivo"
+                pct={OBJETIVO}
+                max={maxComp}
+                color="var(--ink2)"
+              />
             </div>
             <div style={{ fontSize: 12, color: "var(--ink2)", marginTop: 12 }}>
               {a.prod == null
@@ -220,21 +305,37 @@ export default function Tablero({ tars, peds, arts, enCurso, setDetail, rol, irA
                     type="button"
                     className="opbar opbar-btn"
                     aria-expanded={abierto}
-                    onClick={() => setAbiertos((s) => ({ ...s, [o.nombre]: !s[o.nombre] }))}
+                    onClick={() =>
+                      setAbiertos((s) => ({ ...s, [o.nombre]: !s[o.nombre] }))
+                    }
                   >
                     <span className="nm">
-                      {abierto ? <ChevronDown size={14} /> : <ChevronRight size={14} />} {o.nombre}
+                      {abierto ? (
+                        <ChevronDown size={14} />
+                      ) : (
+                        <ChevronRight size={14} />
+                      )}{" "}
+                      {o.nombre}
                     </span>
                     <span className="tr">
                       <i
                         style={{
-                          width: Math.min(100, ((o.prod || 0) / maxProdOp) * 100) + "%",
+                          width:
+                            Math.min(100, ((o.prod || 0) / maxProdOp) * 100) +
+                            "%",
                           background: effColor(o.prod),
                         }}
                       />
-                      <b className="obj" style={{ left: (OBJETIVO / maxProdOp) * 100 + "%" }} title="Objetivo" />
+                      <b
+                        className="obj"
+                        style={{ left: (OBJETIVO / maxProdOp) * 100 + "%" }}
+                        title="Objetivo"
+                      />
                     </span>
-                    <span className="qt mono" style={{ color: effColor(o.prod) }}>
+                    <span
+                      className="qt mono"
+                      style={{ color: effColor(o.prod) }}
+                    >
                       {o.prod == null ? "—" : Math.round(o.prod) + "%"}
                     </span>
                   </button>
@@ -246,10 +347,17 @@ export default function Tablero({ tars, peds, arts, enCurso, setDetail, rol, irA
                           g={g}
                           art={findArt(arts, g.articuloId)}
                           ped={findPed(peds, g.pedidoId)}
-                          onAbrir={() => setDetail({ type: "ped", id: g.pedidoId })}
+                          onAbrir={() =>
+                            setDetail({ type: "ped", id: g.pedidoId })
+                          }
                         />
                       ))}
-                      <button className="linkmini" onClick={() => irA("tareas", { ...filtroDia, operario: o.nombre })}>
+                      <button
+                        className="linkmini"
+                        onClick={() =>
+                          irA("tareas", { ...filtroDia, operario: o.nombre })
+                        }
+                      >
                         Ver tareas de {o.nombre} →
                       </button>
                     </div>
@@ -269,7 +377,9 @@ export default function Tablero({ tars, peds, arts, enCurso, setDetail, rol, irA
           </div>
           <div className="card">
             {paradas.length === 0 ? (
-              <div style={{ fontSize: 12.5, color: "var(--ink2)" }}>Sin paradas registradas en el día.</div>
+              <div style={{ fontSize: 12.5, color: "var(--ink2)" }}>
+                Sin paradas registradas en el día.
+              </div>
             ) : (
               <>
                 {paradas.map((p) => (
@@ -278,13 +388,21 @@ export default function Tablero({ tars, peds, arts, enCurso, setDetail, rol, irA
                       {p.motivo}
                     </div>
                     <div className="tr">
-                      <i style={{ width: (p.seg / maxParada) * 100 + "%", background: "var(--ink2)" }} />
+                      <i
+                        style={{
+                          width: (p.seg / maxParada) * 100 + "%",
+                          background: "var(--ink2)",
+                        }}
+                      />
                     </div>
                     <div className="qt mono">{fmtMin(p.seg)}</div>
                   </div>
                 ))}
-                <div style={{ fontSize: 12, color: "var(--ink2)", marginTop: 10 }}>
-                  Total {fmtMin(totalParadas)} en {paradas.reduce((s, p) => s + p.n, 0)} paradas
+                <div
+                  style={{ fontSize: 12, color: "var(--ink2)", marginTop: 10 }}
+                >
+                  Total {fmtMin(totalParadas)} en{" "}
+                  {paradas.reduce((s, p) => s + p.n, 0)} paradas
                   {vivo ? " · incluye paradas abiertas hasta ahora" : ""}.
                 </div>
               </>
@@ -304,7 +422,9 @@ export default function Tablero({ tars, peds, arts, enCurso, setDetail, rol, irA
                   <div
                     className="bar"
                     style={{
-                      height: (e.prod ? Math.min(100, (e.prod / maxEvo) * 100) : 0) + "%",
+                      height:
+                        (e.prod ? Math.min(100, (e.prod / maxEvo) * 100) : 0) +
+                        "%",
                       background: effColor(e.prod),
                       opacity: e.prod == null ? 0.15 : 1,
                     }}
@@ -366,7 +486,10 @@ function TarjetaOrden({ g, art, ped, onAbrir }) {
   return (
     <div className="opdet-card">
       <button type="button" className="rowitem" onClick={onAbrir}>
-        <div className="lead" style={{ background: effColor(g.prod), color: "#fff" }}>
+        <div
+          className="lead"
+          style={{ background: effColor(g.prod), color: "#fff" }}
+        >
           {g.prod == null ? "—" : Math.round(g.prod)}
         </div>
         <div className="mid">
@@ -374,15 +497,28 @@ function TarjetaOrden({ g, art, ped, onAbrir }) {
             {art?.codigo || "—"} · {actLabel(g.actividad)} · {g.articuloNombre}
           </div>
           <div className="s mono">
-            Orden {g.pedidoCodigo} · Inicio {fmtDT(g.inicio)} · Fin {fmtDT(g.fin)}
+            Orden {g.pedidoCodigo} · Inicio {fmtDT(g.inicio)} · Fin{" "}
+            {fmtDT(g.fin)}
           </div>
         </div>
       </button>
       <div className="kpis kpis-5">
-        <Kpi lab="Cantidad pedida" val={ped ? nf(ped.cantidad) : "—"} col="var(--ink)" />
+        <Kpi
+          lab="Cantidad pedida"
+          val={ped ? nf(ped.cantidad) : "—"}
+          col="var(--ink)"
+        />
         <Kpi lab="Unidades procesadas" val={nf(g.ok)} col="var(--good)" />
-        <Kpi lab="Productividad" val={g.prod == null ? "—" : Math.round(g.prod) + "%"} col={effColor(g.prod)} />
-        <Kpi lab="Tiempo estimado" val={(g.std / 3600).toFixed(1) + " h"} col="var(--ink)" />
+        <Kpi
+          lab="Productividad"
+          val={g.prod == null ? "—" : Math.round(g.prod) + "%"}
+          col={effColor(g.prod)}
+        />
+        <Kpi
+          lab="Tiempo estimado"
+          val={(g.std / 3600).toFixed(1) + " h"}
+          col="var(--ink)"
+        />
         <Kpi lab="Scrap" val={scrapPct.toFixed(1) + "%"} col="var(--warn)" />
       </div>
     </div>
@@ -413,7 +549,11 @@ function CBar({ label, pct, max, color }) {
 function Kpi({ lab, val, col, onClick }) {
   const Tag = onClick ? "button" : "div";
   return (
-    <Tag className={"kpi" + (onClick ? " kpi-link" : "")} onClick={onClick} type={onClick ? "button" : undefined}>
+    <Tag
+      className={"kpi" + (onClick ? " kpi-link" : "")}
+      onClick={onClick}
+      type={onClick ? "button" : undefined}
+    >
       <div className="tick" style={{ background: col }} />
       <div className="lab">{lab}</div>
       <div className="val mono" style={{ color: col }}>
