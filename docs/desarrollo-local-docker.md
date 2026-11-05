@@ -17,12 +17,36 @@ npm run dev:docker
 
 - Aplicación: http://127.0.0.1:5173
 - Supabase Studio: http://127.0.0.1:54323
-- No se cargan datos ni cuentas de ejemplo. Crear cuentas propias en Authentication de Studio y asignar el rol correspondiente en perfiles.
+- El arranque no carga cuentas ni datos de ejemplo automáticamente. Para crear usuarios locales de prueba, ejecutar el seed opcional que se describe a continuación.
 - `db:configure:docker` crea `.env.docker.local` sin modificar `.env`. No sobrescribe una configuración local existente. Para reemplazarla deliberadamente: `node scripts/configure-local.mjs --replace`.
 - Para ejecuciones siguientes basta `npm run db:start` y `npm run dev:docker`.
 - La primera puesta en marcha descarga imágenes y requiere Internet. No se requiere un proyecto Supabase cloud.
 
 El servidor local de funciones escucha en 127.0.0.1:5174 y Vite redirige `/.netlify/functions/*` a ese servidor. Crear usuarios y consultar/cambiar sus credenciales conserva los controles del servidor existente. `npm run dev` usa Supabase real y también inicia sus funciones administrativas. No usarlo para conectarse a Docker.
+
+## Usuarios locales de prueba
+
+Con Docker iniciado, ejecutar:
+
+```powershell
+npm run db:seed:users
+npm run dev:docker
+```
+
+El seed `scripts/seed-local-users.mjs` crea cuatro cuentas activas y con correo confirmado:
+
+| Cuenta | Rol | Uso |
+|---|---|---|
+| qa-admin@egeo.test | Administrador | Planta, materiales, usuarios, indicadores y todas las operaciones. |
+| qa-supervisor@egeo.test | Supervisor | Órdenes, tareas y asignación de mantenimiento/molienda. |
+| qa-operario@egeo.test | Operario | Producción y trabajos asignados. |
+| qa-operario2@egeo.test | Operario | Retoma con otro usuario y comprobación de visibilidad de asignaciones. |
+
+Las contraseñas se generan al ejecutar el seed, se muestran en la terminal y quedan en `.local/usuarios-demo.json`, excluido de Git. Ejecutarlo nuevamente no duplica cuentas ni cambia esas contraseñas; restaura los roles y perfiles activos de las cuentas del seed. No modifica cuentas ajenas ni carga artículos, máquinas, moldes u órdenes.
+
+Si se pierde el archivo de contraseñas o se quieren regenerar deliberadamente, usar `npm run db:seed:users -- --reset-passwords`. Esta opción solo actúa sobre cuentas identificadas como pertenecientes al seed.
+
+La conexión se obtiene del CLI de Supabase local, se exige `http://127.0.0.1:54321` y no se leen las credenciales de `.env`. El seed no se ejecuta en el arranque, en las migraciones ni durante el build de Netlify. Estas cuentas existen únicamente en Docker; no permiten ingresar a Supabase real.
 
 ## Detener y actualizar
 
