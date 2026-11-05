@@ -3,6 +3,8 @@ dist
 .env
 .env.local
 .DS_Store
+.env.example
+.env.docker.example
 
 # Herramientas y capturas de validación local
 .validacion/
