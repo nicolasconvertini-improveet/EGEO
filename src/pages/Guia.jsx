@@ -48,12 +48,16 @@ const SECCIONES = [
     id: "planta",
     min: 3,
     icon: Package,
-    titulo: "Máquinas y moldes",
+    titulo: "Máquinas, moldes y materiales",
     resumen: "Administrá los recursos y artículos por ciclo.",
     bloques: [
       [
         "Planta",
-        "Creá, editá y desactivá máquinas, equipos y moldes. Cada molde tiene una máquina, material, consumo con unidad, segundos por ciclo y uno o varios artículos con sus unidades por ciclo.",
+        "Creá, editá y desactivá máquinas, equipos, moldes y materiales. Cada molde permite seleccionar varias máquinas compatibles, un material sugerido, consumo en gramos por ciclo, segundos por ciclo y uno o varios artículos con sus unidades por ciclo.",
+      ],
+      [
+        "Materiales y colada",
+        "Los materiales se administran con código, descripción y estado activo/inactivo. Completá el peso de colada del molde en gramos: es informativo y ya está incluido en el material por ciclo, por lo que no se suma otra vez. En moldes anteriores puede faltar este dato; completalo antes de crear una orden nueva.",
       ],
       [
         "Desactivación",
@@ -74,7 +78,7 @@ const SECCIONES = [
       ],
       [
         "Horas",
-        "La tabla muestra horas por motivo y el total. El tiempo de una tarea de molde se cuenta una sola vez. Mantenimiento y molienda incluyen toda la planta, sin depender de usuario, artículo o proceso.",
+        "La tabla muestra horas por motivo y el total. Subida, calentamiento y bajada de molde figuran como tiempos no operativos, igual que las pausas, una sola vez por orden. Son minutos declarados atribuidos al usuario y a la fecha de carga. No se suman al tiempo productivo ni se descuentan nuevamente de una tarea. Mantenimiento y molienda incluyen toda la planta, sin depender de usuario, artículo o proceso.",
       ],
       [
         "Filtros y comparación",
@@ -96,7 +100,7 @@ const SECCIONES = [
       ],
       [
         "Contenido",
-        "El reporte de tareas incluye las confirmadas; el maestro de artículos incluye inactivos. La hoja Exportacion indica cantidad de registros y fecha de lectura.",
+        "El reporte de tareas incluye las confirmadas; el maestro de artículos incluye inactivos. Pausas incluye además subida, calentamiento y bajada de molde. Para estos tiempos declarados, inicio indica la fecha de carga y fin queda vacío. La hoja Exportacion indica cantidad de registros y fecha de lectura.",
       ],
       [
         "Formato",
@@ -115,7 +119,11 @@ const SECCIONES = [
     bloques: [
       [
         "1 · Iniciar",
-        "Elegí la orden (podés buscarlo por código o artículo) y el proceso. Tocá “Iniciar tarea” cuando arranques. Desde ese momento la orden y el proceso quedan fijos.",
+        "Elegí la orden (podés buscarla por código o artículo) y el proceso. En la primera toma de una orden nueva de inyectado, tocá “Tomar orden y subir molde”, confirmá que vas a tomarla y subir el molde, y cargá los minutos de subida y calentamiento antes de iniciar producción. Los campos son obligatorios; si un tiempo no aplica, ingresá 0 explícitamente. Para los otros procesos, tocá “Iniciar tarea”. Desde el inicio, la orden y el proceso quedan fijos.",
+      ],
+      [
+        "Retomar inyectado",
+        "Si una tarea termina sin completar las cantidades de la orden, el molde permanece montado. Al retomar, incluso con otro operario o dispositivo, no se repiten la confirmación de subida ni los tiempos de subida y calentamiento. Tampoco se pide bajada ni limpieza al terminar una tarea parcial. No registres los tiempos de montaje también como una pausa de producción.",
       ],
       [
         "2 · Trabajar",
@@ -127,7 +135,11 @@ const SECCIONES = [
       ],
       [
         "Resultado",
-        "Con “Registrar tarea” se guarda y suma a la orden. Si te equivocaste al iniciar, registrá cero piezas y explicalo en observaciones para conservar el tiempo y las pausas.",
+        "Con “Registrar tarea” se guarda y suma a la orden. Si te equivocaste al iniciar, registrá cero piezas y explicalo en observaciones para conservar el tiempo y las pausas. En inyectado, la productividad se calcula por ciclos ejecutados sobre el tiempo operativo neto; los tiempos declarados del molde quedan separados.",
+      ],
+      [
+        "Cerrar una orden de inyectado",
+        "Cuando todos los artículos alcanzan su objetivo OK y no quedan tareas abiertas o por confirmar, registrá los minutos de bajada y confirmá “Recordá limpiar el molde”. El cierre está disponible en Registrar y en el detalle de la orden. Es obligatorio para cerrar las órdenes nuevas de inyectado y no se vuelve a pedir una vez registrado. Lo realiza un operario que participó en la orden, un supervisor o un administrador.",
       ],
     ],
   },
@@ -140,7 +152,7 @@ const SECCIONES = [
     bloques: [
       [
         "Crear",
-        "Completá un código único y elegí un proceso. Para inyectado seleccioná un molde: se incluyen todos sus artículos. Para los demás procesos seleccioná un artículo activo con estándar habilitado.",
+        "Completá un código único y elegí un proceso. Para inyectado seleccioná un molde, una de sus máquinas compatibles activas y el material: se sugiere el del molde, pero tenés que confirmarlo o elegir otro y confirmarlo. Se incluyen todos los artículos del molde. Para los demás procesos seleccioná un artículo activo con estándar habilitado.",
       ],
       [
         "Cantidades",
@@ -148,19 +160,19 @@ const SECCIONES = [
       ],
       [
         "Registrar producción",
-        "El proceso queda fijado por la orden. Al finalizar inyectado se cargan piezas OK y rechazo por cada artículo del molde. Su suma debe ser múltiplo de las unidades por ciclo, y todos deben informar los mismos ciclos. La productividad usa ciclos ejecutados y el avance muestra unidades y gramos solicitados y pendientes. Las cantidades se guardan juntas.",
+        "El proceso queda fijado por la orden. Al finalizar inyectado se cargan piezas OK y rechazo por cada artículo del molde. Su suma debe ser múltiplo de las unidades por ciclo, y todos deben informar los mismos ciclos. La productividad usa ciclos ejecutados y el avance muestra unidades, el material elegido y kilos solicitados y pendientes. Las cantidades se guardan juntas.",
       ],
       [
         "Avance",
-        "Una orden de inyectado se completa cuando todos sus artículos alcanzan sus objetivos OK. El avance muestra ciclos equivalentes según el artículo con menor avance relativo. El resto de órdenes considera únicamente su proceso.",
+        "La producción de inyectado se completa cuando todos los artículos alcanzan sus objetivos OK. La orden queda pendiente de bajada y limpieza hasta registrar ese cierre; no se puede iniciar otra tarea de producción en ella. El avance muestra ciclos equivalentes según el artículo con menor avance relativo. Los kilos pendientes estiman el material necesario para completar las piezas OK y no representan stock disponible. El resto de órdenes considera únicamente su proceso.",
       ],
       [
         "Configuración histórica",
-        "La orden guarda la configuración usada. Cambiar el molde no altera sus artículos ni estándares. Las órdenes antiguas conservan su cálculo multietapa original.",
+        "La orden guarda la configuración usada: máquina, material, artículos y estándares. Editar los catálogos no cambia esos datos históricos. Las órdenes creadas antes de esta actualización conservan su circuito anterior y no se les inventan tiempos de montaje.",
       ],
       [
         "Estados y correcciones",
-        "El administrador puede cambiar estados y reabrir órdenes cerradas con pendientes. Supervisor y administrador pueden editar la cantidad objetivo sin reducirla por debajo de lo ya producido. Los cambios quedan auditados.",
+        "El administrador puede cambiar estados según el circuito de la orden. Supervisor y administrador pueden editar la cantidad objetivo sin reducirla por debajo de lo ya producido. En una orden nueva de inyectado no se puede omitir la bajada y limpieza ni volver a producir después de retirar el molde: para otro montaje corresponde una nueva orden. Los cambios quedan auditados.",
       ],
     ],
   },
@@ -275,7 +287,7 @@ const FAQ = [
   ],
   [
     "La productividad dio un valor raro",
-    "Suele indicar que el tiempo estándar del artículo no refleja la realidad. Revisalo con un administrador.",
+    "Revisá con un administrador el tiempo estándar del artículo o, en inyectado, los segundos por ciclo guardados en la orden. Subida, calentamiento y bajada se registran aparte y no deben cargarse también como pausas de producción.",
   ],
   [
     "El tablero no muestra hoy",

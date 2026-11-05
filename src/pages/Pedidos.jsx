@@ -1,3 +1,6 @@
+import AvanceInyectado from "../components/AvanceInyectado";
+import { TiemposMolde, CierreMolde } from "../components/ControlMolde";
+import { pendienteCierreMolde } from "../lib/montaje";
 import React, { useState, useEffect, useMemo } from "react";
 import { ClipboardList, Boxes, Plus, Check, Pencil } from "lucide-react";
 import { fetchEtapasPedido, editarCantidadPedido } from "../api";
@@ -90,7 +93,9 @@ export default function Pedidos({ rol, peds, setDetail, prefiltro }) {
                   </div>
                 </div>
                 <span className={"badge " + estadoBadge(p.estado)}>
-                  {estadoLabel(p.estado)}
+                  {pendienteCierreMolde(p)
+                    ? "Pendiente de bajada y limpieza"
+                    : estadoLabel(p.estado)}
                 </span>
               </div>
               <div className="prog">
@@ -191,7 +196,9 @@ export function PedidoDetalle({
             </div>
           </div>
           <span className={"badge " + estadoBadge(p.estado)}>
-            {estadoLabel(p.estado)}
+            {pendienteCierreMolde(p)
+              ? "Pendiente de bajada y limpieza"
+              : estadoLabel(p.estado)}
           </span>
         </div>
         <div className="prog" style={{ marginTop: 14 }}>
@@ -243,6 +250,13 @@ export function PedidoDetalle({
         )}
       </div>
 
+      {p.moldeId && (
+        <>
+          <AvanceInyectado pedido={p} />
+          <TiemposMolde pedido={p} />
+          <CierreMolde pedido={p} notify={notify} reloadPeds={reloadPeds} />
+        </>
+      )}
       {p.moldeId && (
         <div className="card">
           <h3>Artículos del molde {p.configuracion?.codigo}</h3>

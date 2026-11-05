@@ -18,30 +18,51 @@ export async function filas(tabla) {
   }
 }
 export async function catalogos() {
-  const [maquinas, equipos, moldes, relaciones] = await Promise.all([
-    filas("maquinas"),
-    filas("equipos"),
-    filas("moldes"),
-    (async () => {
-      const all = [];
-      for (let offset = 0; ; offset += 1000) {
-        const { data, error } = await supabase
-          .from("molde_articulos")
-          .select("*")
-          .order("molde_id")
-          .order("articulo_id")
-          .range(offset, offset + 999);
-        if (error) throw error;
-        all.push(...data);
-        if (data.length < 1000) return all;
-      }
-    })(),
-  ]);
+  const [maquinas, equipos, moldes, relaciones, materiales, compatibilidades] =
+    await Promise.all([
+      filas("maquinas"),
+      filas("equipos"),
+      filas("moldes"),
+      (async () => {
+        const all = [];
+        for (let offset = 0; ; offset += 1000) {
+          const { data, error } = await supabase
+            .from("molde_articulos")
+            .select("*")
+            .order("molde_id")
+            .order("articulo_id")
+            .range(offset, offset + 999);
+          if (error) throw error;
+          all.push(...data);
+          if (data.length < 1000) return all;
+        }
+      })(),
+      filas("materiales"),
+      (async () => {
+        const all = [];
+        for (let offset = 0; ; offset += 1000) {
+          const { data, error } = await supabase
+            .from("molde_maquinas")
+            .select("*")
+            .order("molde_id")
+            .order("maquina_id")
+            .range(offset, offset + 999);
+          if (error) throw error;
+          all.push(...data);
+          if (data.length < 1000) return all;
+        }
+      })(),
+    ]);
   return {
     maquinas,
     equipos,
+    materiales,
     moldes: moldes.map((m) => ({
       ...m,
+      material: materiales.find((x) => x.id === m.material_id)?.nombre ?? m.material,
+      maquinas: compatibilidades
+        .filter((r) => r.molde_id === m.id)
+        .map((r) => r.maquina_id),
       articulos: relaciones.filter((r) => r.molde_id === m.id),
     })),
   };
