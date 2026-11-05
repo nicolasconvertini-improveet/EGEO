@@ -1898,7 +1898,7 @@ mark {
 }
 
 /* Cuatro acciones de Planta distribuidas en el ancho disponible, sin desbordar. */
-.planta-toolbar {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));width:100%;gap:8px;align-items:stretch;margin:12px 0;}
+.planta-toolbar {display:grid;grid-template-columns:repeat(5,minmax(0,1fr));width:100%;gap:8px;align-items:stretch;margin:12px 0;}
 .planta-toolbar .chip,.planta-toolbar .btn {min-width:0;max-width:100%;width:100%;margin:0;white-space:normal;min-height:44px;height:100%;}
 .kpis.trabajos-kpis {grid-template-columns:repeat(3,minmax(0,1fr));margin:12px 0 20px;}
 .trabajos-kpis .lab {white-space:normal;overflow-wrap:anywhere;}
@@ -1916,3 +1916,19 @@ mark {
 .avance-inyectado-articulo {border-top:1px solid var(--line);padding:10px 0;overflow-wrap:anywhere;}
 .avance-inyectado-articulo p {margin:6px 0;}
 .resultados-molde .hint-err {margin-top:8px;}
+
+/* Materiales agrega una pestaña. Mantener controles utilizables en móvil. */
+.maquinas-compatibles {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px;}
+.maquinas-compatibles label {display:flex;align-items:center;gap:8px;min-width:0;overflow-wrap:anywhere;}
+.maquinas-compatibles input[type="checkbox"] {width:auto;flex:0 0 auto;}
+.cierre-molde {text-align:left;}
+@media (max-width:639px) {.planta-toolbar {grid-template-columns:repeat(2,minmax(0,1fr));}.planta-toolbar>.btn {grid-column:1/-1;}}
+.nueva-orden > fieldset > label.material-confirmacion {display:flex;align-items:flex-start;gap:8px;}
+.nueva-orden > fieldset > label.material-confirmacion > input[type=checkbox] {width:auto;flex:0 0 auto;padding:0;margin:3px 0 0;}
+.modal-molde {max-height:calc(100dvh - 32px);overflow-y:auto;}
+.modal-molde .molde-tiempo {display:block;margin:14px 0;font-weight:600;}
+.modal-molde .molde-tiempo input {display:block;width:100%;box-sizing:border-box;margin-top:6px;padding:12px;border:1px solid var(--line);border-radius:9px;background:var(--surface,#fff);color:var(--ink);font:inherit;}
+.modal-molde .molde-confirmacion {display:flex;align-items:flex-start;gap:8px;margin:12px 0;}
+.modal-molde input[type=checkbox] {flex:0 0 auto;margin-top:3px;}
+.modal-molde .confirm-acciones {flex-wrap:wrap;}
+.modal-molde .confirm-acciones .btn {flex:1 1 140px;min-width:0;height:auto;min-height:44px;padding:12px;white-space:normal;}

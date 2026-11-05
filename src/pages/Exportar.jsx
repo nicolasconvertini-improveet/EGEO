@@ -11,7 +11,7 @@ const TABLAS = [
   {
     nombre: "pausas",
     titulo: "Pausas",
-    detalle: "Nro. de orden, usuario, motivo, inicio, fin y tiempo total de cada pausa (HH:MM:SS).",
+    detalle: "Nro. de orden, usuario, motivo, inicio, fin y tiempo total de cada pausa (HH:MM:SS). Incluye los tiempos declarados de subida, calentamiento y bajada; su inicio representa la fecha de registro y su fin queda vacío.",
   },
   {
     nombre: "tareas",

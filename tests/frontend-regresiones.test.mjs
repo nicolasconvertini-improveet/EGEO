@@ -36,14 +36,14 @@ const arts = Array.from({ length: 25 }, (_, i) => ({
   categoria: i % 2 ? "Tapas" : "Bases",
   std: { inyectado: 1, rebabado: 1 },
 }));
-test("Planta: las tres secciones y Nuevo registro están en una misma barra", () => {
+test("Planta: las cuatro secciones y Nuevo registro están en una misma barra", () => {
   const html = renderToStaticMarkup(
     createElement(ui.Planta, { rol: "admin", arts }),
   );
   const toolbar = html.match(/<div class="planta-toolbar"[\s\S]*?<\/div>/)?.[0];
   assert.ok(toolbar);
-  assert.equal((toolbar.match(/<button/g) || []).length, 4);
-  for (const text of ["Moldes", "Máquinas", "Equipos", "Nuevo registro"])
+  assert.equal((toolbar.match(/<button/g) || []).length, 5);
+  for (const text of ["Moldes", "Máquinas", "Equipos", "Materiales", "Nuevo registro"])
     assert.ok(toolbar.includes(text));
 });
 test("Artículos: selector de categorías visible incluso con artículos sin categoría", () => {
@@ -118,7 +118,7 @@ test("Tablero: seis tarjetas accionables, sin resueltas ni detalle; cada clic ab
   assert.equal(ESTADOS_TRABAJO.filter((e) => e.key === "pendiente").length, 1);
 });
 
-test("Cierre de inyectado: mostrar productividad y avance en unidades y gramos", () => {
+test("Cierre de inyectado: mostrar productividad y avance en unidades y kilos", () => {
   const pedido = {
     cantidad: 10,
     configuracion: { codigo: "M-01", material_ciclo: 30, segundos_ciclo: 20 },
@@ -164,11 +164,11 @@ test("Cierre de inyectado: mostrar productividad y avance en unidades y gramos",
     "50%",
     "5",
     "20",
-    "150",
+    "0,15 kg",
     "Material solicitado",
-    "300",
+    "0,3 kg",
     "Material pendiente estimado",
-    "180",
+    "0,18 kg",
     "Unidades solicitadas",
     "Unidades pendientes",
     "27",

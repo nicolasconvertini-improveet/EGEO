@@ -62,10 +62,13 @@ test("Docker local: órdenes por proceso, molde multiartículo, historial y perm
       .select()
       .single(),
   );
+  const material = await must(admin.c.from("materiales").insert({codigo:stamp,nombre:stamp+" PP"}).select().single());
+  const maquina2 = await must(admin.c.from("maquinas").insert({codigo:stamp+"-2",nombre:"Segunda inyectora"}).select().single());
   const moldeDatos = {
     codigo: stamp,
-    maquina_id: maquina.id,
-    material: "PP",
+    maquinas: [maquina.id,maquina2.id],
+    material_id: material.id,
+    colada_gramos: 5,
     material_ciclo: 30,
     segundos_ciclo: 20,
     activo: true,
@@ -111,6 +114,9 @@ test("Docker local: órdenes por proceso, molde multiartículo, historial y perm
         codigo: stamp,
         proceso: "inyectado",
         molde_id: molde,
+        maquina_id: maquina2.id,
+        material_id: material.id,
+        material_confirmado: true,
         cantidad: 10,
       })
       .select()
@@ -127,13 +133,8 @@ test("Docker local: órdenes por proceso, molde multiartículo, historial y perm
       p_actividad: "armado",
     }),
   );
-  const tid = await must(
-    op.c.rpc("gestionar_tarea", {
-      p_accion: "iniciar",
-      p_pedido: pedido.id,
-      p_actividad: "inyectado",
-    }),
-  );
+  await denied(op.c.rpc("gestionar_tarea",{p_accion:"iniciar",p_pedido:pedido.id,p_actividad:"inyectado"}));
+  const tid = await must(op.c.rpc("iniciar_inyectado",{p_pedido:pedido.id,p_montaje:{confirmado:true,subida_minutos:10,calentamiento_minutos:5}}));
   let t = await must(op.c.from("v_tareas").select("*").eq("id", tid).single());
   await must(
     op.c.rpc("gestionar_tarea", {
@@ -193,7 +194,9 @@ test("Docker local: órdenes por proceso, molde multiartículo, historial y perm
   const terminado = await must(
     op.c.from("v_pedidos").select("*").eq("id", pedido.id).single(),
   );
-  assert.equal(terminado.estado, "finalizado");
+  assert.equal(terminado.estado, "en_curso");
+  assert.equal(terminado.control_molde.subida_minutos,10);
+  assert.equal(terminado.configuracion.maquina_id,maquina2.id);
   assert.equal(terminado.ok_acum, 10);
   await must(
     admin.c.rpc("guardar_molde", {
@@ -632,6 +635,9 @@ test("Docker local: órdenes por proceso, molde multiartículo, historial y perm
     codigo: stamp + "-UI",
     proceso: "inyectado",
     moldeId: molde,
+    maquinaId: maquina.id,
+    materialId: material.id,
+    materialConfirmado: true,
     cantidad: 2,
   });
   const uiPedido = (await api.fetchPedidos()).find(
@@ -642,6 +648,8 @@ test("Docker local: órdenes por proceso, molde multiartículo, historial y perm
   const uiId = await api.iniciarTarea({
     pedidoId: uiPedido.id,
     actividad: "inyectado",
+    inyectado: true,
+    montaje: {confirmado:true,subida_minutos:0,calentamiento_minutos:3},
   });
   let uiTarea = await api.fetchTareaActiva();
   assert.equal(uiTarea.id, uiId);
@@ -707,6 +715,37 @@ test("Docker local: órdenes por proceso, molde multiartículo, historial y perm
     .filter((t) => t.motivo.startsWith("Producción · "))
     .reduce((n, t) => n + Number(t.segundos), 0);
   assert.ok(Math.abs(realResumen - realTabla) < 0.001);
+  // Circuito completo: primera tarea parcial, retoma por otro operario y cierre único.
+  const ciclo = await must(op.c.from("pedidos").insert({codigo:stamp+"-CICLO",proceso:"inyectado",molde_id:molde,maquina_id:maquina.id,material_id:material.id,material_confirmado:true,cantidad:2}).select().single());
+  await denied(op.c.rpc("iniciar_inyectado",{p_pedido:ciclo.id}));
+  await denied(op.c.rpc("iniciar_inyectado",{p_pedido:ciclo.id,p_montaje:{confirmado:true,subida_minutos:"",calentamiento_minutos:2}}));
+  await denied(op.c.from("pedido_montajes").insert({pedido_id:ciclo.id,subida_minutos:1,calentamiento_minutos:1,montado_por:op.id}));
+  async function registrarUna(c,montaje) {
+    const id = await must(c.rpc("iniciar_inyectado",{p_pedido:ciclo.id,p_montaje:montaje}));
+    let v = await must(c.from("v_tareas").select("*").eq("id",id).single());
+    await must(c.rpc("gestionar_tarea",{p_accion:"finalizar",p_tarea:id,p_revision:v.revision}));
+    v = await must(c.from("v_tareas").select("*").eq("id",id).single());
+    await must(c.rpc("confirmar_tarea_molde",{p_tarea:id,p_revision:v.revision,p_resultados:[{articulo_id:a[0].id,piezas_ok:3,piezas_scrap:0}],p_observaciones:""}));
+  }
+  await registrarUna(op.c,{confirmado:true,subida_minutos:7,calentamiento_minutos:3});
+  let estadoCiclo = await must(op.c.from("v_pedidos").select("*").eq("id",ciclo.id).single());
+  await denied(op.c.rpc("cerrar_molde",{p_pedido:ciclo.id,p_revision:estadoCiclo.estado_revision,p_bajada_minutos:4,p_limpieza:true}));
+  await registrarUna(otherOp.c,null);
+  estadoCiclo = await must(op.c.from("v_pedidos").select("*").eq("id",ciclo.id).single());
+  assert.equal(estadoCiclo.estado,"en_curso");
+  assert.equal(estadoCiclo.control_molde.subida_minutos,7);
+  await denied(op.c.rpc("iniciar_inyectado",{p_pedido:ciclo.id}));
+  await denied(op.c.rpc("cerrar_molde",{p_pedido:ciclo.id,p_revision:estadoCiclo.estado_revision,p_bajada_minutos:4,p_limpieza:false}));
+  const cierreParams={p_pedido:ciclo.id,p_revision:estadoCiclo.estado_revision,p_bajada_minutos:4,p_limpieza:true};
+  await must(op.c.rpc("cerrar_molde",cierreParams));
+  await must(op.c.rpc("cerrar_molde",cierreParams));
+  estadoCiclo=await must(op.c.from("v_pedidos").select("*").eq("id",ciclo.id).single());
+  assert.equal(estadoCiclo.estado,"finalizado");
+  const tiempos = await must(admin.c.from("v_tiempos_molde").select("*").eq("pedido_id",ciclo.id));
+  assert.equal(tiempos.length,3);
+  assert.equal(tiempos.reduce((n,r) => n+Number(r.minutos),0),14);
+  const pausas = await must(admin.c.rpc("exportar_reporte",{p_reporte:"pausas"}));
+  assert.equal(pausas.filas.filter((r) => r.nro_orden===ciclo.codigo).length,3);
   await api.supabase.auth.signOut();
   console.log("Datos de prueba identificados con prefijo " + stamp);
 });

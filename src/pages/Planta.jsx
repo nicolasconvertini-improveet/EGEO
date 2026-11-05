@@ -2,8 +2,9 @@ import React, { useEffect, useState } from "react";
 import { catalogos, guardarActivo, rpc } from "../lib/plantaApi";
 const nuevoMolde = () => ({
   codigo: "",
-  maquina_id: "",
-  material: "",
+  maquinas: [],
+  material_id: "",
+  colada_gramos: "",
   material_ciclo: 1,
   segundos_ciclo: 1,
   activo: true,
@@ -49,9 +50,9 @@ export default function Planta({ arts, rol }) {
     return <p role="alert">Acceso exclusivo para administradores.</p>;
   return (
     <section className="gestion">
-      <h2>Máquinas, equipos y moldes</h2>
+      <h2>Máquinas, equipos, moldes y materiales</h2>
       <div className="planta-toolbar" aria-label="Gestión de planta">
-        {["moldes", "maquinas", "equipos"].map((t) => (
+        {["moldes", "maquinas", "equipos", "materiales"].map((t) => (
           <button
             className={"chip" + (tipo === t ? " on" : "")}
             key={t}
@@ -65,7 +66,9 @@ export default function Planta({ arts, rol }) {
               ? "Máquinas"
               : t === "equipos"
                 ? "Equipos"
-                : "Moldes"}
+                : t === "materiales"
+                  ? "Materiales"
+                  : "Moldes"}
           </button>
         ))}
         {!form && (
@@ -119,30 +122,62 @@ export default function Planta({ arts, rol }) {
                   </label>
                 ) : (
                   <>
+                    <fieldset className="maquinas-compatibles">
+                      <legend>Máquinas compatibles (selección múltiple)</legend>
+                      {datos.maquinas
+                        .filter((m) => m.activo || form.maquinas.includes(m.id))
+                        .map((m) => (
+                          <label key={m.id}>
+                            <input
+                              type="checkbox"
+                              checked={form.maquinas.includes(m.id)}
+                              onChange={(e) =>
+                                cambiar(
+                                  "maquinas",
+                                  e.target.checked
+                                    ? [...form.maquinas, m.id]
+                                    : form.maquinas.filter((id) => id !== m.id),
+                                )
+                              }
+                            />
+                            {m.codigo} · {m.nombre}
+                            {!m.activo ? " (inactiva)" : ""}
+                          </label>
+                        ))}
+                      {!form.maquinas.length && (
+                        <p role="alert">Seleccioná al menos una máquina.</p>
+                      )}
+                    </fieldset>
                     <label>
-                      Máquina
+                      Material sugerido
                       <select
                         required
-                        value={form.maquina_id}
-                        onChange={(e) => cambiar("maquina_id", e.target.value)}
+                        value={form.material_id || ""}
+                        onChange={(e) => cambiar("material_id", e.target.value)}
                       >
-                        <option value="">Seleccionar</option>
-                        {datos.maquinas
-                          .filter((m) => m.activo || m.id === form.maquina_id)
+                        <option value="">Seleccionar material</option>
+                        {datos.materiales
+                          .filter((m) => m.activo || m.id === form.material_id)
                           .map((m) => (
                             <option key={m.id} value={m.id}>
                               {m.codigo} · {m.nombre}
-                              {!m.activo ? " (inactiva)" : ""}
+                              {!m.activo ? " (inactivo)" : ""}
                             </option>
                           ))}
                       </select>
                     </label>
                     <label>
-                      Material
+                      Peso de colada (gr.) — informativo, ya incluido en
+                      material por ciclo
                       <input
                         required
-                        value={form.material}
-                        onChange={(e) => cambiar("material", e.target.value)}
+                        type="number"
+                        min="0"
+                        step="any"
+                        value={form.colada_gramos ?? ""}
+                        onChange={(e) =>
+                          cambiar("colada_gramos", e.target.value)
+                        }
                       />
                     </label>
                     <label>
@@ -261,7 +296,10 @@ export default function Planta({ arts, rol }) {
                 </label>
                 <button
                   className="btn btn-primary"
-                  disabled={tipo === "moldes" && !form.articulos.length}
+                  disabled={
+                    tipo === "moldes" &&
+                    (!form.articulos.length || !form.maquinas.length)
+                  }
                 >
                   Guardar
                 </button>
