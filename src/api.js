@@ -82,6 +82,10 @@ export async function fetchPedidos() {
     articuloId: p.articulo_id,
     proceso: p.proceso,
     moldeId: p.molde_id,
+    maquinaId: p.maquina_id,
+    materialId: p.material_id,
+    requiereCierreMolde: p.requiere_cierre_molde,
+    controlMolde: p.control_molde,
     configuracion: p.configuracion,
     articulos: p.articulos || [],
     articuloNombre: p.articulo_nombre,
@@ -154,6 +158,9 @@ export async function createPedido({
   codigo,
   articuloId,
   moldeId,
+  maquinaId,
+  materialId,
+  materialConfirmado,
   proceso,
   cantidad,
 }) {
@@ -162,6 +169,9 @@ export async function createPedido({
     articulo_id: proceso === "inyectado" ? null : articuloId,
     proceso,
     molde_id: proceso === "inyectado" ? moldeId : null,
+    maquina_id: proceso === "inyectado" ? maquinaId : null,
+    material_id: proceso === "inyectado" ? materialId : null,
+    material_confirmado: proceso === "inyectado" && materialConfirmado === true,
     cantidad: Number(cantidad),
   });
   if (error) throw error;
@@ -404,7 +414,20 @@ async function gestionarTarea(p_accion, params = {}) {
   return data;
 }
 
-export function iniciarTarea({ pedidoId, actividad }) {
+export async function iniciarTarea({
+  pedidoId,
+  actividad,
+  inyectado = false,
+  montaje = null,
+}) {
+  if (inyectado) {
+    const { data, error } = await supabase.rpc("iniciar_inyectado", {
+      p_pedido: pedidoId,
+      p_montaje: montaje,
+    });
+    if (error) throw error;
+    return data;
+  }
   return gestionarTarea("iniciar", {
     p_pedido: pedidoId,
     p_actividad: actividad,
@@ -580,3 +603,14 @@ export const adminEditarPausa = (pausaId, { inicio, fin, motivoId, motivo }) =>
 
 export const adminEliminarPausa = (pausaId, motivo) =>
   rpcAdmin("admin_eliminar_pausa", { p_pausa: pausaId, p_motivo: motivo });
+
+export async function cerrarMolde(pedido, bajadaMinutos, limpieza) {
+  const { data, error } = await supabase.rpc("cerrar_molde", {
+    p_pedido: pedido.id,
+    p_revision: pedido.estadoRevision,
+    p_bajada_minutos: Number(bajadaMinutos),
+    p_limpieza: limpieza === true,
+  });
+  if (error) throw error;
+  return data;
+}

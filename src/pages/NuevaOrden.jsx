@@ -9,6 +9,9 @@ export default function NuevaOrden({ arts, notify, reloadPeds, setDetail }) {
       codigo: "",
       proceso: "inyectado",
       moldeId: "",
+      maquinaId: "",
+      materialId: "",
+      materialConfirmado: false,
       articuloId: "",
       cantidad: "",
     }),
@@ -62,6 +65,9 @@ export default function NuevaOrden({ arts, notify, reloadPeds, setDetail }) {
                 proceso: e.target.value,
                 articuloId: "",
                 moldeId: "",
+                maquinaId: "",
+                materialId: "",
+                materialConfirmado: false,
               }))
             }
           >
@@ -87,13 +93,24 @@ export default function NuevaOrden({ arts, notify, reloadPeds, setDetail }) {
               <select
                 required
                 value={form.moldeId}
-                onChange={(e) => set("moldeId", e.target.value)}
+                onChange={(e) => {
+                  const elegido = datos.moldes.find(
+                    (m) => m.id === e.target.value,
+                  );
+                  setForm((f) => ({
+                    ...f,
+                    moldeId: e.target.value,
+                    maquinaId: "",
+                    materialId: elegido?.material_id || "",
+                    materialConfirmado: false,
+                  }));
+                }}
               >
                 <option value="">Seleccionar molde</option>
                 {datos?.moldes
                   .filter((m) => {
-                    const maquina = datos.maquinas.find(
-                      (x) => x.id === m.maquina_id,
+                    const maquinas = datos.maquinas.filter((x) =>
+                      m.maquinas.includes(x.id),
                     );
                     const piezas = m.articulos
                       .map((r) => arts.find((a) => a.id === r.articulo_id))
@@ -101,8 +118,7 @@ export default function NuevaOrden({ arts, notify, reloadPeds, setDetail }) {
                     const texto = norm(
                       [
                         m.codigo,
-                        maquina?.codigo,
-                        maquina?.nombre,
+                        ...maquinas.flatMap((q) => [q.codigo, q.nombre]),
                         ...piezas.flatMap((a) => [a.codigo, a.nombre]),
                       ].join(" "),
                     );
@@ -118,14 +134,69 @@ export default function NuevaOrden({ arts, notify, reloadPeds, setDetail }) {
                   .map((m) => (
                     <option key={m.id} value={m.id}>
                       {m.codigo} ·{" "}
-                      {
-                        datos.maquinas.find((x) => x.id === m.maquina_id)
-                          ?.nombre
-                      }
+                      {datos.maquinas
+                        .filter((x) => m.maquinas.includes(x.id))
+                        .map((x) => x.nombre)
+                        .join(", ")}
                     </option>
                   ))}
               </select>
             </label>
+            {molde && (
+              <>
+                <label>
+                  Máquina de la orden
+                  <select
+                    required
+                    value={form.maquinaId}
+                    onChange={(e) => set("maquinaId", e.target.value)}
+                  >
+                    <option value="">Seleccionar máquina</option>
+                    {datos.maquinas
+                      .filter((m) => m.activo && molde.maquinas.includes(m.id))
+                      .map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.codigo} · {m.nombre}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+                <label>
+                  Material de la orden (sugerido desde el molde)
+                  <select
+                    required
+                    value={form.materialId}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        materialId: e.target.value,
+                        materialConfirmado: false,
+                      }))
+                    }
+                  >
+                    <option value="">Seleccionar material</option>
+                    {datos.materiales
+                      .filter((m) => m.activo)
+                      .map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.codigo} · {m.nombre}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+                <label className="material-confirmacion">
+                  <input
+                    type="checkbox"
+                    required
+                    checked={form.materialConfirmado}
+                    onChange={(e) =>
+                      set("materialConfirmado", e.target.checked)
+                    }
+                  />
+                  Confirmo el material seleccionado para esta orden
+                </label>
+              </>
+            )}
             {molde && (
               <div className="card">
                 <p>

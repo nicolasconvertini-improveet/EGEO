@@ -1,3 +1,5 @@
+import { InicioInyectado, CierreMolde } from "../components/ControlMolde";
+import { pendienteCierreMolde, formatearKg } from "../lib/montaje";
 import React, {
   useState,
   useEffect,
@@ -233,19 +235,28 @@ export default function Registrar({
       await cargarActiva(true);
       await Promise.all([reloadPeds(), reloadTars(), reloadEnCurso()]);
       if (mensaje) notify(mensaje);
+      return true;
     } catch (e) {
       notify(e?.message || "No se pudo guardar. Verificá tu conexión", true);
       await cargarActiva(true);
+      await reloadPeds();
+      return false;
     } finally {
       operacion.current = false;
       setBusy(false);
     }
   };
 
-  const iniciar = () =>
+  const iniciar = (montaje = null) =>
     pedId &&
     ejecutar(
-      () => iniciarTarea({ pedidoId: pedId, actividad: act }),
+      () =>
+        iniciarTarea({
+          pedidoId: pedId,
+          actividad: act,
+          inyectado: !!pedSel?.moldeId,
+          montaje,
+        }),
       "Tarea iniciada",
     );
   const finalizar = async () => {
@@ -321,8 +332,20 @@ export default function Registrar({
     );
 
   /* resumen posterior */
+  const ordenRegistrada = hecha?.pedido ? findPed(peds, hecha.pedido.id) : null;
   if (hecha)
-    return <ResumenRegistro hecha={hecha} onOtra={() => setHecha(null)} />;
+    return (
+      <>
+        <ResumenRegistro hecha={hecha} onOtra={() => setHecha(null)} />
+        {ordenRegistrada && (
+          <CierreMolde
+            pedido={ordenRegistrada}
+            notify={notify}
+            reloadPeds={reloadPeds}
+          />
+        )}
+      </>
+    );
 
   /* La tarea sigue reservada mientras trabaja o está pausada. */
   if (activa && !activa.fin) {
@@ -673,6 +696,9 @@ export default function Registrar({
           {opciones.map((p) => (
             <option key={p.id} value={p.id}>
               {p.codigo} · {p.articuloNombre}
+              {pendienteCierreMolde(p)
+                ? " · Pendiente de bajada y limpieza"
+                : ""}
             </option>
           ))}
         </select>
@@ -683,54 +709,78 @@ export default function Registrar({
         )}
       </div>
 
-      <div className="field">
-        <label>Actividad</label>
-        <div className="chips">
-          {ACTS.map((ac) => (
-            <button
-              key={ac.key}
-              className={"chip" + (act === ac.key ? " on" : "")}
-              disabled={
-                pedSel?.proceso
-                  ? pedSel.proceso !== ac.key
-                  : !artSel?.std[ac.key]
-              }
-              onClick={() => setAct(ac.key)}
-            >
-              {ac.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {pedSel?.moldeId ? (
-        <AvanceInyectado pedido={pedSel} />
+      {pendienteCierreMolde(pedSel) ? (
+        <>
+          <AvanceInyectado pedido={pedSel} />
+          <CierreMolde
+            pedido={pedSel}
+            notify={notify}
+            reloadPeds={reloadPeds}
+          />
+        </>
       ) : (
-        <AvancePedido
-          cantidad={pedSel?.cantidad}
-          actividad={act}
-          aplica={!!pedSel?.proceso || (artSel?.std?.[act] || 0) > 0}
-          etapas={etapas}
-        />
-      )}
+        <>
+          <div className="field">
+            <label>Actividad</label>
+            <div className="chips">
+              {ACTS.map((ac) => (
+                <button
+                  key={ac.key}
+                  className={"chip" + (act === ac.key ? " on" : "")}
+                  disabled={
+                    pedSel?.proceso
+                      ? pedSel.proceso !== ac.key
+                      : !artSel?.std[ac.key]
+                  }
+                  onClick={() => setAct(ac.key)}
+                >
+                  {ac.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
-      <div className="card" style={{ marginTop: 14 }}>
-        <div className="sec-title" style={{ margin: "0 0 10px" }}>
-          Control de tarea
-        </div>
-        <div className="ctl-hint">
-          Al iniciar, la orden y la actividad quedan fijas. El tiempo se guarda
-          solo.
-        </div>
-        <button
-          className="btn btn-dark"
-          style={{ marginTop: 12 }}
-          disabled={busy || !pedId || (!pedSel?.proceso && !artSel?.std[act])}
-          onClick={iniciar}
-        >
-          <Play size={16} fill="#fff" /> Iniciar tarea
-        </button>
-      </div>
+          {pedSel?.moldeId ? (
+            <AvanceInyectado pedido={pedSel} />
+          ) : (
+            <AvancePedido
+              cantidad={pedSel?.cantidad}
+              actividad={act}
+              aplica={!!pedSel?.proceso || (artSel?.std?.[act] || 0) > 0}
+              etapas={etapas}
+            />
+          )}
+
+          <div className="card" style={{ marginTop: 14 }}>
+            <div className="sec-title" style={{ margin: "0 0 10px" }}>
+              Control de tarea
+            </div>
+            <div className="ctl-hint">
+              Al iniciar, la orden y la actividad quedan fijas. El tiempo se
+              guarda solo.
+            </div>
+            {pedSel?.moldeId ? (
+              <InicioInyectado
+                key={pedSel.id}
+                pedido={pedSel}
+                busy={busy}
+                onIniciar={iniciar}
+              />
+            ) : (
+              <button
+                className="btn btn-dark"
+                style={{ marginTop: 12 }}
+                disabled={
+                  busy || !pedId || (!pedSel?.proceso && !artSel?.std[act])
+                }
+                onClick={iniciar}
+              >
+                <Play size={16} fill="#fff" /> Iniciar tarea
+              </button>
+            )}
+          </div>
+        </>
+      )}
     </>
   );
 }
@@ -778,7 +828,7 @@ export function ResumenRegistro({ hecha, onOtra }) {
           {hecha.molde ? (
             <>
               {nf(hecha.ciclos)} ciclos · Estándar {nf(hecha.segundosCiclo)}{" "}
-              s/ciclo · Material procesado {nf(hecha.gramosProcesados)} gr.
+              s/ciclo · Material procesado {formatearKg(hecha.gramosProcesados)}
             </>
           ) : (
             <>
