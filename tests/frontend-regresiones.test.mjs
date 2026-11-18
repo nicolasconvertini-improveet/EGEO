@@ -12,7 +12,7 @@ import {
 mkdirSync(".local", { recursive: true });
 await build({
   stdin: {
-    contents: `export {ResumenRegistro} from './src/pages/Registrar.jsx';export {default as Planta} from './src/pages/Planta.jsx';export {default as Articulos} from './src/pages/Articulos.jsx';export {default as Selector} from './src/components/SelectorArticuloPedido.jsx';export {TarjetasTrabajos} from './src/components/PendientesTrabajo.jsx';`,
+    contents: `export {default as Pedidos} from './src/pages/Pedidos.jsx';export {ResumenRegistro} from './src/pages/Registrar.jsx';export {default as Planta} from './src/pages/Planta.jsx';export {default as Articulos} from './src/pages/Articulos.jsx';export {default as Selector} from './src/components/SelectorArticuloPedido.jsx';export {TarjetasTrabajos} from './src/components/PendientesTrabajo.jsx';`,
     resolveDir: process.cwd(),
   },
   bundle: true,
@@ -43,7 +43,13 @@ test("Planta: las cuatro secciones y Nuevo registro están en una misma barra", 
   const toolbar = html.match(/<div class="planta-toolbar"[\s\S]*?<\/div>/)?.[0];
   assert.ok(toolbar);
   assert.equal((toolbar.match(/<button/g) || []).length, 5);
-  for (const text of ["Moldes", "Máquinas", "Equipos", "Materiales", "Nuevo registro"])
+  for (const text of [
+    "Moldes",
+    "Máquinas",
+    "Equipos",
+    "Materiales",
+    "Nuevo registro",
+  ])
     assert.ok(toolbar.includes(text));
 });
 test("Artículos: selector de categorías visible incluso con artículos sin categoría", () => {
@@ -175,4 +181,41 @@ test("Cierre de inyectado: mostrar productividad y avance en unidades y kilos", 
   ])
     assert.ok(html.includes(texto), texto);
   assert.ok(html.includes("Registrar otra tarea"));
+});
+
+test("Órdenes: por defecto excluir cerradas y permitir filtros explícitos", () => {
+  const peds = [
+    "pendiente",
+    "en_curso",
+    "finalizado",
+    "finalizado_pendientes",
+    "cancelado",
+  ].map((estado, i) => ({
+    id: String(i),
+    codigo: "ORDEN-" + i,
+    estado,
+    cantidad: 10,
+    okAcum: 1,
+    articuloNombre: "Pieza",
+  }));
+  const html = renderToStaticMarkup(
+    createElement(ui.Pedidos, { rol: "operario", peds, setDetail: () => {} }),
+  );
+  assert.ok(html.includes("ORDEN-0"));
+  assert.ok(html.includes("ORDEN-1"));
+  for (const i of [2, 3, 4]) assert.ok(!html.includes("ORDEN-" + i));
+  assert.ok(html.includes('id="filtro-estado-ordenes"'));
+  for (const estado of ["finalizado", "finalizado_pendientes", "cancelado"]) {
+    const filtered = renderToStaticMarkup(
+      createElement(ui.Pedidos, {
+        rol: "operario",
+        peds,
+        setDetail: () => {},
+        prefiltro: { estado },
+      }),
+    );
+    const expected = peds.find((p) => p.estado === estado);
+    assert.ok(filtered.includes(expected.codigo));
+    assert.ok(!filtered.includes("ORDEN-0"));
+  }
 });

@@ -28,6 +28,11 @@ function valorExcel(valor, columna) {
     if (Number.isSafeInteger(numero) && valor.replace(/^-/, "").length <= 15)
       return numero;
   }
+  if (columna.tipo === "float8") {
+    const numero = Number(valor);
+    if (!Number.isFinite(numero)) throw new Error("Duración inválida.");
+    return numero;
+  }
   // Texto explícito: códigos con ceros, UUID, fechas con zona y decimales
   // conservan su representación. Nunca se crean fórmulas desde los datos.
   return { t: "s", v: valor };

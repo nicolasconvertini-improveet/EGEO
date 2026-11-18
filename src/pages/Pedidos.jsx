@@ -25,11 +25,21 @@ import EstadoPedido from "../components/EstadoPedido";
 export default function Pedidos({ rol, peds, setDetail, prefiltro }) {
   const [q, setQ] = useState("");
   // Filtro de estado precargado al llegar desde el tablero (ej.: "en_curso").
-  const [estado, setEstado] = useState(prefiltro?.estado || "");
+  const [estado, setEstado] = useState(prefiltro?.estado || "abiertas");
   const canCreate = rango(rol) >= 1;
   const lista = useMemo(() => {
     const nq = norm(q.trim());
-    const base = estado ? peds.filter((p) => p.estado === estado) : peds;
+    const base =
+      estado === "abiertas"
+        ? peds.filter(
+            (p) =>
+              !["finalizado", "finalizado_pendientes", "cancelado"].includes(
+                p.estado,
+              ),
+          )
+        : estado
+          ? peds.filter((p) => p.estado === estado)
+          : peds;
     if (!nq) return base;
     return base.filter(
       (p) =>
@@ -57,14 +67,30 @@ export default function Pedidos({ rol, peds, setDetail, prefiltro }) {
         onChange={setQ}
         placeholder="Buscar por código o artículo…"
       />
-      {estado && (
-        <div className="filtro-activo">
-          Mostrando sólo: <b>{estadoLabel(estado)}</b>
-          <button className="linkmini" onClick={() => setEstado("")}>
-            Quitar filtro
-          </button>
-        </div>
-      )}
+      <div className="field">
+        <label htmlFor="filtro-estado-ordenes">Estado</label>
+        <select
+          id="filtro-estado-ordenes"
+          value={estado}
+          onChange={(e) => setEstado(e.target.value)}
+        >
+          <option value="abiertas">
+            Abiertas (sin finalizadas ni canceladas)
+          </option>
+          <option value="">Todos los estados</option>
+          {[
+            "pendiente",
+            "en_curso",
+            "finalizado",
+            "finalizado_pendientes",
+            "cancelado",
+          ].map((e) => (
+            <option key={e} value={e}>
+              {estadoLabel(e)}
+            </option>
+          ))}
+        </select>
+      </div>
       {(q || estado) && (
         <div className="search-count">
           {lista.length} de {peds.length} órdenes

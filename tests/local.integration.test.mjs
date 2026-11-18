@@ -62,11 +62,23 @@ test("Docker local: órdenes por proceso, molde multiartículo, historial y perm
       .select()
       .single(),
   );
-  const material = await must(admin.c.from("materiales").insert({codigo:stamp,nombre:stamp+" PP"}).select().single());
-  const maquina2 = await must(admin.c.from("maquinas").insert({codigo:stamp+"-2",nombre:"Segunda inyectora"}).select().single());
+  const material = await must(
+    admin.c
+      .from("materiales")
+      .insert({ codigo: stamp, nombre: stamp + " PP" })
+      .select()
+      .single(),
+  );
+  const maquina2 = await must(
+    admin.c
+      .from("maquinas")
+      .insert({ codigo: stamp + "-2", nombre: "Segunda inyectora" })
+      .select()
+      .single(),
+  );
   const moldeDatos = {
     codigo: stamp,
-    maquinas: [maquina.id,maquina2.id],
+    maquinas: [maquina.id, maquina2.id],
     material_id: material.id,
     colada_gramos: 5,
     material_ciclo: 30,
@@ -133,8 +145,23 @@ test("Docker local: órdenes por proceso, molde multiartículo, historial y perm
       p_actividad: "armado",
     }),
   );
-  await denied(op.c.rpc("gestionar_tarea",{p_accion:"iniciar",p_pedido:pedido.id,p_actividad:"inyectado"}));
-  const tid = await must(op.c.rpc("iniciar_inyectado",{p_pedido:pedido.id,p_montaje:{confirmado:true,subida_minutos:10,calentamiento_minutos:5}}));
+  await denied(
+    op.c.rpc("gestionar_tarea", {
+      p_accion: "iniciar",
+      p_pedido: pedido.id,
+      p_actividad: "inyectado",
+    }),
+  );
+  const tid = await must(
+    op.c.rpc("iniciar_inyectado", {
+      p_pedido: pedido.id,
+      p_montaje: {
+        confirmado: true,
+        subida_minutos: 10,
+        calentamiento_minutos: 5,
+      },
+    }),
+  );
   let t = await must(op.c.from("v_tareas").select("*").eq("id", tid).single());
   await must(
     op.c.rpc("gestionar_tarea", {
@@ -195,8 +222,8 @@ test("Docker local: órdenes por proceso, molde multiartículo, historial y perm
     op.c.from("v_pedidos").select("*").eq("id", pedido.id).single(),
   );
   assert.equal(terminado.estado, "en_curso");
-  assert.equal(terminado.control_molde.subida_minutos,10);
-  assert.equal(terminado.configuracion.maquina_id,maquina2.id);
+  assert.equal(terminado.control_molde.subida_minutos, 10);
+  assert.equal(terminado.configuracion.maquina_id, maquina2.id);
   assert.equal(terminado.ok_acum, 10);
   await must(
     admin.c.rpc("guardar_molde", {
@@ -649,7 +676,7 @@ test("Docker local: órdenes por proceso, molde multiartículo, historial y perm
     pedidoId: uiPedido.id,
     actividad: "inyectado",
     inyectado: true,
-    montaje: {confirmado:true,subida_minutos:0,calentamiento_minutos:3},
+    montaje: { confirmado: true, subida_minutos: 0, calentamiento_minutos: 3 },
   });
   let uiTarea = await api.fetchTareaActiva();
   assert.equal(uiTarea.id, uiId);
@@ -716,36 +743,402 @@ test("Docker local: órdenes por proceso, molde multiartículo, historial y perm
     .reduce((n, t) => n + Number(t.segundos), 0);
   assert.ok(Math.abs(realResumen - realTabla) < 0.001);
   // Circuito completo: primera tarea parcial, retoma por otro operario y cierre único.
-  const ciclo = await must(op.c.from("pedidos").insert({codigo:stamp+"-CICLO",proceso:"inyectado",molde_id:molde,maquina_id:maquina.id,material_id:material.id,material_confirmado:true,cantidad:2}).select().single());
-  await denied(op.c.rpc("iniciar_inyectado",{p_pedido:ciclo.id}));
-  await denied(op.c.rpc("iniciar_inyectado",{p_pedido:ciclo.id,p_montaje:{confirmado:true,subida_minutos:"",calentamiento_minutos:2}}));
-  await denied(op.c.from("pedido_montajes").insert({pedido_id:ciclo.id,subida_minutos:1,calentamiento_minutos:1,montado_por:op.id}));
-  async function registrarUna(c,montaje) {
-    const id = await must(c.rpc("iniciar_inyectado",{p_pedido:ciclo.id,p_montaje:montaje}));
-    let v = await must(c.from("v_tareas").select("*").eq("id",id).single());
-    await must(c.rpc("gestionar_tarea",{p_accion:"finalizar",p_tarea:id,p_revision:v.revision}));
-    v = await must(c.from("v_tareas").select("*").eq("id",id).single());
-    await must(c.rpc("confirmar_tarea_molde",{p_tarea:id,p_revision:v.revision,p_resultados:[{articulo_id:a[0].id,piezas_ok:3,piezas_scrap:0}],p_observaciones:""}));
+  const ciclo = await must(
+    op.c
+      .from("pedidos")
+      .insert({
+        codigo: stamp + "-CICLO",
+        proceso: "inyectado",
+        molde_id: molde,
+        maquina_id: maquina.id,
+        material_id: material.id,
+        material_confirmado: true,
+        cantidad: 2,
+      })
+      .select()
+      .single(),
+  );
+  await denied(op.c.rpc("iniciar_inyectado", { p_pedido: ciclo.id }));
+  await denied(
+    op.c.rpc("iniciar_inyectado", {
+      p_pedido: ciclo.id,
+      p_montaje: {
+        confirmado: true,
+        subida_minutos: "",
+        calentamiento_minutos: 2,
+      },
+    }),
+  );
+  await denied(
+    op.c
+      .from("pedido_montajes")
+      .insert({
+        pedido_id: ciclo.id,
+        subida_minutos: 1,
+        calentamiento_minutos: 1,
+        montado_por: op.id,
+      }),
+  );
+  async function registrarUna(c, montaje) {
+    const id = await must(
+      c.rpc("iniciar_inyectado", { p_pedido: ciclo.id, p_montaje: montaje }),
+    );
+    let v = await must(c.from("v_tareas").select("*").eq("id", id).single());
+    await must(
+      c.rpc("gestionar_tarea", {
+        p_accion: "finalizar",
+        p_tarea: id,
+        p_revision: v.revision,
+      }),
+    );
+    v = await must(c.from("v_tareas").select("*").eq("id", id).single());
+    await must(
+      c.rpc("confirmar_tarea_molde", {
+        p_tarea: id,
+        p_revision: v.revision,
+        p_resultados: [{ articulo_id: a[0].id, piezas_ok: 3, piezas_scrap: 0 }],
+        p_observaciones: "",
+      }),
+    );
   }
-  await registrarUna(op.c,{confirmado:true,subida_minutos:7,calentamiento_minutos:3});
-  let estadoCiclo = await must(op.c.from("v_pedidos").select("*").eq("id",ciclo.id).single());
-  await denied(op.c.rpc("cerrar_molde",{p_pedido:ciclo.id,p_revision:estadoCiclo.estado_revision,p_bajada_minutos:4,p_limpieza:true}));
-  await registrarUna(otherOp.c,null);
-  estadoCiclo = await must(op.c.from("v_pedidos").select("*").eq("id",ciclo.id).single());
-  assert.equal(estadoCiclo.estado,"en_curso");
-  assert.equal(estadoCiclo.control_molde.subida_minutos,7);
-  await denied(op.c.rpc("iniciar_inyectado",{p_pedido:ciclo.id}));
-  await denied(op.c.rpc("cerrar_molde",{p_pedido:ciclo.id,p_revision:estadoCiclo.estado_revision,p_bajada_minutos:4,p_limpieza:false}));
-  const cierreParams={p_pedido:ciclo.id,p_revision:estadoCiclo.estado_revision,p_bajada_minutos:4,p_limpieza:true};
-  await must(op.c.rpc("cerrar_molde",cierreParams));
-  await must(op.c.rpc("cerrar_molde",cierreParams));
-  estadoCiclo=await must(op.c.from("v_pedidos").select("*").eq("id",ciclo.id).single());
-  assert.equal(estadoCiclo.estado,"finalizado");
-  const tiempos = await must(admin.c.from("v_tiempos_molde").select("*").eq("pedido_id",ciclo.id));
-  assert.equal(tiempos.length,3);
-  assert.equal(tiempos.reduce((n,r) => n+Number(r.minutos),0),14);
-  const pausas = await must(admin.c.rpc("exportar_reporte",{p_reporte:"pausas"}));
-  assert.equal(pausas.filas.filter((r) => r.nro_orden===ciclo.codigo).length,3);
+  await registrarUna(op.c, {
+    confirmado: true,
+    subida_minutos: 7,
+    calentamiento_minutos: 3,
+  });
+  let estadoCiclo = await must(
+    op.c.from("v_pedidos").select("*").eq("id", ciclo.id).single(),
+  );
+  await denied(
+    op.c.rpc("cerrar_molde", {
+      p_pedido: ciclo.id,
+      p_revision: estadoCiclo.estado_revision,
+      p_bajada_minutos: 4,
+      p_limpieza: true,
+    }),
+  );
+  await registrarUna(otherOp.c, null);
+  estadoCiclo = await must(
+    op.c.from("v_pedidos").select("*").eq("id", ciclo.id).single(),
+  );
+  assert.equal(estadoCiclo.estado, "en_curso");
+  assert.equal(estadoCiclo.control_molde.subida_minutos, 7);
+  await denied(op.c.rpc("iniciar_inyectado", { p_pedido: ciclo.id }));
+  await denied(
+    op.c.rpc("cerrar_molde", {
+      p_pedido: ciclo.id,
+      p_revision: estadoCiclo.estado_revision,
+      p_bajada_minutos: 4,
+      p_limpieza: false,
+    }),
+  );
+  const cierreParams = {
+    p_pedido: ciclo.id,
+    p_revision: estadoCiclo.estado_revision,
+    p_bajada_minutos: 4,
+    p_limpieza: true,
+  };
+  await must(op.c.rpc("cerrar_molde", cierreParams));
+  await must(op.c.rpc("cerrar_molde", cierreParams));
+  estadoCiclo = await must(
+    op.c.from("v_pedidos").select("*").eq("id", ciclo.id).single(),
+  );
+  assert.equal(estadoCiclo.estado, "finalizado");
+  const tiempos = await must(
+    admin.c.from("v_tiempos_molde").select("*").eq("pedido_id", ciclo.id),
+  );
+  assert.equal(tiempos.length, 3);
+  assert.equal(
+    tiempos.reduce((n, r) => n + Number(r.minutos), 0),
+    14,
+  );
+  const pausas = await must(
+    admin.c.rpc("exportar_reporte", { p_reporte: "pausas" }),
+  );
+  assert.equal(
+    pausas.filas.filter((r) => r.nro_orden === ciclo.codigo).length,
+    3,
+  );
+  // Cierre operativo desde registro: permisos, transacción y cantidades pendientes.
+  const ordenCierre = async (codigo, cantidad = 100) =>
+    must(
+      op.c
+        .from("pedidos")
+        .insert({
+          codigo: stamp + codigo,
+          proceso: "rebabado",
+          articulo_id: a[0].id,
+          cantidad,
+        })
+        .select()
+        .single(),
+    );
+  const tareaCierre = async (
+    c,
+    pedido,
+    actividad = "rebabado",
+    montaje = null,
+  ) => {
+    const id = await must(
+      actividad === "inyectado"
+        ? c.rpc("iniciar_inyectado", {
+            p_pedido: pedido.id,
+            p_montaje: montaje,
+          })
+        : c.rpc("gestionar_tarea", {
+            p_accion: "iniciar",
+            p_pedido: pedido.id,
+            p_actividad: actividad,
+          }),
+    );
+    let t = await must(c.from("v_tareas").select("*").eq("id", id).single());
+    await must(
+      c.rpc("gestionar_tarea", {
+        p_accion: "finalizar",
+        p_tarea: id,
+        p_revision: t.revision,
+      }),
+    );
+    return must(c.from("v_tareas").select("*").eq("id", id).single());
+  };
+  const ordenParcial = await ordenCierre("-CIERRE-PARCIAL");
+  const parcial = await tareaCierre(op.c, ordenParcial);
+  const cierreParcial = {
+    p_tarea: parcial.id,
+    p_revision: parcial.revision,
+    p_ok: 2,
+    p_scrap: 1,
+  };
+  const anon = createClient(env.API_URL, env.ANON_KEY, opts);
+  await denied(anon.rpc("finalizar_orden_desde_tarea", cierreParcial));
+  await denied(otherOp.c.rpc("finalizar_orden_desde_tarea", cierreParcial));
+  await denied(
+    op.c
+      .from("pedidos")
+      .update({ estado: "finalizado" })
+      .eq("id", ordenParcial.id),
+  );
+  await must(op.c.from("perfiles").update({ rol: "admin" }).eq("id", op.id));
+  assert.equal(
+    (await must(root.from("perfiles").select("rol").eq("id", op.id).single()))
+      .rol,
+    "operario",
+  );
+  await denied(
+    op.c.rpc("finalizar_orden_desde_tarea", {
+      ...cierreParcial,
+      p_revision: 0,
+    }),
+  );
+  await denied(
+    op.c.rpc("finalizar_orden_desde_tarea", {
+      ...cierreParcial,
+      p_ok: 0,
+      p_scrap: 0,
+    }),
+  );
+  assert.equal(
+    (
+      await must(
+        op.c.from("tareas").select("confirmada").eq("id", parcial.id).single(),
+      )
+    ).confirmada,
+    false,
+  );
+  // Otra tarea impide cerrar, incluso si ya terminó pero todavía no se registró.
+  const ajena = await tareaCierre(otherOp.c, ordenParcial);
+  await denied(op.c.rpc("finalizar_orden_desde_tarea", cierreParcial));
+  await must(
+    otherOp.c.rpc("gestionar_tarea", {
+      p_accion: "confirmar",
+      p_tarea: ajena.id,
+      p_revision: ajena.revision,
+      p_ok: 1,
+      p_scrap: 0,
+    }),
+  );
+  await must(op.c.rpc("finalizar_orden_desde_tarea", cierreParcial));
+  assert.equal(
+    (
+      await must(
+        op.c
+          .from("pedidos")
+          .select("estado")
+          .eq("id", ordenParcial.id)
+          .single(),
+      )
+    ).estado,
+    "finalizado_pendientes",
+  );
+  await denied(op.c.rpc("finalizar_orden_desde_tarea", cierreParcial));
+  await denied(
+    op.c.rpc("gestionar_tarea", {
+      p_accion: "iniciar",
+      p_pedido: ordenParcial.id,
+      p_actividad: "rebabado",
+    }),
+  );
+  const history = await must(
+    admin.c
+      .from("pedido_estado_historial")
+      .select("*")
+      .eq("pedido_id", ordenParcial.id)
+      .eq("estado_nuevo", "finalizado_pendientes"),
+  );
+  assert.equal(history.length, 1);
+  assert.equal(history[0].usuario_id, op.id);
+  for (const cantidad of [2, 3]) {
+    const completa = await ordenCierre("-CIERRE-" + cantidad, cantidad);
+    const t = await tareaCierre(op.c, completa);
+    await must(
+      op.c.rpc("finalizar_orden_desde_tarea", {
+        p_tarea: t.id,
+        p_revision: t.revision,
+        p_ok: 3,
+        p_scrap: 0,
+      }),
+    );
+    assert.equal(
+      (
+        await must(
+          op.c.from("pedidos").select("estado").eq("id", completa.id).single(),
+        )
+      ).estado,
+      "finalizado",
+    );
+  }
+  const sinProduccion = await ordenCierre("-CIERRE-CERO");
+  const cero = await tareaCierre(op.c, sinProduccion);
+  await must(
+    op.c.rpc("finalizar_orden_desde_tarea", {
+      p_tarea: cero.id,
+      p_revision: cero.revision,
+      p_ok: 0,
+      p_scrap: 0,
+      p_observaciones: "Sin producción por falla",
+    }),
+  );
+  assert.equal(
+    (
+      await must(
+        op.c
+          .from("pedidos")
+          .select("estado")
+          .eq("id", sinProduccion.id)
+          .single(),
+      )
+    ).estado,
+    "finalizado_pendientes",
+  );
+  const moldeParcial = await must(
+    op.c
+      .from("pedidos")
+      .insert({
+        codigo: stamp + "-MOLDE-PARCIAL",
+        proceso: "inyectado",
+        molde_id: molde,
+        maquina_id: maquina.id,
+        material_id: material.id,
+        material_confirmado: true,
+        cantidad: 10,
+      })
+      .select()
+      .single(),
+  );
+  const tm = await tareaCierre(op.c, moldeParcial, "inyectado", {
+    confirmado: true,
+    subida_minutos: 1,
+    calentamiento_minutos: 2,
+  });
+  const cm = {
+    p_tarea: tm.id,
+    p_revision: tm.revision,
+    p_resultados: [{ articulo_id: a[0].id, piezas_ok: 3, piezas_scrap: 0 }],
+    p_bajada_minutos: 4,
+    p_limpieza: true,
+  };
+  await denied(
+    op.c.rpc("finalizar_orden_desde_tarea", { ...cm, p_limpieza: false }),
+  );
+  await denied(
+    op.c.rpc("finalizar_orden_desde_tarea", { ...cm, p_bajada_minutos: -1 }),
+  );
+  await denied(
+    op.c.rpc("finalizar_orden_desde_tarea", {
+      ...cm,
+      p_resultados: [{ articulo_id: a[0].id, piezas_ok: 1, piezas_scrap: 0 }],
+    }),
+  );
+  assert.equal(
+    (
+      await must(
+        op.c.from("tareas").select("confirmada").eq("id", tm.id).single(),
+      )
+    ).confirmada,
+    false,
+  );
+  assert.equal(
+    (
+      await must(
+        op.c
+          .from("pedido_montajes")
+          .select("bajado_en")
+          .eq("pedido_id", moldeParcial.id)
+          .single(),
+      )
+    ).bajado_en,
+    null,
+  );
+  await must(op.c.rpc("finalizar_orden_desde_tarea", cm));
+  const mp = await must(
+    op.c.from("v_pedidos").select("*").eq("id", moldeParcial.id).single(),
+  );
+  assert.equal(mp.estado, "finalizado_pendientes");
+  assert.equal(mp.control_molde.bajada_minutos, 4);
+  assert.equal(mp.control_molde.limpieza_confirmada, true);
+  await denied(
+    admin.c.rpc("editar_cantidad_pedido", {
+      p_pedido: moldeParcial.id,
+      p_cantidad: 11,
+    }),
+  );
+  // Duración numérica tomada de timestamps reales, incluidos días y pausas.
+  const exportT = await must(
+    admin.c.from("v_tareas").select("*").eq("id", parcial.id).single(),
+  );
+  const finExport = "2000-01-03T12:00:00.000Z";
+  const inicioExport = new Date(
+    new Date(finExport).getTime() - 90090000,
+  ).toISOString();
+  await must(
+    admin.c.rpc("admin_editar_tarea", {
+      p_tarea: exportT.id,
+      p_revision: exportT.revision,
+      p_inicio: inicioExport,
+      p_fin: finExport,
+      p_ok: 2,
+      p_scrap: 1,
+      p_observaciones: "",
+      p_motivo: "Prueba de duración",
+    }),
+  );
+  const reporteTiempo = await must(
+    admin.c.rpc("exportar_reporte", { p_reporte: "tareas" }),
+  );
+  const filaTiempo = reporteTiempo.filas.find(
+    (x) => x.nro_orden === ordenParcial.codigo && x.piezas_ok === "2",
+  );
+  assert.equal(Number(filaTiempo.duracion_minutos), 1501.5);
+  assert.equal(
+    reporteTiempo.columnas.find((c) => c.nombre === "duracion_minutos").tipo,
+    "float8",
+  );
+  await denied(op.c.rpc("exportar_reporte", { p_reporte: "tareas" }));
+  const inactivo = await usuario("operario");
+  await must(
+    root.from("perfiles").update({ activo: false }).eq("id", inactivo.id),
+  );
+  await denied(inactivo.c.rpc("finalizar_orden_desde_tarea", cierreParcial));
   await api.supabase.auth.signOut();
   console.log("Datos de prueba identificados con prefijo " + stamp);
 });

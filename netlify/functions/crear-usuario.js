@@ -12,7 +12,10 @@
 import { exigirSesion, json } from "../lib/sesion.js";
 
 export const handler = async (event) => {
-  if (event.httpMethod !== "POST") return json(405, { error: "Método no permitido" });
+  if (event.httpMethod !== "POST")
+    return json(405, { error: "Método no permitido" });
+  if (Buffer.byteLength(event.body || "", "utf8") > 16384)
+    return json(413, { error: "Solicitud demasiado grande" });
   const acceso = await exigirSesion(event, ["admin"]);
   if (acceso.response) return acceso.response;
   const { admin } = acceso;
@@ -24,18 +27,25 @@ export const handler = async (event) => {
     return json(400, { error: "Datos inválidos" });
   }
 
-  if (!body || typeof body !== "object" || Array.isArray(body)) return json(400, { error: "Datos inválidos" });
-  const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+  if (!body || typeof body !== "object" || Array.isArray(body))
+    return json(400, { error: "Datos inválidos" });
+  const email =
+    typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
   const password = typeof body.password === "string" ? body.password : "";
   const nombre = typeof body.nombre === "string" ? body.nombre.trim() : "";
   const rol = body.rol || "operario";
 
-  if (!email || !email.includes("@")) return json(400, { error: "E-mail inválido" });
-  if (password.length < 6)
+  if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    return json(400, { error: "E-mail inválido" });
+  if (password.length < 12 || password.length > 128)
     return json(400, {
-      error: "La contraseña debe tener al menos 6 caracteres",
+      error: "La contraseña debe tener entre 12 y 128 caracteres",
     });
-  if (!["operario", "supervisor", "admin"].includes(rol)) return json(400, { error: "Rol inválido" });
+  if (!["operario", "supervisor", "admin"].includes(rol))
+    return json(400, { error: "Rol inválido" });
+
+  if (nombre.length > 120)
+    return json(400, { error: "El nombre admite hasta 120 caracteres" });
 
   // 4) Crear el usuario (ya confirmado, para uso interno)
   const { data: creado, error: createErr } = await admin.auth.admin.createUser({
@@ -47,7 +57,9 @@ export const handler = async (event) => {
   if (createErr) {
     const dup = /already|registered|exists/i.test(createErr.message || "");
     return json(dup ? 409 : 400, {
-      error: dup ? "Ya existe un usuario con ese e-mail" : createErr.message,
+      error: dup
+        ? "Ya existe un usuario con ese e-mail"
+        : "No se pudo crear la cuenta. Revisá los datos y la política de contraseñas.",
     });
   }
 

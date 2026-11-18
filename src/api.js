@@ -479,6 +479,21 @@ export async function confirmarTarea(
   });
 }
 
+export async function finalizarOrdenDesdeTarea(tarea, datos, cierreMolde) {
+  const { data, error } = await supabase.rpc("finalizar_orden_desde_tarea", {
+    p_tarea: tarea.id,
+    p_revision: tarea.revision,
+    p_ok: datos.ok,
+    p_scrap: datos.scrap,
+    p_observaciones: datos.observaciones,
+    p_resultados: datos.resultados,
+    p_bajada_minutos: cierreMolde ? Number(cierreMolde.bajada) : null,
+    p_limpieza: cierreMolde?.limpieza === true,
+  });
+  if (error) throw error;
+  return data;
+}
+
 export async function fetchMotivosParada() {
   const { data, error } = await supabase
     .from("motivos_parada")

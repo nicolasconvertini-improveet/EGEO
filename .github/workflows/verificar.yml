@@ -1,0 +1,24 @@
+name: Verificar aplicación
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm audit --audit-level=moderate
+      - run: npm run test:indicadores
+      - run: npm run test:frontend
+      - run: npm run test:inyectado
+      - run: npm run test:seguridad
+      - run: npm run release:check
+      - run: npm run build
+        env:
+          VITE_SUPABASE_URL: https://example.supabase.co
+          VITE_SUPABASE_ANON_KEY: sb_publishable_test_only
