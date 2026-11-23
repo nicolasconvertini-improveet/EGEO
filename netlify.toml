@@ -4,6 +4,7 @@
   functions = "netlify/functions"
 
 [build.environment]
+  NODE_VERSION = "24"
   # La URL del proyecto es pública y también se utiliza en el frontend.
   # La clave SUPABASE_SERVICE_ROLE_KEY continúa protegida por el escaneo.
   SECRETS_SCAN_OMIT_KEYS = "SUPABASE_URL"
@@ -13,3 +14,13 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data:; font-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Strict-Transport-Security = "max-age=31536000"

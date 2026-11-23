@@ -93,6 +93,7 @@ export async function fetchPedidos() {
     cantidad: p.cantidad,
     estado: p.estado,
     estadoRevision: p.estado_revision,
+    finalizadoEn: p.finalizado_en || null,
     okAcum: p.ok_acum, // piezas completas (etapa más atrasada)
     okBruto: p.ok_bruto, // volumen total trabajado
     etapasReq: p.etapas_req,
@@ -477,6 +478,21 @@ export async function confirmarTarea(
     p_scrap: scrap,
     p_observaciones: observaciones,
   });
+}
+
+export async function finalizarOrdenDesdeTarea(tarea, datos, cierreMolde) {
+  const { data, error } = await supabase.rpc("finalizar_orden_desde_tarea", {
+    p_tarea: tarea.id,
+    p_revision: tarea.revision,
+    p_ok: datos.ok,
+    p_scrap: datos.scrap,
+    p_observaciones: datos.observaciones,
+    p_resultados: datos.resultados,
+    p_bajada_minutos: cierreMolde ? Number(cierreMolde.bajada) : null,
+    p_limpieza: cierreMolde?.limpieza === true,
+  });
+  if (error) throw error;
+  return data;
 }
 
 export async function fetchMotivosParada() {

@@ -21,24 +21,39 @@ import {
 import SearchBox from "../components/SearchBox";
 import Highlight from "../components/Highlight";
 import EstadoPedido from "../components/EstadoPedido";
+import {
+  ESTADOS_ORDENES,
+  estadosIniciales,
+  filtrarOrdenes,
+  errorFechasOrdenes,
+  diaFinalizacion,
+} from "../lib/filtrosOrdenes";
 
 export default function Pedidos({ rol, peds, setDetail, prefiltro }) {
   const [q, setQ] = useState("");
-  // Filtro de estado precargado al llegar desde el tablero (ej.: "en_curso").
-  const [estado, setEstado] = useState(prefiltro?.estado || "");
+  const [estados, setEstados] = useState(() => estadosIniciales(prefiltro));
+  const [proceso, setProceso] = useState("");
+  const [desde, setDesde] = useState("");
+  const [hasta, setHasta] = useState("");
   const canCreate = rango(rol) >= 1;
-  const lista = useMemo(() => {
-    const nq = norm(q.trim());
-    const base = estado ? peds.filter((p) => p.estado === estado) : peds;
-    if (!nq) return base;
-    return base.filter(
-      (p) =>
-        norm(p.codigo).includes(nq) ||
-        norm(p.articuloNombre).includes(nq) ||
-        norm(p.articuloCodigo).includes(nq) ||
-        norm(estadoLabel(p.estado)).includes(nq),
+  const errorFechas = errorFechasOrdenes(desde, hasta);
+  const lista = useMemo(
+    () => filtrarOrdenes(peds, { estados, proceso, desde, hasta, q }),
+    [peds, estados, proceso, desde, hasta, q],
+  );
+  const alternarEstado = (estado) =>
+    setEstados((actual) =>
+      actual.includes(estado)
+        ? actual.filter((e) => e !== estado)
+        : [...actual, estado],
     );
-  }, [peds, q, estado]);
+  const restablecer = () => {
+    setEstados(estadosIniciales());
+    setProceso("");
+    setDesde("");
+    setHasta("");
+    setQ("");
+  };
 
   return (
     <>
@@ -57,19 +72,103 @@ export default function Pedidos({ rol, peds, setDetail, prefiltro }) {
         onChange={setQ}
         placeholder="Buscar por código o artículo…"
       />
-      {estado && (
-        <div className="filtro-activo">
-          Mostrando sólo: <b>{estadoLabel(estado)}</b>
-          <button className="linkmini" onClick={() => setEstado("")}>
-            Quitar filtro
-          </button>
+      <section className="card filtros-ordenes" aria-label="Filtros de órdenes">
+        <fieldset className="filtros-estados">
+          <legend>Estados</legend>
+          <div className="opciones-estados">
+            {ESTADOS_ORDENES.map((estado) => (
+              <label key={estado}>
+                <input
+                  type="checkbox"
+                  checked={estados.includes(estado)}
+                  onChange={() => alternarEstado(estado)}
+                />
+                {estadoLabel(estado)}
+              </label>
+            ))}
+          </div>
+          <div className="filtros-atajos">
+            <button
+              type="button"
+              className="linkmini"
+              onClick={() => setEstados([...ESTADOS_ORDENES])}
+            >
+              Seleccionar todos
+            </button>
+            <button
+              type="button"
+              className="linkmini"
+              onClick={() => setEstados([])}
+            >
+              Deseleccionar todos
+            </button>
+          </div>
+        </fieldset>
+        <div className="filtros-ordenes-campos">
+          <div className="field">
+            <label htmlFor="filtro-proceso-ordenes">Proceso</label>
+            <select
+              id="filtro-proceso-ordenes"
+              value={proceso}
+              onChange={(e) => setProceso(e.target.value)}
+            >
+              <option value="">Todos los procesos</option>
+              {ACTS.map((a) => (
+                <option key={a.key} value={a.key}>
+                  {a.label}
+                </option>
+              ))}
+              <option value="historica">Histórica multietapa</option>
+            </select>
+          </div>
+          <div className="field">
+            <label htmlFor="ordenes-finalizacion-desde">
+              Finalización desde
+            </label>
+            <input
+              id="ordenes-finalizacion-desde"
+              type="date"
+              value={desde}
+              max={hasta || undefined}
+              aria-describedby="ayuda-fechas-ordenes"
+              aria-invalid={!!errorFechas}
+              onChange={(e) => setDesde(e.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="ordenes-finalizacion-hasta">
+              Finalización hasta
+            </label>
+            <input
+              id="ordenes-finalizacion-hasta"
+              type="date"
+              value={hasta}
+              min={desde || undefined}
+              aria-describedby="ayuda-fechas-ordenes"
+              aria-invalid={!!errorFechas}
+              onChange={(e) => setHasta(e.target.value)}
+            />
+          </div>
         </div>
-      )}
-      {(q || estado) && (
-        <div className="search-count">
-          {lista.length} de {peds.length} órdenes
-        </div>
-      )}
+        <p id="ayuda-fechas-ordenes" className="filtros-ayuda">
+          El rango incluye ambos días, en hora de Argentina. Al filtrar por
+          fecha se muestran sólo órdenes con finalización registrada.
+        </p>
+        {errorFechas && (
+          <p className="hint-err" role="alert">
+            {errorFechas}
+          </p>
+        )}
+        {estados.length === 0 && (
+          <p role="status">Seleccioná al menos un estado para ver órdenes.</p>
+        )}
+        <button type="button" className="btn btn-ghost" onClick={restablecer}>
+          Restablecer filtros
+        </button>
+      </section>
+      <div className="search-count" role="status" aria-live="polite">
+        {lista.length} de {peds.length} órdenes
+      </div>
 
       <div className="lista">
         {lista.map((p) => {
@@ -90,6 +189,16 @@ export default function Pedidos({ rol, peds, setDetail, prefiltro }) {
                     <Highlight text={p.articuloNombre} query={q} /> ·{" "}
                     {nf(p.cantidad)} {p.moldeId ? "ciclos" : "u."} ·{" "}
                     {p.proceso ? actLabel(p.proceso) : "Histórica multietapa"}
+                    {p.finalizadoEn && (
+                      <>
+                        {" "}
+                        · Finalización:{" "}
+                        {diaFinalizacion(p.finalizadoEn)
+                          .split("-")
+                          .reverse()
+                          .join("/")}
+                      </>
+                    )}
                   </div>
                 </div>
                 <span className={"badge " + estadoBadge(p.estado)}>

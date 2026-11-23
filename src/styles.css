@@ -1932,3 +1932,17 @@ mark {
 .modal-molde input[type=checkbox] {flex:0 0 auto;margin-top:3px;}
 .modal-molde .confirm-acciones {flex-wrap:wrap;}
 .modal-molde .confirm-acciones .btn {flex:1 1 140px;min-width:0;height:auto;min-height:44px;padding:12px;white-space:normal;}
+
+/* Filtros combinables de órdenes. */
+.filtros-ordenes {margin:14px 0;}
+.filtros-estados {border:0;padding:0;margin:0;min-width:0;}
+.filtros-estados legend {font-size:13px;font-weight:600;margin-bottom:8px;}
+.opciones-estados {display:flex;flex-wrap:wrap;gap:8px 18px;}
+.opciones-estados label {display:flex;align-items:center;gap:8px;min-height:36px;font-size:13px;cursor:pointer;}
+.opciones-estados input[type=checkbox] {width:18px;height:18px;margin:0;flex:0 0 auto;accent-color:var(--ink);}
+.filtros-atajos {display:flex;flex-wrap:wrap;gap:16px;margin-top:8px;}
+.filtros-ordenes-campos {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}
+.filtros-ordenes-campos .field {min-width:0;}
+.filtros-ordenes-campos input,.filtros-ordenes-campos select {min-width:0;max-width:100%;}
+.filtros-ayuda {font-size:12px;color:var(--ink2);}
+@media(max-width:639px) {.filtros-ordenes-campos {grid-template-columns:minmax(0,1fr);gap:0;}}

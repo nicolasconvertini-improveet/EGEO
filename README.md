@@ -33,3 +33,7 @@ Mantenimiento y molienda comparten solicitud, asignación, inicio y resolución;
 ## Verificación
 
 `npm run build`, `npm run test:indicadores`, `npm run test:frontend` y `npm run test:inyectado` no modifican la base real. `npm run test:local` requiere Docker y genera fixtures identificados con prefijo test-.
+
+## Actualización de noviembre
+
+Ver [seguridad y cierre de órdenes](docs/seguridad-y-cierre-20261118.md) para los cambios, pruebas y pasos pendientes de publicación.

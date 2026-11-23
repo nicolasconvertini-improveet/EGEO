@@ -6,20 +6,26 @@ const TABLAS = [
   {
     nombre: "mantenimientos",
     titulo: "Mantenimientos",
-    detalle: "Registrado por, fecha de ejecución, detalle, preventivo (Sí/No) y minutos.",
+    detalle:
+      "Registrado por, fecha de ejecución, detalle, preventivo (Sí/No) y minutos.",
   },
   {
     nombre: "pausas",
     titulo: "Pausas",
-    detalle: "Nro. de orden, usuario, motivo, inicio, fin y tiempo total de cada pausa (HH:MM:SS). Incluye los tiempos declarados de subida, calentamiento y bajada; su inicio representa la fecha de registro y su fin queda vacío.",
+    detalle:
+      "Nro. de orden, usuario, motivo, inicio, fin y tiempo total de cada pausa (HH:MM:SS). Incluye los tiempos declarados de subida, calentamiento y bajada; su inicio representa la fecha de registro y su fin queda vacío.",
   },
   {
     nombre: "tareas",
     titulo: "Tareas",
     detalle:
-      "Nro. de orden, actividad, inicio, fin, operario, piezas OK, piezas scrap, observaciones, código y descripción del artículo y cantidad a fabricar de la orden. Solo tareas registradas.",
+      "Nro. de orden, actividad, inicio, fin, duración total en minutos (incluye pausas), operario, piezas OK, piezas scrap, observaciones, código y descripción del artículo y cantidad a fabricar de la orden. Solo tareas registradas.",
   },
-  { nombre: "articulos", titulo: "Artículos", detalle: "Maestro de artículos completo, incluidos los inactivos." },
+  {
+    nombre: "articulos",
+    titulo: "Artículos",
+    detalle: "Maestro de artículos completo, incluidos los inactivos.",
+  },
 ];
 
 export default function Exportar({ rol }) {
@@ -30,7 +36,8 @@ export default function Exportar({ rol }) {
   const control = useRef(null);
   useEffect(() => () => control.current?.abort(), []);
 
-  if (rol !== "admin") return <div className="empty">Acceso exclusivo para administradores.</div>;
+  if (rol !== "admin")
+    return <div className="empty">Acceso exclusivo para administradores.</div>;
 
   const descargar = async (tabla) => {
     if (control.current) return;
@@ -41,10 +48,14 @@ export default function Exportar({ rol }) {
     setResultado(null);
     setEstado("Preparando la descarga…");
     try {
-      const res = await descargarTablaExcel(tabla, { signal: actual.signal, onEstado: setEstado });
+      const res = await descargarTablaExcel(tabla, {
+        signal: actual.signal,
+        onEstado: setEstado,
+      });
       if (!actual.signal.aborted) setResultado(res);
     } catch (e) {
-      if (!actual.signal.aborted) setError(e?.message || "No se pudo exportar. Volvé a intentarlo.");
+      if (!actual.signal.aborted)
+        setError(e?.message || "No se pudo exportar. Volvé a intentarlo.");
     } finally {
       if (!actual.signal.aborted) {
         setTablaActiva(null);
@@ -56,7 +67,9 @@ export default function Exportar({ rol }) {
 
   return (
     <>
-      <p style={{ color: "var(--ink2)", marginTop: 0 }}>Descargá cada reporte en un Excel independiente.</p>
+      <p style={{ color: "var(--ink2)", marginTop: 0 }}>
+        Descargá cada reporte en un Excel independiente.
+      </p>
       {TABLAS.map((tabla) => (
         <div className="card" key={tabla.nombre} style={{ marginBottom: 14 }}>
           <h2 style={{ fontSize: 17, margin: "0 0 6px" }}>{tabla.titulo}</h2>
@@ -75,13 +88,18 @@ export default function Exportar({ rol }) {
           </button>
         </div>
       ))}
-      <div role="status" aria-live="polite" style={{ overflowWrap: "anywhere" }}>
+      <div
+        role="status"
+        aria-live="polite"
+        style={{ overflowWrap: "anywhere" }}
+      >
         {estado && <p>{estado}</p>}
         {resultado && (
           <p>
             Archivo preparado: <strong>{resultado.nombre}</strong>
             <br />
-            {resultado.filas.toLocaleString("es-AR")} registros. Revisá las descargas del navegador.
+            {resultado.filas.toLocaleString("es-AR")} registros. Revisá las
+            descargas del navegador.
           </p>
         )}
       </div>

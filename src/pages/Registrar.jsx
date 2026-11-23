@@ -1,5 +1,9 @@
 import { InicioInyectado, CierreMolde } from "../components/ControlMolde";
-import { pendienteCierreMolde, formatearKg } from "../lib/montaje";
+import {
+  pendienteCierreMolde,
+  formatearKg,
+  minutosValidos,
+} from "../lib/montaje";
 import React, {
   useState,
   useEffect,
@@ -13,6 +17,7 @@ import {
   iniciarTarea,
   finalizarTarea,
   confirmarTarea,
+  finalizarOrdenDesdeTarea,
   pausarTarea,
   reanudarTarea,
   fetchEtapasPedido,
@@ -60,6 +65,9 @@ export default function Registrar({
   const [cargandoMotivos, setCargandoMotivos] = useState(true);
   const [errorMotivos, setErrorMotivos] = useState("");
   const [confirmarFin, setConfirmarFin] = useState(false);
+  const [confirmarOrden, setConfirmarOrden] = useState(false);
+  const [bajadaOrden, setBajadaOrden] = useState("");
+  const [limpiezaOrden, setLimpiezaOrden] = useState(false);
 
   useEffect(() => {
     let vigente = true;
@@ -267,46 +275,61 @@ export default function Registrar({
     motivo && ejecutar(() => pausarTarea(activa, motivo), "Tarea pausada");
   const reanudar = () =>
     ejecutar(() => reanudarTarea(activa), "Tarea reanudada");
-  const confirmar = () =>
-    ejecutar(async () => {
-      if (errorInyectado) throw new Error(errorInyectado);
-      await confirmarTarea(activa, {
-        ok: totalOk,
-        scrap: totalScrap,
-        observaciones,
-        resultados: articulosMolde.map((a) => {
-          const r = resultados.find((r) => r.articulo_id === a.articulo_id);
-          return {
-            articulo_id: a.articulo_id,
-            piezas_ok: r?.piezas_ok || 0,
-            piezas_scrap: r?.piezas_scrap || 0,
-          };
-        }),
-      });
-      setHecha({
-        art: findArt(arts, activa.articuloId),
-        molde: activa.moldeId ? ordenActiva?.configuracion?.codigo : null,
-        act: activa.actividad,
-        ok: totalOk,
-        scrap: totalScrap,
-        realSec: activa.realSec,
-        productividad: cargaInyectado.productividad,
-        ciclos: cargaInyectado.ciclos,
-        segundosCiclo: Number(ordenActiva?.configuracion?.segundos_ciclo),
-        gramosProcesados:
-          cargaInyectado.ciclos *
-          Number(ordenActiva?.configuracion?.material_ciclo || 0),
-        pedido: ordenActiva,
-        resultados: cargaInyectado.filas.map((f) => ({
-          articulo_id: f.articulo_id,
-          piezas_ok: f.ok,
-          piezas_scrap: f.scrap,
-        })),
-      });
-      setOk(0);
-      setScrap(0);
-      setObservaciones("");
-    }, "Tarea registrada");
+  const confirmar = (cerrarOrden = false) =>
+    ejecutar(
+      async () => {
+        if (errorInyectado) throw new Error(errorInyectado);
+        const datos = {
+          ok: totalOk,
+          scrap: totalScrap,
+          observaciones,
+          resultados: articulosMolde.map((a) => {
+            const r = resultados.find((r) => r.articulo_id === a.articulo_id);
+            return {
+              articulo_id: a.articulo_id,
+              piezas_ok: r?.piezas_ok || 0,
+              piezas_scrap: r?.piezas_scrap || 0,
+            };
+          }),
+        };
+        if (cerrarOrden) {
+          await finalizarOrdenDesdeTarea(
+            activa,
+            datos,
+            ordenActiva?.requiereCierreMolde
+              ? { bajada: bajadaOrden, limpieza: limpiezaOrden }
+              : null,
+          );
+          setConfirmarOrden(false);
+        } else {
+          await confirmarTarea(activa, datos);
+        }
+        setHecha({
+          art: findArt(arts, activa.articuloId),
+          molde: activa.moldeId ? ordenActiva?.configuracion?.codigo : null,
+          act: activa.actividad,
+          ok: totalOk,
+          scrap: totalScrap,
+          realSec: activa.realSec,
+          productividad: cargaInyectado.productividad,
+          ciclos: cargaInyectado.ciclos,
+          segundosCiclo: Number(ordenActiva?.configuracion?.segundos_ciclo),
+          gramosProcesados:
+            cargaInyectado.ciclos *
+            Number(ordenActiva?.configuracion?.material_ciclo || 0),
+          pedido: ordenActiva,
+          resultados: cargaInyectado.filas.map((f) => ({
+            articulo_id: f.articulo_id,
+            piezas_ok: f.ok,
+            piezas_scrap: f.scrap,
+          })),
+        });
+        setOk(0);
+        setScrap(0);
+        setObservaciones("");
+      },
+      cerrarOrden ? "Tarea registrada y orden finalizada" : "Tarea registrada",
+    );
 
   if (cargando)
     return (
@@ -651,10 +674,81 @@ export default function Registrar({
             !!errorInyectado ||
             (totalOk === 0 && totalScrap === 0 && !observaciones.trim())
           }
-          onClick={confirmar}
+          onClick={() => confirmar()}
         >
           <Check size={18} strokeWidth={2.5} /> Registrar tarea
         </button>
+        <button
+          type="button"
+          className="btn btn-dark"
+          style={{ marginTop: 12 }}
+          disabled={
+            busy ||
+            !!errorInyectado ||
+            (totalOk === 0 && totalScrap === 0 && !observaciones.trim())
+          }
+          onClick={() => {
+            setBajadaOrden("");
+            setLimpiezaOrden(false);
+            setConfirmarOrden(true);
+          }}
+        >
+          Finalizar orden
+        </button>
+        <ConfirmDialog
+          abierto={confirmarOrden}
+          titulo="¿Registrar la tarea y finalizar la orden?"
+          textoConfirmar="Sí, finalizar orden"
+          busy={busy}
+          deshabilitado={
+            !!errorInyectado ||
+            (totalOk === 0 && totalScrap === 0 && !observaciones.trim()) ||
+            (ordenActiva?.requiereCierreMolde &&
+              (!minutosValidos(bajadaOrden) || !limpiezaOrden))
+          }
+          onCancelar={() => setConfirmarOrden(false)}
+          onConfirmar={() => confirmar(true)}
+        >
+          <p>
+            Se registrará esta tarea y se cerrará la orden {activa.pedidoCodigo}
+            . Si faltan piezas, quedará finalizada con pendientes. No se exige
+            alcanzar la cantidad solicitada.
+          </p>
+          <p>
+            Las demás tareas de esta orden deben estar registradas antes de
+            cerrar.
+          </p>
+          {activa.actividad === "inyectado" && (
+            <p>
+              <strong>Recordá bajar y limpiar el molde.</strong>
+            </p>
+          )}
+          {ordenActiva?.requiereCierreMolde && (
+            <>
+              <label className="molde-tiempo">
+                Bajada del molde (minutos)
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  required
+                  value={bajadaOrden}
+                  disabled={busy}
+                  onChange={(e) => setBajadaOrden(e.target.value)}
+                />
+              </label>
+              <label className="molde-confirmacion">
+                <input
+                  type="checkbox"
+                  checked={limpiezaOrden}
+                  disabled={busy}
+                  onChange={(e) => setLimpiezaOrden(e.target.checked)}
+                />
+                Confirmo que bajé y limpié el molde.
+              </label>
+            </>
+          )}
+        </ConfirmDialog>
         {totalOk === 0 && totalScrap === 0 && !observaciones.trim() && (
           <div
             style={{

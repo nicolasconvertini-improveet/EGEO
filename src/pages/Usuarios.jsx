@@ -1,13 +1,27 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Check, Users, UserPlus } from "lucide-react";
-import { fetchUsuarios, updateUsuario, crearUsuario, cambiarPasswordUsuario, consultarEmailUsuario } from "../api";
+import {
+  fetchUsuarios,
+  updateUsuario,
+  crearUsuario,
+  cambiarPasswordUsuario,
+  consultarEmailUsuario,
+} from "../api";
 import { norm } from "../lib/format";
 import SearchBox from "../components/SearchBox";
 import Highlight from "../components/Highlight";
 
 const ROL_OPCIONES = [
-  { key: "operario", label: "Operario", desc: "Registra tareas, crea órdenes y mantenimientos" },
-  { key: "supervisor", label: "Supervisor", desc: "Además ve tareas de todos y el historial de estados" },
+  {
+    key: "operario",
+    label: "Operario",
+    desc: "Registra tareas, crea órdenes y mantenimientos",
+  },
+  {
+    key: "supervisor",
+    label: "Supervisor",
+    desc: "Además ve tareas de todos y el historial de estados",
+  },
   { key: "admin", label: "Administrador", desc: "Acceso total" },
 ];
 
@@ -33,7 +47,9 @@ export default function Usuarios({ perfil, notify, setDetail }) {
     if (!usuarios) return [];
     const nq = norm(q.trim());
     if (!nq) return usuarios;
-    return usuarios.filter((u) => norm(u.nombre).includes(nq) || norm(u.rol).includes(nq));
+    return usuarios.filter(
+      (u) => norm(u.nombre).includes(nq) || norm(u.rol).includes(nq),
+    );
   }, [usuarios, q]);
 
   const cambiarRol = async (u, rol) => {
@@ -79,11 +95,19 @@ export default function Usuarios({ perfil, notify, setDetail }) {
 
   return (
     <>
-      <button className="btn btn-dark" style={{ marginBottom: 12 }} onClick={() => setDetail({ type: "usrNew" })}>
+      <button
+        className="btn btn-dark"
+        style={{ marginBottom: 12 }}
+        onClick={() => setDetail({ type: "usrNew" })}
+      >
         <UserPlus size={18} strokeWidth={2.4} /> Nuevo usuario
       </button>
 
-      <SearchBox value={q} onChange={setQ} placeholder="Buscar por nombre o rol…" />
+      <SearchBox
+        value={q}
+        onChange={setQ}
+        placeholder="Buscar por nombre o rol…"
+      />
       {q && (
         <div className="search-count">
           {lista.length} de {usuarios.length} usuarios
@@ -91,15 +115,23 @@ export default function Usuarios({ perfil, notify, setDetail }) {
       )}
 
       {lista.map((u) => (
-        <div className="card usercard" key={u.id} style={{ opacity: u.activo ? 1 : 0.62 }}>
+        <div
+          className="card usercard"
+          key={u.id}
+          style={{ opacity: u.activo ? 1 : 0.62 }}
+        >
           <div className="uhead">
-            <div className="uav">{(u.nombre || "?").slice(0, 2).toUpperCase()}</div>
+            <div className="uav">
+              {(u.nombre || "?").slice(0, 2).toUpperCase()}
+            </div>
             <div className="umid">
               <div className="un">
                 <Highlight text={u.nombre || "(sin nombre)"} query={q} />
                 {u.id === perfil.id && <span className="uyou">vos</span>}
               </div>
-              <div className="us">{ROL_OPCIONES.find((r) => r.key === u.rol)?.label}</div>
+              <div className="us">
+                {ROL_OPCIONES.find((r) => r.key === u.rol)?.label}
+              </div>
             </div>
             <button
               className={"switch" + (u.activo ? " on" : "")}
@@ -123,8 +155,12 @@ export default function Usuarios({ perfil, notify, setDetail }) {
               </button>
             ))}
           </div>
-          {!u.activo && <div className="uoff">Cuenta desactivada · no puede ingresar</div>}
-          {perfil.rol === "admin" && perfil.activo && u.id !== perfil.id && <CambioPassword usuario={u} notify={notify} />}
+          {!u.activo && (
+            <div className="uoff">Cuenta desactivada · no puede ingresar</div>
+          )}
+          {perfil.rol === "admin" && perfil.activo && u.id !== perfil.id && (
+            <CambioPassword usuario={u} notify={notify} />
+          )}
         </div>
       ))}
 
@@ -133,7 +169,9 @@ export default function Usuarios({ perfil, notify, setDetail }) {
           <div className="ic">
             <Users size={22} />
           </div>
-          {usuarios.length === 0 ? "No hay usuarios" : "Ningún usuario coincide con la búsqueda"}
+          {usuarios.length === 0
+            ? "No hay usuarios"
+            : "Ningún usuario coincide con la búsqueda"}
         </div>
       )}
     </>
@@ -150,7 +188,11 @@ export function UsuarioForm({ setDetail, notify }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
-  const valid = f.nombre.trim() && f.email.includes("@") && f.password.length >= 6;
+  const valid =
+    f.nombre.trim() &&
+    f.email.includes("@") &&
+    f.password.length >= 12 &&
+    f.password.length <= 128;
 
   const save = async () => {
     setBusy(true);
@@ -178,7 +220,11 @@ export function UsuarioForm({ setDetail, notify }) {
         <label>
           Nombre y apellido <span className="req">*</span>
         </label>
-        <input value={f.nombre} onChange={(e) => set("nombre", e.target.value)} placeholder="Marcelo Sosa" />
+        <input
+          value={f.nombre}
+          onChange={(e) => set("nombre", e.target.value)}
+          placeholder="Marcelo Sosa"
+        />
       </div>
 
       <div className="field">
@@ -198,8 +244,18 @@ export function UsuarioForm({ setDetail, notify }) {
         <label>
           Contraseña inicial <span className="req">*</span>
         </label>
-        <input type="text" value={f.password} onChange={(e) => set("password", e.target.value)} placeholder="Mínimo 6 caracteres" />
-        <div style={{ fontSize: 11.5, color: "var(--ink2)", marginTop: 6 }}>Compartila con la persona; puede cambiarla luego.</div>
+        <input
+          type="password"
+          autoComplete="new-password"
+          minLength={12}
+          maxLength={128}
+          value={f.password}
+          onChange={(e) => set("password", e.target.value)}
+          placeholder="Entre 12 y 128 caracteres"
+        />
+        <div style={{ fontSize: 11.5, color: "var(--ink2)", marginTop: 6 }}>
+          Compartila con la persona; puede cambiarla luego.
+        </div>
       </div>
 
       <div className="field">
@@ -208,7 +264,11 @@ export function UsuarioForm({ setDetail, notify }) {
         </label>
         <div className="rolist">
           {ROL_OPCIONES.map((r) => (
-            <button key={r.key} className={"rolopt" + (f.rol === r.key ? " on" : "")} onClick={() => set("rol", r.key)}>
+            <button
+              key={r.key}
+              className={"rolopt" + (f.rol === r.key ? " on" : "")}
+              onClick={() => set("rol", r.key)}
+            >
               <span className="rr">{r.label}</span>
               <span className="rd">{r.desc}</span>
             </button>
@@ -216,7 +276,12 @@ export function UsuarioForm({ setDetail, notify }) {
         </div>
       </div>
 
-      <button className="btn btn-primary" style={{ marginTop: 22 }} disabled={!valid || busy} onClick={save}>
+      <button
+        className="btn btn-primary"
+        style={{ marginTop: 22 }}
+        disabled={!valid || busy}
+        onClick={save}
+      >
         <Check size={18} strokeWidth={2.5} /> Crear usuario
       </button>
     </>
@@ -232,7 +297,12 @@ function CambioPassword({ usuario, notify }) {
   const [error, setError] = useState("");
   const [email, setEmail] = useState("");
   const [cargandoEmail, setCargandoEmail] = useState(false);
-  const valid = Boolean(email) && !cargandoEmail && password.length >= 6 && password.length <= 128 && password === confirmacion;
+  const valid =
+    Boolean(email) &&
+    !cargandoEmail &&
+    password.length >= 12 &&
+    password.length <= 128 &&
+    password === confirmacion;
   const abrir = async () => {
     if (cargandoEmail) return;
 
@@ -274,18 +344,35 @@ function CambioPassword({ usuario, notify }) {
   };
   if (!abierto)
     return (
-      <button type="button" className="btn btn-ghost" style={{ marginTop: 12 }} disabled={cargandoEmail} onClick={abrir}>
+      <button
+        type="button"
+        className="btn btn-ghost"
+        style={{ marginTop: 12 }}
+        disabled={cargandoEmail}
+        onClick={abrir}
+      >
         {cargandoEmail ? "Consultando correo…" : "Cambiar contraseña"}
       </button>
     );
   return (
-    <form onSubmit={guardar} style={{ marginTop: 12 }} aria-label={`Cambiar contraseña de ${usuario.nombre}`}>
+    <form
+      onSubmit={guardar}
+      style={{ marginTop: 12 }}
+      aria-label={`Cambiar contraseña de ${usuario.nombre}`}
+    >
       <div className="field">
         <label htmlFor={`email-${usuario.id}`}>Correo asociado</label>
-        <input id={`email-${usuario.id}`} type="email" value={email} readOnly style={{ background: "#f4f6f8", cursor: "text" }} />
+        <input
+          id={`email-${usuario.id}`}
+          type="email"
+          value={email}
+          readOnly
+          style={{ background: "#f4f6f8", cursor: "text" }}
+        />
       </div>
       <p style={{ fontSize: 13 }}>
-        Nueva contraseña para <strong>{usuario.nombre}</strong>. Compartila con esa persona por un medio seguro.
+        Nueva contraseña para <strong>{usuario.nombre}</strong>. Compartila con
+        esa persona por un medio seguro.
       </p>
       <div className="field">
         <label htmlFor={`password-${usuario.id}`}>Nueva contraseña</label>
@@ -295,11 +382,11 @@ function CambioPassword({ usuario, notify }) {
           autoComplete="new-password"
           autoFocus
           required
-          minLength={6}
+          minLength={12}
           maxLength={128}
           disabled={busy}
           value={password}
-          placeholder="Entre 6 y 128 caracteres"
+          placeholder="Entre 12 y 128 caracteres"
           onChange={(e) => setPassword(e.target.value)}
         />
       </div>
@@ -310,7 +397,7 @@ function CambioPassword({ usuario, notify }) {
           type={verPass ? "text" : "password"}
           autoComplete="new-password"
           required
-          minLength={6}
+          minLength={12}
           maxLength={128}
           disabled={busy}
           value={confirmacion}
@@ -318,18 +405,36 @@ function CambioPassword({ usuario, notify }) {
         />
       </div>
       <label className="check-ver-pass">
-        <input type="checkbox" checked={verPass} onChange={(e) => setVerPass(e.target.checked)} /> Mostrar contraseñas
+        <input
+          type="checkbox"
+          checked={verPass}
+          onChange={(e) => setVerPass(e.target.checked)}
+        />{" "}
+        Mostrar contraseñas
       </label>
-      {confirmacion && confirmacion !== password && <p className="hint-err">Las contraseñas no coinciden</p>}
+      {confirmacion && confirmacion !== password && (
+        <p className="hint-err">Las contraseñas no coinciden</p>
+      )}
       {error && (
         <p className="hint-err" role="alert">
           {error}
         </p>
       )}
-      <button type="submit" className="btn btn-primary" style={{ marginTop: 12 }} disabled={!valid || busy}>
+      <button
+        type="submit"
+        className="btn btn-primary"
+        style={{ marginTop: 12 }}
+        disabled={!valid || busy}
+      >
         {busy ? "Guardando…" : "Guardar contraseña"}
       </button>
-      <button type="button" className="btn btn-ghost" style={{ marginTop: 8 }} disabled={busy} onClick={cerrar}>
+      <button
+        type="button"
+        className="btn btn-ghost"
+        style={{ marginTop: 8 }}
+        disabled={busy}
+        onClick={cerrar}
+      >
         Cancelar
       </button>
     </form>
