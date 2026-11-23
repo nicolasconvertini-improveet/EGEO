@@ -78,3 +78,13 @@ Si el paquete no llegó a confirmar, corregir el error y repetir después del ro
 ## Historial CLI
 
 La ruta recomendada arriba es SQL Editor para una base histórica administrada con scripts. No ejecutar después `supabase db push` sin reconciliar el historial remoto: podría intentar reproducir el baseline o migraciones ya aplicadas. Un futuro uso del CLI requiere verificar equivalencia del esquema y registrar las versiones aplicadas mediante el procedimiento oficial de [migraciones](https://supabase.com/docs/guides/deployment/database-migrations) y [migration repair](https://supabase.com/docs/reference/cli/supabase-migration-repair). Repair cambia el historial; no ejecuta ni valida el SQL. El paquete deja además su marca en `egeo_privado.despliegues`, sin inventar un historial CLI remoto.
+
+## Filtros de órdenes — 23/11/2026
+
+Aplicar completa `supabase/migrations/20261123000000_filtros_ordenes.sql` después de las migraciones anteriores (incluida `20261118000000_cierre_orden_seguridad.sql`). Esta migración agrega `finalizado_en` a `v_pedidos`, calculado desde la última transición efectiva a finalizada o finalizada con pendientes. Respeta la sesión activa y conserva la vista con `security_invoker`; no cambia datos de producción ni amplía la lectura del historial.
+
+El rango de fechas es inclusivo, en hora de Argentina. Las órdenes abiertas, reabiertas o sin un cierre registrado no aparecen al filtrar fechas; no se infieren fechas del fin de tareas ni de reclasificaciones históricas. Cambiar entre finalizada y finalizada con pendientes sin reabrir conserva la fecha del cierre efectivo. Las pruebas locales comprueban que una reapertura elimina la fecha visible y que el siguiente cierre la actualiza.
+
+La pantalla permite tildar o destildar cada estado, con todos seleccionados inicialmente salvo canceladas. El prefiltro del tablero conserva el estado elegido allí. Los filtros de estados, proceso, fechas y búsqueda se combinan. El filtro de proceso incluye los cuatro procesos y las órdenes históricas multietapa.
+
+Validación: `npm run test:frontend`, `npm run test:local` contra Docker y `npm run build`. Aplicar el SQL en el entorno remoto correspondiente antes de usar el filtro por fecha en ese entorno.

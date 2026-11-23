@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { mkdirSync } from "node:fs";
+import {
+  filtrarOrdenes,
+  estadosIniciales,
+  ESTADOS_ORDENES,
+  diaFinalizacion,
+  errorFechasOrdenes,
+} from "../src/lib/filtrosOrdenes.js";
 import { build } from "esbuild";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -183,7 +190,7 @@ test("Cierre de inyectado: mostrar productividad y avance en unidades y kilos", 
   assert.ok(html.includes("Registrar otra tarea"));
 });
 
-test("Órdenes: por defecto excluir cerradas y permitir filtros explícitos", () => {
+test("Órdenes: selección múltiple predeterminada sin canceladas y prefiltro del tablero", () => {
   const peds = [
     "pendiente",
     "en_curso",
@@ -203,8 +210,16 @@ test("Órdenes: por defecto excluir cerradas y permitir filtros explícitos", ()
   );
   assert.ok(html.includes("ORDEN-0"));
   assert.ok(html.includes("ORDEN-1"));
-  for (const i of [2, 3, 4]) assert.ok(!html.includes("ORDEN-" + i));
-  assert.ok(html.includes('id="filtro-estado-ordenes"'));
+  for (const i of [2, 3]) assert.ok(html.includes("ORDEN-" + i));
+  assert.ok(!html.includes("ORDEN-4"));
+  assert.equal((html.match(/type="checkbox"/g) || []).length, 5);
+  assert.equal((html.match(/checked=""/g) || []).length, 4);
+  for (const id of [
+    "filtro-proceso-ordenes",
+    "ordenes-finalizacion-desde",
+    "ordenes-finalizacion-hasta",
+  ])
+    assert.ok(html.includes(`id="${id}"`));
   for (const estado of ["finalizado", "finalizado_pendientes", "cancelado"]) {
     const filtered = renderToStaticMarkup(
       createElement(ui.Pedidos, {
@@ -218,4 +233,129 @@ test("Órdenes: por defecto excluir cerradas y permitir filtros explícitos", ()
     assert.ok(filtered.includes(expected.codigo));
     assert.ok(!filtered.includes("ORDEN-0"));
   }
+});
+
+const pedidosFiltro = [
+  {
+    id: "a",
+    estado: "finalizado",
+    proceso: "inyectado",
+    finalizadoEn: "2026-11-20T02:59:59Z",
+    codigo: "Molde Ázul",
+  },
+  {
+    id: "b",
+    estado: "finalizado_pendientes",
+    proceso: "inyectado",
+    finalizadoEn: "2026-11-20T03:00:00Z",
+    codigo: "Molde Ázul",
+  },
+  {
+    id: "c",
+    estado: "finalizado",
+    proceso: "armado",
+    finalizadoEn: "2026-11-21T02:59:59Z",
+    codigo: "Otro",
+  },
+  {
+    id: "d",
+    estado: "finalizado",
+    proceso: null,
+    finalizadoEn: null,
+    codigo: "Histórica sin fecha",
+  },
+  {
+    id: "e",
+    estado: "en_curso",
+    proceso: "inyectado",
+    finalizadoEn: null,
+    codigo: "Abierta",
+  },
+  {
+    id: "f",
+    estado: "cancelado",
+    proceso: "armado",
+    finalizadoEn: null,
+    codigo: "Cancelada",
+  },
+  {
+    id: "g",
+    estado: "finalizado",
+    proceso: "inyectado",
+    finalizadoEn: "2026-11-21T03:00:00Z",
+    codigo: "Molde Ázul",
+  },
+];
+const ids = (rows) => rows.map((p) => p.id);
+test("Órdenes: combinar estados tildados, destildar todos y restaurar predeterminados", () => {
+  assert.deepEqual(ids(filtrarOrdenes(pedidosFiltro, { estados: [] })), []);
+  assert.deepEqual(
+    ids(filtrarOrdenes(pedidosFiltro, { estados: ["en_curso", "cancelado"] })),
+    ["e", "f"],
+  );
+  assert.deepEqual(
+    ids(filtrarOrdenes(pedidosFiltro, { estados: estadosIniciales() })),
+    ["a", "b", "c", "d", "e", "g"],
+  );
+  assert.deepEqual(estadosIniciales({ estado: "finalizado_pendientes" }), [
+    "finalizado_pendientes",
+  ]);
+});
+test("Órdenes: rango inclusivo por cierre en Argentina, sin confundir fecha UTC ni órdenes sin fecha", () => {
+  const base = {
+    estados: ESTADOS_ORDENES,
+    desde: "2026-11-20",
+    hasta: "2026-11-20",
+  };
+  assert.deepEqual(ids(filtrarOrdenes(pedidosFiltro, base)), ["b", "c"]);
+  assert.deepEqual(ids(filtrarOrdenes(pedidosFiltro, { ...base, hasta: "" })), [
+    "b",
+    "c",
+    "g",
+  ]);
+  assert.deepEqual(ids(filtrarOrdenes(pedidosFiltro, { ...base, desde: "" })), [
+    "a",
+    "b",
+    "c",
+  ]);
+  assert.equal(diaFinalizacion("2026-11-20T02:59:59Z"), "2026-11-19");
+  assert.equal(diaFinalizacion("inválida"), "");
+  assert.ok(errorFechasOrdenes("2026-11-21", "2026-11-20"));
+  assert.ok(errorFechasOrdenes("2026-02-30", ""));
+  assert.deepEqual(
+    filtrarOrdenes(pedidosFiltro, { ...base, desde: "2026-11-21" }),
+    [],
+  );
+});
+test("Órdenes: aplicar proceso, búsqueda, estados y fechas simultáneamente", () => {
+  assert.deepEqual(
+    ids(
+      filtrarOrdenes(pedidosFiltro, {
+        estados: ["finalizado_pendientes"],
+        proceso: "inyectado",
+        desde: "2026-11-20",
+        hasta: "2026-11-20",
+        q: "azul",
+      }),
+    ),
+    ["b"],
+  );
+  assert.deepEqual(
+    ids(
+      filtrarOrdenes(pedidosFiltro, {
+        estados: ESTADOS_ORDENES,
+        proceso: "historica",
+      }),
+    ),
+    ["d"],
+  );
+  assert.deepEqual(
+    ids(
+      filtrarOrdenes(pedidosFiltro, {
+        estados: ESTADOS_ORDENES,
+        proceso: "rebabado",
+      }),
+    ),
+    [],
+  );
 });

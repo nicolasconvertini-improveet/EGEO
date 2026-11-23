@@ -770,14 +770,12 @@ test("Docker local: órdenes por proceso, molde multiartículo, historial y perm
     }),
   );
   await denied(
-    op.c
-      .from("pedido_montajes")
-      .insert({
-        pedido_id: ciclo.id,
-        subida_minutos: 1,
-        calentamiento_minutos: 1,
-        montado_por: op.id,
-      }),
+    op.c.from("pedido_montajes").insert({
+      pedido_id: ciclo.id,
+      subida_minutos: 1,
+      calentamiento_minutos: 1,
+      montado_por: op.id,
+    }),
   );
   async function registrarUna(c, montaje) {
     const id = await must(
@@ -1139,6 +1137,82 @@ test("Docker local: órdenes por proceso, molde multiartículo, historial y perm
     root.from("perfiles").update({ activo: false }).eq("id", inactivo.id),
   );
   await denied(inactivo.c.rpc("finalizar_orden_desde_tarea", cierreParcial));
+  // La fecha de finalización pertenece a la orden: visible para todos los roles,
+  // desaparece al reabrir y se actualiza al cerrar nuevamente.
+  const fechaOp = await must(
+    op.c
+      .from("v_pedidos")
+      .select("finalizado_en")
+      .eq("id", ordenParcial.id)
+      .single(),
+  );
+  const fechaAdmin = await must(
+    admin.c
+      .from("v_pedidos")
+      .select("finalizado_en")
+      .eq("id", ordenParcial.id)
+      .single(),
+  );
+  assert.ok(fechaOp.finalizado_en);
+  assert.equal(fechaOp.finalizado_en, fechaAdmin.finalizado_en);
+  assert.equal(
+    new Date(fechaOp.finalizado_en).getTime(),
+    new Date(history[0].creado).getTime(),
+  );
+  let reabierta = await must(
+    admin.c
+      .from("pedidos")
+      .select("estado_revision")
+      .eq("id", ordenParcial.id)
+      .single(),
+  );
+  await must(
+    admin.c.rpc("cambiar_estado_pedido", {
+      p_solicitud: crypto.randomUUID(),
+      p_pedido: ordenParcial.id,
+      p_revision: reabierta.estado_revision,
+      p_accion: "reabrir",
+      p_motivo: "Prueba de filtros de cierre",
+    }),
+  );
+  assert.equal(
+    (
+      await must(
+        op.c
+          .from("v_pedidos")
+          .select("finalizado_en")
+          .eq("id", ordenParcial.id)
+          .single(),
+      )
+    ).finalizado_en,
+    null,
+  );
+  const recierre = await tareaCierre(op.c, ordenParcial);
+  await must(
+    op.c.rpc("finalizar_orden_desde_tarea", {
+      p_tarea: recierre.id,
+      p_revision: recierre.revision,
+      p_ok: 1,
+      p_scrap: 0,
+    }),
+  );
+  const fechaNueva = await must(
+    op.c
+      .from("v_pedidos")
+      .select("finalizado_en")
+      .eq("id", ordenParcial.id)
+      .single(),
+  );
+  assert.ok(
+    new Date(fechaNueva.finalizado_en) > new Date(fechaOp.finalizado_en),
+  );
+  const pedidoApi = (await api.fetchPedidos()).find(
+    (p) => p.id === ordenParcial.id,
+  );
+  assert.equal(
+    new Date(pedidoApi.finalizadoEn).getTime(),
+    new Date(fechaNueva.finalizado_en).getTime(),
+  );
   await api.supabase.auth.signOut();
   console.log("Datos de prueba identificados con prefijo " + stamp);
 });

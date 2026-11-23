@@ -93,6 +93,7 @@ export async function fetchPedidos() {
     cantidad: p.cantidad,
     estado: p.estado,
     estadoRevision: p.estado_revision,
+    finalizadoEn: p.finalizado_en || null,
     okAcum: p.ok_acum, // piezas completas (etapa más atrasada)
     okBruto: p.ok_bruto, // volumen total trabajado
     etapasReq: p.etapas_req,
